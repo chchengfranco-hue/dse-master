@@ -1,104 +1,107 @@
-import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, Pen, Headphones, Mic, BarChart3 } from 'lucide-react';
+import { useState } from 'react';
+import { BookOpen, PenTool, Grid3X3, MessageSquare, Book, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useUser } from '@/lib/UserContext';
+import LoginModal from '@/components/auth/LoginModal';
+import VocabModule from '@/pages/modules/VocabModule';
+import WritingModule from '@/pages/modules/WritingModule';
+import ClozeModule from '@/pages/modules/ClozeModule';
+import EssentialVocabModule from '@/pages/modules/EssentialVocabModule';
+import SpeakingModule from '@/pages/modules/SpeakingModule';
+import UserManagement from '@/pages/modules/UserManagement';
 
-const navItems = [
-  { path: '/', icon: LayoutDashboard, label: 'Home' },
-  { path: '/reading', icon: BookOpen, label: 'Reading' },
-  { path: '/writing', icon: Pen, label: 'Writing' },
-  { path: '/listening', icon: Headphones, label: 'Listening' },
-  { path: '/speaking', icon: Mic, label: 'Speaking' },
-  { path: '/progress', icon: BarChart3, label: 'Progress' },
+const baseModules = [
+  { id: 'vocab', icon: BookOpen, label: 'Idea Bank' },
+  { id: 'writing', icon: PenTool, label: 'Writing' },
+  { id: 'cloze', icon: Grid3X3, label: 'Exercises' },
+  { id: 'essential', icon: Book, label: 'Vocabulary' },
+  { id: 'speaking', icon: MessageSquare, label: 'Speaking' },
 ];
 
 export default function AppLayout() {
-  const location = useLocation();
+  const { isAuthenticated, isEditor, currentUser, login, logout, ready } = useUser();
+  const [activeModule, setActiveModule] = useState('vocab');
+
+  if (!ready) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const modules = isEditor
+    ? [...baseModules, { id: 'users', icon: Users, label: 'Users' }]
+    : baseModules;
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col min-h-screen bg-background">
+        <header className="bg-card border-b border-border p-4 text-center">
+          <h1 className="text-xl font-bold text-foreground">HKDSE Learning Hub</h1>
+        </header>
+        <LoginModal onLogin={login} />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Desktop sidebar */}
-      <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 bg-card border-r border-border flex-col z-40">
-        <div className="p-6 border-b border-border">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-              <span className="text-xl">📚</span>
-            </div>
-            <div>
-              <h1 className="font-bold text-foreground text-lg leading-tight">HKDSE</h1>
-              <p className="text-xs text-muted-foreground">English Prep</p>
-            </div>
+    <div className="flex flex-col min-h-screen bg-background">
+      {/* Header */}
+      <header className="bg-card border-b border-border px-4 py-3 flex justify-between items-center sticky top-0 z-40">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-md shadow-primary/25">
+            <span className="text-xl">📚</span>
+          </div>
+          <div>
+            <h1 className="text-base font-bold text-foreground leading-tight">HKDSE Learning Hub</h1>
+            <p className="text-[10px] text-muted-foreground">Interactive English Learning Platform</p>
           </div>
         </div>
-        <nav className="flex-1 p-4 space-y-1">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
+        <div className="flex items-center gap-2">
+          <div className="hidden sm:flex items-center gap-1 bg-muted px-3 py-1.5 rounded-lg border border-border">
+            <span className="text-sm font-medium text-foreground">{currentUser}</span>
+            {isEditor && <span className="text-xs text-muted-foreground ml-1">(Editor)</span>}
+          </div>
+          <button
+            onClick={logout}
+            className="text-sm bg-muted hover:bg-border px-3 py-1.5 rounded-lg transition-colors font-medium text-foreground border border-border"
+          >
+            Logout
+          </button>
+        </div>
+      </header>
+
+      {/* Content */}
+      <main className="flex-1 overflow-y-auto pb-24">
+        {activeModule === 'vocab' && <VocabModule isEditor={isEditor} />}
+        {activeModule === 'writing' && <WritingModule isEditor={isEditor} />}
+        {activeModule === 'cloze' && <ClozeModule isEditor={isEditor} />}
+        {activeModule === 'essential' && <EssentialVocabModule isEditor={isEditor} />}
+        {activeModule === 'speaking' && <SpeakingModule isEditor={isEditor} />}
+        {activeModule === 'users' && isEditor && <UserManagement />}
+      </main>
+
+      {/* Bottom nav */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-40 px-2 pb-[env(safe-area-inset-bottom)]">
+        <div className="flex justify-around items-center h-16">
+          {modules.map((mod) => {
+            const Icon = mod.icon;
+            const isActive = activeModule === mod.id;
             return (
-              <Link
-                key={item.path}
-                to={item.path}
+              <button
+                key={mod.id}
+                onClick={() => setActiveModule(mod.id)}
                 className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
+                  "flex flex-col items-center justify-center flex-1 h-12 rounded-xl mx-0.5 transition-all duration-200",
                   isActive
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+                    ? "text-primary bg-primary/10"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 )}
               >
-                <item.icon className="w-5 h-5" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="p-4 border-t border-border">
-          <div className="bg-accent rounded-xl p-4">
-            <p className="text-xs font-semibold text-accent-foreground mb-1">Pro Tip</p>
-            <p className="text-xs text-muted-foreground leading-relaxed">Practice daily for 30 minutes to see the best results.</p>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main content */}
-      <main className="flex-1 lg:ml-64 pb-24 lg:pb-8">
-        {/* Mobile header */}
-        <header className="lg:hidden sticky top-0 bg-card/80 backdrop-blur-xl border-b border-border z-30 px-4 py-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center">
-              <span className="text-lg">📚</span>
-            </div>
-            <div>
-              <h1 className="font-bold text-foreground text-base leading-tight">HKDSE English</h1>
-              <p className="text-[10px] text-muted-foreground">Preparation Hub</p>
-            </div>
-          </div>
-        </header>
-
-        <Outlet />
-      </main>
-
-      {/* Mobile bottom nav */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-card/90 backdrop-blur-xl border-t border-border z-40 px-2 pb-[env(safe-area-inset-bottom)]">
-        <div className="flex items-center justify-around py-2">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={cn(
-                  "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all duration-200 min-w-0",
-                  isActive
-                    ? "text-primary"
-                    : "text-muted-foreground"
-                )}
-              >
-                <div className={cn(
-                  "p-1.5 rounded-xl transition-all duration-200",
-                  isActive && "bg-primary/10"
-                )}>
-                  <item.icon className="w-5 h-5" />
-                </div>
-                <span className="text-[10px] font-medium truncate">{item.label}</span>
-              </Link>
+                <Icon className="w-5 h-5" />
+                <span className="text-[10px] mt-0.5 font-medium">{mod.label}</span>
+              </button>
             );
           })}
         </div>
