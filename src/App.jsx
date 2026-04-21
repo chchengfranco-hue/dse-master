@@ -5,7 +5,13 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-// Add page imports here
+import AppLayout from './components/layout/AppLayout';
+import Dashboard from './pages/Dashboard';
+import Reading from './pages/Reading';
+import Writing from './pages/Writing';
+import Listening from './pages/Listening';
+import Speaking from './pages/Speaking';
+import ProgressPage from './pages/Progress';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -33,7 +39,14 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <Routes>
-      {/* Add your page Route elements here */}
+      <Route element={<AppLayout />}>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/reading" element={<Reading />} />
+        <Route path="/writing" element={<Writing />} />
+        <Route path="/listening" element={<Listening />} />
+        <Route path="/speaking" element={<Speaking />} />
+        <Route path="/progress" element={<ProgressPage />} />
+      </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
