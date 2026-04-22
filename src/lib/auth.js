@@ -1,16 +1,78 @@
+import { base44 } from '@/api/base44Client';
+
 export const getUsers = () => {
   const stored = localStorage.getItem("appUsers");
   return stored ? JSON.parse(stored) : [];
 };
 
-export const initializeUsers = () => {
+export const initializeUsers = async () => {
+  // First try to load from DB
+  try {
+    const dbUsers = await base44.entities.AppUser.list();
+    if (dbUsers && dbUsers.length > 0) {
+      // Sync DB data to localStorage
+      const users = dbUsers.map(u => ({ username: u.username, password: u.password, isEditor: u.is_editor, dbId: u.id }));
+      localStorage.setItem("appUsers", JSON.stringify(users));
+      return;
+    }
+  } catch (e) {
+    // Fall through to localStorage fallback
+  }
+
+  // If DB is empty, use localStorage (or defaults)
   const stored = localStorage.getItem("appUsers");
   if (!stored) {
     const defaultUsers = [{ username: "teacher", password: "teacher2026", isEditor: true }];
     localStorage.setItem("appUsers", JSON.stringify(defaultUsers));
+    // Also save to DB
+    await base44.entities.AppUser.create({ username: "teacher", password: "teacher2026", is_editor: true });
+  } else {
+    // Migrate existing localStorage users to DB
+    const existingUsers = JSON.parse(stored);
+    for (const u of existingUsers) {
+      if (!u.dbId) {
+        try {
+          const created = await base44.entities.AppUser.create({ username: u.username, password: u.password, is_editor: u.isEditor || false });
+          u.dbId = created.id;
+        } catch (e) {
+          // already exists or error, skip
+        }
+      }
+    }
+    localStorage.setItem("appUsers", JSON.stringify(existingUsers));
   }
 };
 
-export const saveUsers = (users) => {
+export const saveUsers = async (users) => {
   localStorage.setItem("appUsers", JSON.stringify(users));
+  // Sync to DB
+  try {
+    const dbUsers = await base44.entities.AppUser.list();
+    const dbMap = {};
+    dbUsers.forEach(u => { dbMap[u.username] = u; });
+
+    for (const u of users) {
+      if (dbMap[u.username]) {
+        // Update existing
+        await base44.entities.AppUser.update(dbMap[u.username].id, { password: u.password, is_editor: u.isEditor || false });
+        u.dbId = dbMap[u.username].id;
+      } else {
+        // Create new
+        const created = await base44.entities.AppUser.create({ username: u.username, password: u.password, is_editor: u.isEditor || false });
+        u.dbId = created.id;
+      }
+    }
+
+    // Delete removed users from DB
+    const usernames = new Set(users.map(u => u.username));
+    for (const dbUser of dbUsers) {
+      if (!usernames.has(dbUser.username)) {
+        await base44.entities.AppUser.delete(dbUser.id);
+      }
+    }
+
+    localStorage.setItem("appUsers", JSON.stringify(users));
+  } catch (e) {
+    console.warn('Failed to sync users to DB:', e);
+  }
 };

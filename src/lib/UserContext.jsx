@@ -10,18 +10,19 @@ export function UserProvider({ children }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    initializeUsers();
-    const stored = localStorage.getItem('currentUser');
-    if (stored) {
-      const users = getUsers();
-      const user = users.find(u => u.username === stored);
-      if (user) {
-        setIsAuthenticated(true);
-        setCurrentUser(user.username);
-        setIsEditor(user.isEditor);
+    initializeUsers().then(() => {
+      const stored = localStorage.getItem('currentUser');
+      if (stored) {
+        const users = getUsers();
+        const user = users.find(u => u.username === stored);
+        if (user) {
+          setIsAuthenticated(true);
+          setCurrentUser(user.username);
+          setIsEditor(user.isEditor);
+        }
       }
-    }
-    setReady(true);
+      setReady(true);
+    });
   }, []);
 
   const login = (username, password) => {

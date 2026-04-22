@@ -1,0 +1,23 @@
+{
+  "name": "AppUser",
+  "type": "object",
+  "properties": {
+    "username": {
+      "type": "string",
+      "description": "The username for login"
+    },
+    "password": {
+      "type": "string",
+      "description": "The password (stored as plain text for this app's custom auth)"
+    },
+    "is_editor": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this user has editor privileges"
+    }
+  },
+  "required": [
+    "username",
+    "password"
+  ]
+}
