@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BookOpen, PenTool, Grid3X3, MessageSquare, Book, Users, CheckSquare, MoreHorizontal, ChevronLeft, BarChart2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/lib/UserContext';
@@ -62,6 +62,11 @@ export default function AppLayout() {
     if (p.includes('/bulk')) return 'Import';
     return '';
   })();
+
+  // Stop speech on every route change
+  useEffect(() => {
+    window.speechSynthesis?.cancel();
+  }, [location.pathname]);
 
   // Back destination = the module root
   const handleBack = () => navigate(getTabPath(activeModule));
