@@ -42,7 +42,7 @@ export default function AppLayout() {
     if (p.startsWith('/users')) return 'users';
     if (p.startsWith('/progress')) return 'progress';
     if (p.startsWith('/vocab')) return 'vocab';
-    return 'vocab'; // default: '/'
+    return isEditor ? 'vocab' : 'progress'; // default: students see progress
   })();
 
   const getTabPath = (id) => id === 'vocab' ? '/vocab' : `/${id}`;
