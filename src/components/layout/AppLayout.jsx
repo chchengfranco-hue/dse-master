@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BookOpen, PenTool, Grid3X3, MessageSquare, Book, Users } from 'lucide-react';
+import { BookOpen, PenTool, Grid3X3, MessageSquare, Book, Users, CheckSquare, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/lib/UserContext';
 import LoginModal from '@/components/auth/LoginModal';
@@ -8,14 +8,16 @@ import WritingModule from '@/pages/modules/WritingModule';
 import ClozeModule from '@/pages/modules/ClozeModule';
 import EssentialVocabModule from '@/pages/modules/EssentialVocabModule';
 import SpeakingModule from '@/pages/modules/SpeakingModule';
+import GrammarModule from '@/pages/modules/GrammarModule';
 import UserManagement from '@/pages/modules/UserManagement';
 
 const baseModules = [
-  { id: 'vocab', icon: BookOpen, label: 'Idea Bank' },
+  { id: 'vocab', icon: BookOpen, label: 'Reading' },
   { id: 'writing', icon: PenTool, label: 'Writing' },
-  { id: 'cloze', icon: Grid3X3, label: 'Exercises' },
-  { id: 'essential', icon: Book, label: 'Vocabulary' },
+  { id: 'cloze', icon: Grid3X3, label: 'Cloze' },
+  { id: 'essential', icon: Book, label: 'Vocab' },
   { id: 'speaking', icon: MessageSquare, label: 'Speaking' },
+  { id: 'grammar', icon: CheckSquare, label: 'Grammar' },
 ];
 
 export default function AppLayout() {
@@ -33,6 +35,7 @@ export default function AppLayout() {
   const modules = isEditor
     ? [...baseModules, { id: 'users', icon: Users, label: 'Users' }]
     : baseModules;
+
 
   if (!isAuthenticated) {
     return (
@@ -79,6 +82,7 @@ export default function AppLayout() {
         {activeModule === 'cloze' && <ClozeModule isEditor={isEditor} />}
         {activeModule === 'essential' && <EssentialVocabModule isEditor={isEditor} />}
         {activeModule === 'speaking' && <SpeakingModule isEditor={isEditor} />}
+        {activeModule === 'grammar' && <GrammarModule isEditor={isEditor} />}
         {activeModule === 'users' && isEditor && <UserManagement />}
       </main>
 
