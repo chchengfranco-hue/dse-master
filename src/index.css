@@ -91,102 +91,226 @@
 }
 
 @media print {
-  /* Hide all UI chrome */
-  header,
-  nav,
-  footer,
-  button,
-  aside,
+  @page {
+    margin: 2cm 2.2cm;
+    size: A4 portrait;
+  }
+
+  /* ── Hide all interactive UI chrome ── */
+  header, nav, footer, button, aside,
   .no-print,
   [data-vaul-drawer-direction] > div:first-child,
   [data-radix-scroll-area-scrollbar] {
     display: none !important;
   }
 
-  /* Reset layout for clean paper output */
+  /* ── Base reset ── */
   html, body {
     background: #fff !important;
-    color: #000 !important;
-    font-size: 12pt !important;
+    color: #1a1a2e !important;
+    font-family: 'Georgia', 'Times New Roman', serif !important;
+    font-size: 11pt !important;
+    line-height: 1.7 !important;
     margin: 0 !important;
     padding: 0 !important;
   }
 
-  /* Page settings */
-  @page {
-    margin: 1.5cm 2cm;
-    size: A4 portrait;
-  }
-
-  /* Remove rounded corners, shadows, borders for print */
+  /* ── Layout: remove all wrappers, make content full-width ── */
   * {
     box-shadow: none !important;
-    border-radius: 0 !important;
-    background-color: transparent !important;
-    color: #000 !important;
+    text-shadow: none !important;
   }
 
-  /* Keep certain background colors for semantic blocks */
-  .bg-sky-50, .bg-amber-50, .bg-blue-50, .bg-red-50, .bg-emerald-50 {
-    background-color: #f8f8f8 !important;
-    border: 1px solid #ccc !important;
-  }
-
-  /* Ensure content fills page width */
-  .max-w-5xl, .max-w-3xl, .max-w-lg {
+  .max-w-5xl, .max-w-3xl, .max-w-lg, .max-w-xl {
     max-width: 100% !important;
-    padding: 0 !important;
-    margin: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
   }
 
-  /* Make the content area full width (no margin sidebar) */
-  .flex.gap-5.items-start > .flex-1 {
-    width: 100% !important;
+  /* Flatten flex layouts so content stretches full width */
+  .flex.gap-5.items-start {
+    display: block !important;
   }
 
-  /* Print title styling */
-  h1, h2 {
-    font-size: 16pt !important;
-    font-weight: bold !important;
+  /* ── Typography hierarchy ── */
+  h1 {
+    font-size: 18pt !important;
+    font-weight: 700 !important;
+    color: #2d1b69 !important;
+    border-bottom: 2.5pt solid #2d1b69 !important;
+    padding-bottom: 6pt !important;
+    margin-bottom: 10pt !important;
+    page-break-after: avoid !important;
+  }
+
+  h2 {
+    font-size: 15pt !important;
+    font-weight: 700 !important;
+    color: #2d1b69 !important;
     margin-bottom: 8pt !important;
     page-break-after: avoid !important;
   }
 
   h3 {
-    font-size: 13pt !important;
-    font-weight: bold !important;
+    font-size: 12pt !important;
+    font-weight: 700 !important;
+    color: #2d1b69 !important;
+    border-bottom: 1pt solid #bbb !important;
+    padding-bottom: 3pt !important;
+    margin-bottom: 6pt !important;
+    margin-top: 14pt !important;
     page-break-after: avoid !important;
   }
 
-  p, li {
+  p, li, span {
     font-size: 11pt !important;
-    line-height: 1.6 !important;
+    color: #1a1a2e !important;
+    line-height: 1.7 !important;
   }
 
-  /* Avoid breaking inside key sections */
-  li, tr, .brainstorm-hint {
+  /* ── Content containers: clean bordered boxes ── */
+  .bg-card, .rounded-2xl, .rounded-xl, [class*="rounded"] {
+    border-radius: 0 !important;
+    background: #fff !important;
+    border: none !important;
+  }
+
+  /* ── Semantic highlight blocks ── */
+  .bg-sky-50, [class*="border-sky"],
+  .bg-blue-50, [class*="border-blue"] {
+    background-color: #eef6fb !important;
+    border-left: 3pt solid #2d7dd2 !important;
+    padding: 8pt 10pt !important;
+    margin-bottom: 10pt !important;
+    border-top: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+  }
+
+  .bg-amber-50, [class*="border-amber"] {
+    background-color: #fdf8ed !important;
+    border-left: 3pt solid #d4870a !important;
+    padding: 8pt 10pt !important;
+    margin-bottom: 10pt !important;
+    border-top: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+  }
+
+  .bg-emerald-50, [class*="border-emerald"] {
+    background-color: #edfaf3 !important;
+    border-left: 3pt solid #1a9950 !important;
+    padding: 8pt 10pt !important;
+    margin-bottom: 10pt !important;
+    border-top: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+  }
+
+  .bg-red-50, [class*="border-red"] {
+    background-color: #fef2f2 !important;
+    border-left: 3pt solid #d14343 !important;
+    padding: 8pt 10pt !important;
+    margin-bottom: 10pt !important;
+    border-top: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+  }
+
+  /* Brainstorm hint box */
+  .brainstorm-hint {
+    background-color: #fdf8ed !important;
+    border-left: 3pt solid #d4870a !important;
+    border-top: none !important; border-right: none !important; border-bottom: none !important;
+    padding: 6pt 10pt !important;
+    margin-top: 5pt !important;
+    font-size: 10pt !important;
     page-break-inside: avoid !important;
   }
 
-  /* Borders show clearly on paper */
-  .border, .border-border, [class*="border-l-4"] {
-    border-color: #999 !important;
+  /* Annotated word underlines */
+  .bg-sky-100 {
+    background: none !important;
+    border-bottom: 1pt dotted #2d7dd2 !important;
+    color: #1a1a2e !important;
   }
 
-  /* Table print styling */
+  /* ── Word bank box ── */
+  .border-dashed {
+    border: 1.5pt dashed #999 !important;
+    padding: 8pt !important;
+    margin-bottom: 10pt !important;
+    background: #fafafa !important;
+  }
+
+  /* ── Table styling ── */
   table {
     width: 100% !important;
     border-collapse: collapse !important;
-  }
-
-  th, td {
-    border: 1px solid #999 !important;
-    padding: 6pt 8pt !important;
+    margin-bottom: 12pt !important;
     font-size: 10pt !important;
   }
 
   thead tr {
-    background-color: #eee !important;
+    background-color: #2d1b69 !important;
+    color: #fff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  th {
+    color: #fff !important;
+    background-color: #2d1b69 !important;
+    padding: 5pt 8pt !important;
+    font-weight: 600 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  td {
+    border: 0.5pt solid #ccc !important;
+    padding: 5pt 8pt !important;
+    vertical-align: top !important;
+    color: #1a1a2e !important;
+  }
+
+  tr:nth-child(even) td {
+    background-color: #f7f7fb !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* ── Page break control ── */
+  li, tr {
+    page-break-inside: avoid !important;
+  }
+
+  /* ── Answer lines for cloze ── */
+  input[type="text"] {
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: 1pt solid #333 !important;
+    min-width: 60pt !important;
+    background: transparent !important;
+  }
+
+  /* ── Passage text area ── */
+  .leading-loose, .leading-relaxed {
+    line-height: 1.85 !important;
+  }
+
+  /* ── Tags / badges: hidden on print ── */
+  [class*="rounded-full"] {
+    display: inline !important;
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    font-weight: 600 !important;
+    font-size: 9pt !important;
+    color: #555 !important;
   }
 }
 
