@@ -239,9 +239,13 @@ function SpeakingReadView({ exam, isEditor, onBack, onSaveAnnotation }) {
       @media print {
         .brainstorm-hint { display: ${withHints ? 'block' : 'none'} !important; }
         nav, header, button, .no-print { display: none !important; }
-        /* hide the vaul drawer drag bar */
         [data-vaul-drawer-direction] > div:first-child,
         [data-radix-scroll-area-scrollbar] { display: none !important; }
+        ${!withHints ? `
+        * { page-break-inside: avoid !important; page-break-after: avoid !important; page-break-before: avoid !important; }
+        html, body { height: auto !important; overflow: visible !important; }
+        @page { margin: 0.5cm; size: A4 portrait; }
+        ` : ''}
       }
     `;
     document.head.appendChild(style);
