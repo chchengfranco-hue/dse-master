@@ -1,0 +1,60 @@
+{
+  "name": "EssaySubmission",
+  "type": "object",
+  "properties": {
+    "student_name": {
+      "type": "string",
+      "description": "Name of the student who submitted the essay"
+    },
+    "title": {
+      "type": "string",
+      "description": "Essay title or prompt reference"
+    },
+    "topic": {
+      "type": "string",
+      "description": "Topic category (e.g. Environment, Technology)"
+    },
+    "question": {
+      "type": "string",
+      "description": "The exam question or writing prompt"
+    },
+    "essay_text": {
+      "type": "string",
+      "description": "The full text of the student essay"
+    },
+    "feedback": {
+      "type": "string",
+      "description": "AI-generated feedback from the essay evaluator agent"
+    },
+    "score_content": {
+      "type": "number",
+      "description": "Content & Ideas score (out of 10)"
+    },
+    "score_language": {
+      "type": "number",
+      "description": "Language score (out of 10)"
+    },
+    "score_organisation": {
+      "type": "number",
+      "description": "Organisation score (out of 10)"
+    },
+    "dse_band": {
+      "type": "number",
+      "description": "Overall DSE band estimate (1\u20137)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "evaluated",
+        "reviewed"
+      ],
+      "default": "pending",
+      "description": "Status of the submission"
+    }
+  },
+  "required": [
+    "essay_text",
+    "title"
+  ]
+}

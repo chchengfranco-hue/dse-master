@@ -1,0 +1,79 @@
+{
+  "name": "SpeakingExam",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Title of the speaking exam practice material"
+    },
+    "topic": {
+      "type": "string",
+      "description": "Main topic category"
+    },
+    "subtopic": {
+      "type": "string",
+      "description": "Sub-topic"
+    },
+    "custom_code": {
+      "type": "string",
+      "description": "Custom reference code (e.g. SP-001)"
+    },
+    "part_a": {
+      "type": "object",
+      "description": "Part A group discussion content",
+      "properties": {
+        "intro": {
+          "type": "string"
+        },
+        "passage_title": {
+          "type": "string"
+        },
+        "passage": {
+          "type": "string"
+        },
+        "situation": {
+          "type": "string"
+        },
+        "focus": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "focus_ideas": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "part_b": {
+      "type": "array",
+      "description": "Part B individual response questions",
+      "items": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string"
+          },
+          "g": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "annotations": {
+      "type": "object",
+      "description": "Key-value map of word annotations"
+    },
+    "is_published": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this exam is visible to students"
+    }
+  },
+  "required": [
+    "title"
+  ]
+}

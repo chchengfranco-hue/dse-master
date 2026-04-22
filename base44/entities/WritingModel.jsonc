@@ -1,0 +1,43 @@
+{
+  "name": "WritingModel",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Title or essay prompt label"
+    },
+    "topic": {
+      "type": "string",
+      "description": "Main topic category"
+    },
+    "subtopic": {
+      "type": "string",
+      "description": "Sub-topic"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "Optional image URL"
+    },
+    "question": {
+      "type": "string",
+      "description": "The exam question or writing prompt"
+    },
+    "content": {
+      "type": "string",
+      "description": "The model essay or writing content"
+    },
+    "annotations": {
+      "type": "object",
+      "description": "Key-value map of word annotations (word: meaning)"
+    },
+    "is_published": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this model is visible to students"
+    }
+  },
+  "required": [
+    "title",
+    "content"
+  ]
+}

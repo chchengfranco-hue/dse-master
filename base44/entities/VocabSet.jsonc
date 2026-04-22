@@ -1,0 +1,55 @@
+{
+  "name": "VocabSet",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Title of the vocabulary set"
+    },
+    "topic": {
+      "type": "string",
+      "description": "Main topic category"
+    },
+    "subtopic": {
+      "type": "string",
+      "description": "Sub-topic"
+    },
+    "custom_code": {
+      "type": "string",
+      "description": "Custom reference code (e.g. EV-001)"
+    },
+    "passage": {
+      "type": "string",
+      "description": "Optional contextual passage for the vocabulary set"
+    },
+    "vocab_data": {
+      "type": "array",
+      "description": "Array of vocabulary items",
+      "items": {
+        "type": "object",
+        "properties": {
+          "word": {
+            "type": "string"
+          },
+          "pos": {
+            "type": "string"
+          },
+          "meaning": {
+            "type": "string"
+          },
+          "example": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "is_published": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this set is visible to students"
+    }
+  },
+  "required": [
+    "title"
+  ]
+}

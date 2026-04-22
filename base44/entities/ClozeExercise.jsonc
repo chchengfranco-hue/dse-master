@@ -1,0 +1,45 @@
+{
+  "name": "ClozeExercise",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Title of the cloze exercise"
+    },
+    "topic": {
+      "type": "string",
+      "description": "Main topic category"
+    },
+    "subtopic": {
+      "type": "string",
+      "description": "Sub-topic"
+    },
+    "has_options": {
+      "type": "string",
+      "enum": [
+        "bank",
+        "nobank",
+        "mcq"
+      ],
+      "default": "bank",
+      "description": "Exercise type: word bank, no bank, or MCQ dropdown"
+    },
+    "content": {
+      "type": "string",
+      "description": "Cloze passage content with [word|explanation] brackets"
+    },
+    "annotations": {
+      "type": "object",
+      "description": "Key-value map of word annotations"
+    },
+    "is_published": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this exercise is visible to students"
+    }
+  },
+  "required": [
+    "title",
+    "content"
+  ]
+}

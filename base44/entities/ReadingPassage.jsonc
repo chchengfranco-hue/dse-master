@@ -1,0 +1,43 @@
+{
+  "name": "ReadingPassage",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Title of the reading passage"
+    },
+    "topic": {
+      "type": "string",
+      "description": "Main topic category"
+    },
+    "subtopic": {
+      "type": "string",
+      "description": "Sub-topic"
+    },
+    "custom_code": {
+      "type": "string",
+      "description": "Custom reference code (e.g. R-001)"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "Optional image URL for the passage"
+    },
+    "content": {
+      "type": "string",
+      "description": "Full passage text content"
+    },
+    "annotations": {
+      "type": "object",
+      "description": "Key-value map of word annotations (word: meaning)"
+    },
+    "is_published": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this passage is visible to students"
+    }
+  },
+  "required": [
+    "title",
+    "content"
+  ]
+}

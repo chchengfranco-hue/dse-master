@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BookOpen, PenTool, Grid3X3, MessageSquare, Book, Users, CheckSquare, Pencil } from 'lucide-react';
+import { BookOpen, PenTool, Grid3X3, MessageSquare, Book, Users, CheckSquare, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/lib/UserContext';
 import LoginModal from '@/components/auth/LoginModal';
@@ -9,6 +9,7 @@ import ClozeModule from '@/pages/modules/ClozeModule';
 import EssentialVocabModule from '@/pages/modules/EssentialVocabModule';
 import SpeakingModule from '@/pages/modules/SpeakingModule';
 import GrammarModule from '@/pages/modules/GrammarModule';
+import EssayEvaluatorModule from '@/pages/modules/EssayEvaluatorModule';
 import UserManagement from '@/pages/modules/UserManagement';
 
 const baseModules = [
@@ -18,6 +19,7 @@ const baseModules = [
   { id: 'essential', icon: Book, label: 'Vocab' },
   { id: 'speaking', icon: MessageSquare, label: 'Speaking' },
   { id: 'grammar', icon: CheckSquare, label: 'Grammar' },
+  { id: 'evaluate', icon: Star, label: 'Evaluate' },
 ];
 
 export default function AppLayout() {
@@ -83,6 +85,7 @@ export default function AppLayout() {
         {activeModule === 'essential' && <EssentialVocabModule isEditor={isEditor} />}
         {activeModule === 'speaking' && <SpeakingModule isEditor={isEditor} />}
         {activeModule === 'grammar' && <GrammarModule isEditor={isEditor} />}
+        {activeModule === 'evaluate' && <EssayEvaluatorModule isEditor={isEditor} />}
         {activeModule === 'users' && isEditor && <UserManagement />}
       </main>
 

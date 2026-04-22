@@ -1,0 +1,54 @@
+{
+  "name": "GrammarExercise",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Title of the grammar exercise"
+    },
+    "topic": {
+      "type": "string",
+      "description": "Main grammar topic (e.g. Tenses)"
+    },
+    "subtopic": {
+      "type": "string",
+      "description": "Sub-topic (e.g. Present Perfect)"
+    },
+    "mcq_data": {
+      "type": "array",
+      "description": "Array of multiple choice questions",
+      "items": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "description": "Question text"
+          },
+          "opts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Answer options A-D"
+          },
+          "ans_letter": {
+            "type": "string",
+            "description": "Correct answer letter (A/B/C/D)"
+          },
+          "exp": {
+            "type": "string",
+            "description": "Explanation for the correct answer"
+          }
+        }
+      }
+    },
+    "is_published": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this exercise is visible to students"
+    }
+  },
+  "required": [
+    "title"
+  ]
+}
