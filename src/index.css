@@ -101,7 +101,9 @@
   .sticky,
   [data-vaul-drawer-direction],
   [data-vaul-drawer-direction] > *,
-  [data-radix-scroll-area-scrollbar] {
+  [data-radix-scroll-area-scrollbar],
+  /* vaul drag bar handle */
+  [data-vaul-drawer-direction] > div:first-child {
     display: none !important;
   }
 }
