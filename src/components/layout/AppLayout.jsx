@@ -13,14 +13,14 @@ import EssayEvaluatorModule from '@/pages/modules/EssayEvaluatorModule';
 import UserManagement from '@/pages/modules/UserManagement';
 
 const baseModules = [
-  { id: 'vocab', icon: BookOpen, label: 'Reading' },
-  { id: 'writing', icon: PenTool, label: 'Writing' },
-  { id: 'cloze', icon: Grid3X3, label: 'Cloze' },
-  { id: 'essential', icon: Book, label: 'Vocab' },
-  { id: 'speaking', icon: MessageSquare, label: 'Speaking' },
-  { id: 'grammar', icon: CheckSquare, label: 'Grammar' },
-  { id: 'evaluate', icon: Star, label: 'Evaluate' },
-];
+{ id: 'vocab', icon: BookOpen, label: 'Reading' },
+{ id: 'writing', icon: PenTool, label: 'Writing' },
+{ id: 'cloze', icon: Grid3X3, label: 'Cloze' },
+{ id: 'essential', icon: Book, label: 'Vocab' },
+{ id: 'speaking', icon: MessageSquare, label: 'Speaking' },
+{ id: 'grammar', icon: CheckSquare, label: 'Grammar' },
+{ id: 'evaluate', icon: Star, label: 'Evaluate' }];
+
 
 export default function AppLayout() {
   const { isAuthenticated, isEditor, currentUser, login, logout, ready } = useUser();
@@ -30,13 +30,13 @@ export default function AppLayout() {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-background">
         <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
-      </div>
-    );
+      </div>);
+
   }
 
-  const modules = isEditor
-    ? [...baseModules, { id: 'users', icon: Users, label: 'Users' }]
-    : baseModules;
+  const modules = isEditor ?
+  [...baseModules, { id: 'users', icon: Users, label: 'Users' }] :
+  baseModules;
 
 
   if (!isAuthenticated) {
@@ -46,8 +46,8 @@ export default function AppLayout() {
           <h1 className="text-xl font-bold text-foreground">HKDSE Learning Hub</h1>
         </header>
         <LoginModal onLogin={login} />
-      </div>
-    );
+      </div>);
+
   }
 
   return (
@@ -60,7 +60,7 @@ export default function AppLayout() {
           </div>
           <div>
             <h1 className="text-base font-bold text-foreground leading-tight">HKDSE Learning Hub</h1>
-            <p className="text-[10px] text-muted-foreground">Interactive English Learning Platform</p>
+            <p className="text-[10px] text-muted-foreground">English Learning Platform</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -70,8 +70,8 @@ export default function AppLayout() {
           </div>
           <button
             onClick={logout}
-            className="text-sm bg-muted hover:bg-border px-3 py-1.5 rounded-lg transition-colors font-medium text-foreground border border-border"
-          >
+            className="text-sm bg-muted hover:bg-border px-3 py-1.5 rounded-lg transition-colors font-medium text-foreground border border-border">
+            
             Logout
           </button>
         </div>
@@ -101,18 +101,18 @@ export default function AppLayout() {
                 onClick={() => setActiveModule(mod.id)}
                 className={cn(
                   "flex flex-col items-center justify-center flex-1 h-12 rounded-xl mx-0.5 transition-all duration-200",
-                  isActive
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                )}
-              >
+                  isActive ?
+                  "text-primary bg-primary/10" :
+                  "text-muted-foreground hover:text-foreground hover:bg-muted"
+                )}>
+                
                 <Icon className="w-5 h-5" />
                 <span className="text-[10px] mt-0.5 font-medium">{mod.label}</span>
-              </button>
-            );
+              </button>);
+
           })}
         </div>
       </nav>
-    </div>
-  );
+    </div>);
+
 }
