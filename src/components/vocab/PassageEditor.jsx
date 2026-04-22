@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { TOPIC_TREE } from '@/lib/topicTree';
 
 export default function PassageEditor({ passage, onSave, onCancel }) {
   const [form, setForm] = useState({
@@ -17,6 +18,12 @@ export default function PassageEditor({ passage, onSave, onCancel }) {
 
   const set = (key, val) => setForm(p => ({ ...p, [key]: val }));
 
+  const handleTopicChange = (e) => {
+    setForm(p => ({ ...p, topic: e.target.value, subtopic: '' }));
+  };
+
+  const subtopics = form.topic && TOPIC_TREE[form.topic] ? TOPIC_TREE[form.topic] : [];
+
   const handleSave = () => {
     if (!form.title.trim() || !form.content.trim()) return alert('Title and Content are required.');
     const annotations = {};
@@ -28,7 +35,7 @@ export default function PassageEditor({ passage, onSave, onCancel }) {
         if (word && meaning) annotations[word] = meaning;
       }
     });
-    onSave({ id: form.id, title: form.title.trim(), topic: form.topic.trim() || 'Uncategorized', subtopic: form.subtopic.trim() || 'General', imageUrl: form.imageUrl.trim(), content: form.content.trim(), annotations });
+    onSave({ id: form.id, title: form.title.trim(), topic: form.topic || 'Uncategorized', subtopic: form.subtopic || 'General', imageUrl: form.imageUrl.trim(), content: form.content.trim(), annotations });
   };
 
   return (
@@ -37,8 +44,27 @@ export default function PassageEditor({ passage, onSave, onCancel }) {
         <h2 className="text-xl font-bold text-foreground mb-5">{form.id ? 'Edit Passage' : 'Add Passage'}</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-          <Input placeholder="Main Topic (e.g. Technology)" value={form.topic} onChange={e => set('topic', e.target.value)} />
-          <Input placeholder="Sub-topic (e.g. Social Media)" value={form.subtopic} onChange={e => set('subtopic', e.target.value)} />
+          <select
+            className="rounded-xl border border-input px-3 py-2 text-sm bg-background"
+            value={form.topic}
+            onChange={handleTopicChange}
+          >
+            <option value="">— Select Main Topic —</option>
+            {Object.keys(TOPIC_TREE).map(t => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+          <select
+            className="rounded-xl border border-input px-3 py-2 text-sm bg-background disabled:opacity-50"
+            value={form.subtopic}
+            onChange={e => set('subtopic', e.target.value)}
+            disabled={!form.topic}
+          >
+            <option value="">— Select Sub-topic —</option>
+            {subtopics.map(st => (
+              <option key={st} value={st}>{st}</option>
+            ))}
+          </select>
         </div>
 
         <Input className="mb-3" placeholder="Passage Title" value={form.title} onChange={e => set('title', e.target.value)} />

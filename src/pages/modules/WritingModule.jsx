@@ -1,17 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { useNavigate, Routes, Route } from 'react-router-dom';
-
-// Topic → Subtopic hierarchy
-const TOPIC_TREE = {
-  'Environment': ['Climate Change', 'Pollution', 'Biodiversity', 'Sustainable Development', 'Energy'],
-  'Technology': ['Social Media', 'Artificial Intelligence', 'Cybersecurity', 'Digital Life', 'Innovation'],
-  'Society': ['Education', 'Family', 'Poverty & Inequality', 'Gender & Identity', 'Ageing Population'],
-  'Health': ['Mental Health', 'Public Health', 'Diet & Lifestyle', 'Medical Science'],
-  'Economy': ['Globalisation', 'Consumerism', 'Work & Employment', 'Business & Trade'],
-  'Politics & Law': ['Human Rights', 'Democracy', 'Crime & Justice', 'Government Policy'],
-  'Culture & Arts': ['Media & Entertainment', 'Literature', 'Heritage', 'Sports'],
-  'Science': ['Space', 'Biology', 'Physics & Chemistry', 'Research & Ethics'],
-};
+import { TOPIC_TREE } from '@/lib/topicTree';
 import { useLocalData } from '@/hooks/useLocalData';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import PullRefreshIndicator from '@/components/shared/PullRefreshIndicator';
