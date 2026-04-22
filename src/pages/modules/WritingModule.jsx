@@ -1,5 +1,17 @@
 import { useState, useCallback, useRef } from 'react';
 import { useNavigate, Routes, Route } from 'react-router-dom';
+
+// Topic → Subtopic hierarchy
+const TOPIC_TREE = {
+  'Environment': ['Climate Change', 'Pollution', 'Biodiversity', 'Sustainable Development', 'Energy'],
+  'Technology': ['Social Media', 'Artificial Intelligence', 'Cybersecurity', 'Digital Life', 'Innovation'],
+  'Society': ['Education', 'Family', 'Poverty & Inequality', 'Gender & Identity', 'Ageing Population'],
+  'Health': ['Mental Health', 'Public Health', 'Diet & Lifestyle', 'Medical Science'],
+  'Economy': ['Globalisation', 'Consumerism', 'Work & Employment', 'Business & Trade'],
+  'Politics & Law': ['Human Rights', 'Democracy', 'Crime & Justice', 'Government Policy'],
+  'Culture & Arts': ['Media & Entertainment', 'Literature', 'Heritage', 'Sports'],
+  'Science': ['Space', 'Biology', 'Physics & Chemistry', 'Research & Ethics'],
+};
 import { useLocalData } from '@/hooks/useLocalData';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import PullRefreshIndicator from '@/components/shared/PullRefreshIndicator';
@@ -120,19 +132,47 @@ function WritingEditor({ model, onSave, onCancel }) {
     annotationsText: model?.annotations ? Object.entries(model.annotations).map(([k, v]) => `${k}: ${v}`).join('\n') : '',
   });
   const s = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  const handleTopicChange = (e) => {
+    const newTopic = e.target.value;
+    // Reset subtopic when topic changes
+    setForm(p => ({ ...p, topic: newTopic, subtopic: '' }));
+  };
+
+  const subtopics = form.topic && TOPIC_TREE[form.topic] ? TOPIC_TREE[form.topic] : [];
+
   const handleSave = () => {
     if (!form.title.trim() || !form.content.trim()) return alert('Title and Content are required.');
     const annotations = {};
     form.annotationsText.split('\n').forEach(line => { const idx = line.indexOf(':'); if (idx > 0) { const w = line.slice(0, idx).trim(), m = line.slice(idx + 1).trim(); if (w && m) annotations[w] = m; } });
-    onSave({ id: form.id, title: form.title.trim(), topic: form.topic.trim() || 'Uncategorized', subtopic: form.subtopic.trim() || 'General', imageUrl: form.imageUrl.trim(), question: form.question.trim(), content: form.content.trim(), annotations });
+    onSave({ id: form.id, title: form.title.trim(), topic: form.topic || 'Uncategorized', subtopic: form.subtopic || 'General', imageUrl: form.imageUrl.trim(), question: form.question.trim(), content: form.content.trim(), annotations });
   };
   return (
     <div className="px-4 lg:px-8 py-6 max-w-3xl mx-auto">
       <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
         <h2 className="text-xl font-bold text-foreground mb-5">{form.id ? 'Edit Writing Model' : 'Add Writing Model'}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-          <input className="rounded-xl border border-input px-3 py-2 text-sm" placeholder="Main Topic" value={form.topic} onChange={e => s('topic', e.target.value)} />
-          <input className="rounded-xl border border-input px-3 py-2 text-sm" placeholder="Sub-topic" value={form.subtopic} onChange={e => s('subtopic', e.target.value)} />
+          <select
+            className="rounded-xl border border-input px-3 py-2 text-sm bg-background"
+            value={form.topic}
+            onChange={handleTopicChange}
+          >
+            <option value="">— Select Main Topic —</option>
+            {Object.keys(TOPIC_TREE).map(t => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+          <select
+            className="rounded-xl border border-input px-3 py-2 text-sm bg-background disabled:opacity-50"
+            value={form.subtopic}
+            onChange={e => s('subtopic', e.target.value)}
+            disabled={!form.topic}
+          >
+            <option value="">— Select Sub-topic —</option>
+            {subtopics.map(st => (
+              <option key={st} value={st}>{st}</option>
+            ))}
+          </select>
         </div>
         <input className="w-full rounded-xl border border-input px-3 py-2 text-sm mb-3" placeholder="Prompt / Essay Title" value={form.title} onChange={e => s('title', e.target.value)} />
         <input className="w-full rounded-xl border border-input px-3 py-2 text-sm mb-3" placeholder="Image URL (Optional)" value={form.imageUrl} onChange={e => s('imageUrl', e.target.value)} />
