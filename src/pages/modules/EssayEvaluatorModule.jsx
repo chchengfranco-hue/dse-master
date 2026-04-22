@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import ReactMarkdown from 'react-markdown';
 
@@ -76,6 +77,8 @@ function SubmissionCard({ sub, onView }) {
 
 // ─── Main Module ────────────────────────────────────────────────────────────
 export default function EssayEvaluatorModule({ isEditor }) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [view, setView] = useState('submit'); // 'submit' | 'evaluating' | 'history' | 'detail'
   const [essayTitle, setEssayTitle] = useState('');
   const [essayTopic, setEssayTopic] = useState('');

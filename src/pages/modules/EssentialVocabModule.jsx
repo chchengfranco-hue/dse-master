@@ -1,4 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import { Routes, Route, useNavigate } from 'react-router-dom';
+import { useLocalData } from '@/hooks/useLocalData';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import PullRefreshIndicator from '@/components/shared/PullRefreshIndicator';
 
 const STORAGE_KEY = 'essentialVocabSets';
 
@@ -20,7 +24,7 @@ const defaultSets = [
   },
 ];
 
-const load = () => { const s = localStorage.getItem(STORAGE_KEY); return s ? JSON.parse(s) : defaultSets; };
+const load = () => { try { const s = localStorage.getItem(STORAGE_KEY); return s ? JSON.parse(s) : defaultSets; } catch { return defaultSets; } };
 const persist = (d) => localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
 
 function escHtml(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -132,7 +136,7 @@ function EVEditor({ set, onSave, onCancel }) {
 }
 
 // --- Library ---
-function EVLibrary({ sets, isEditor, onView, onEdit, onDelete }) {
+function EVLibrary({ sets, isEditor, onView, onEdit, onDelete, onBulkImport }) {
   const [sel, setSel] = useState('All'); const [selSub, setSelSub] = useState(null);
   const [search, setSearch] = useState(''); const [page, setPage] = useState(1); const PER = 10;
   const topicTree = {};
@@ -152,7 +156,10 @@ function EVLibrary({ sets, isEditor, onView, onEdit, onDelete }) {
     <div className="px-4 lg:px-8 py-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div><h1 className="text-2xl font-bold text-foreground">Essential Vocabulary</h1><p className="text-sm text-muted-foreground mt-1">HKDSE vocabulary sets with context passages</p></div>
-        {isEditor && <button onClick={() => onEdit(null)} className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors">+ Add Vocab Set</button>}
+        <div className="flex gap-2">
+          {isEditor && onBulkImport && <button onClick={onBulkImport} className="px-3 py-2 bg-muted border border-border text-foreground rounded-xl text-sm font-semibold hover:bg-border select-none">📥 Import</button>}
+          {isEditor && <button onClick={() => onEdit(null)} className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors select-none">+ Add Vocab Set</button>}
+        </div>
       </div>
       <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search vocab sets..." className="w-full rounded-xl border border-input px-3 py-2 text-sm mb-5" />
       <div className="flex gap-5 items-start">
@@ -210,7 +217,6 @@ function EVReadView({ set, onBack }) {
   const [showRuby, setShowRuby] = useState(false);
   const [showMargin, setShowMargin] = useState(false);
   const [activeWord, setActiveWord] = useState(null);
-  const [showPrint, setShowPrint] = useState(false);
   const vocab = set.vocabData || [];
 
   const handleWordClick = (word) => {
@@ -247,7 +253,7 @@ function EVReadView({ set, onBack }) {
             <button onClick={() => setShowRuby(v => !v)} className={`text-xs px-3 py-1.5 rounded-lg font-medium border transition-colors ${showRuby ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-muted text-muted-foreground border-border hover:bg-accent'}`}>📖 {showRuby ? 'Hide' : 'Show'} Ruby</button>
             <button onClick={() => setShowMargin(v => !v)} className={`text-xs px-3 py-1.5 rounded-lg font-medium border transition-colors ${showMargin ? 'bg-primary/10 text-primary border-primary/30' : 'bg-muted text-muted-foreground border-border hover:bg-accent'}`}>💬 {showMargin ? 'Hide' : 'Show'} Margin</button>
           </>}
-          <button onClick={() => setShowPrint(true)} className="text-xs bg-card border border-border text-foreground hover:bg-muted px-3 py-1.5 rounded-lg font-medium transition-colors">🖨️ Print…</button>
+          <button onClick={() => window.print()} className="text-xs bg-card border border-border text-foreground hover:bg-muted px-3 py-1.5 rounded-lg font-medium transition-colors select-none">🖨️ Print</button>
         </div>
       </div>
 
@@ -323,44 +329,66 @@ function EVReadView({ set, onBack }) {
         </div>
       )}
 
-      {showPrint && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-card rounded-2xl shadow-xl w-full max-w-sm p-6">
-            <h3 className="text-lg font-bold text-foreground mb-4">🖨️ Print Options</h3>
-            <button onClick={() => { window.print(); setShowPrint(false); }} className="w-full text-left mb-2 px-4 py-3 rounded-xl bg-secondary border border-border font-semibold text-sm hover:bg-muted transition-colors">1. Print: Passage & Selected View</button>
-            <button onClick={() => { const t = set.title + '\n\nVocabulary:\n' + vocab.map(v => `${v.word} (${v.pos}) — ${v.meaning}\nExample: ${v.example}`).join('\n\n'); navigator.clipboard?.writeText(t).then(() => alert('Copied!')); setShowPrint(false); }} className="w-full text-left mb-3 px-4 py-3 rounded-xl bg-secondary border border-border font-semibold text-sm hover:bg-muted transition-colors">📋 Copy Vocab List to Clipboard</button>
-            <button onClick={() => setShowPrint(false)} className="w-full px-4 py-2 border border-border rounded-xl text-sm hover:bg-muted">Cancel</button>
-          </div>
-        </div>
-      )}
+
+    </div>
+  );
+}
+
+function EVBulkImport({ onImport, onCancel }) {
+  const handleFile = (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => { try { const data = JSON.parse(ev.target.result); onImport(Array.isArray(data) ? data : [data]); } catch { alert('Invalid JSON file.'); } };
+    reader.readAsText(file);
+  };
+  return (
+    <div className="px-4 lg:px-8 py-6 max-w-lg mx-auto">
+      <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
+        <h2 className="text-xl font-bold text-foreground mb-2">Bulk Import Vocab Sets</h2>
+        <p className="text-sm text-muted-foreground mb-4">Upload a JSON file with an array of vocab set objects. Each needs at least <code className="bg-muted px-1 rounded">title</code>.</p>
+        <input type="file" accept=".json" onChange={handleFile} className="block w-full text-sm file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-primary file:text-primary-foreground file:font-semibold mb-5" />
+        <button onClick={onCancel} className="px-4 py-2 bg-muted border border-border rounded-xl text-sm font-semibold hover:bg-border select-none">Cancel</button>
+      </div>
     </div>
   );
 }
 
 // --- Main Module ---
 export default function EssentialVocabModule({ isEditor }) {
-  const [sets, setSets] = useState(load);
-  const [view, setView] = useState('list');
-  const [active, setActive] = useState(null);
-  const [editing, setEditing] = useState(null);
+  const navigate = useNavigate();
+  const listRef = useRef(null);
+  const [sets, setSets] = useLocalData(STORAGE_KEY, defaultSets);
+  const refreshing = usePullToRefresh(() => { setSets(load()); }, listRef);
 
   const update = (data) => { setSets(data); persist(data); };
-
   const saveSet = (data) => {
     if (data.id) update(sets.map(s => s.id === data.id ? data : s));
     else update([...sets, { ...data, id: Date.now() }]);
-    setView('list');
+    navigate('/essential');
   };
 
-  if (view === 'edit') return <EVEditor set={editing} onSave={saveSet} onCancel={() => setView('list')} />;
-  if (view === 'read') return <EVReadView set={active} onBack={() => setView('list')} />;
   return (
-    <EVLibrary
-      sets={sets}
-      isEditor={isEditor}
-      onView={p => { setActive(p); setView('read'); }}
-      onEdit={p => { setEditing(p); setView('edit'); }}
-      onDelete={id => update(sets.filter(s => s.id !== id))}
-    />
+    <Routes>
+      <Route path="/" element={
+        <>
+          <PullRefreshIndicator refreshing={refreshing} />
+          <EVLibrary sets={sets} isEditor={isEditor}
+            onView={p => navigate(`/essential/read/${p.id}`)}
+            onEdit={p => navigate(p ? `/essential/edit/${p.id}` : '/essential/edit/new')}
+            onDelete={id => update(sets.filter(s => s.id !== id))}
+            onBulkImport={isEditor ? () => navigate('/essential/bulk') : undefined}
+          />
+        </>
+      } />
+      <Route path="/read/:id" element={(() => {
+        const W = () => { const [ss] = useLocalData(STORAGE_KEY, defaultSets); const id = parseInt(window.location.pathname.split('/').pop()); const set = ss.find(s => s.id === id) || ss[0]; return set ? <EVReadView set={set} onBack={() => navigate('/essential')} /> : null; };
+        return <W />;
+      })()} />
+      <Route path="/edit/:id" element={(() => {
+        const W = () => { const [ss] = useLocalData(STORAGE_KEY, defaultSets); const idStr = window.location.pathname.split('/').pop(); const set = idStr === 'new' ? null : ss.find(s => s.id === parseInt(idStr)); return <EVEditor set={set} onSave={saveSet} onCancel={() => navigate('/essential')} />; };
+        return <W />;
+      })()} />
+      <Route path="/bulk" element={<EVBulkImport onImport={(arr) => { update([...sets, ...arr.map(p => ({ ...p, id: Date.now() + Math.random() }))]); navigate('/essential'); }} onCancel={() => navigate('/essential')} />} />
+    </Routes>
   );
 }

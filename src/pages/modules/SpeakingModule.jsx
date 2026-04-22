@@ -1,8 +1,13 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import { Routes, Route, useNavigate } from 'react-router-dom';
+import { useLocalData } from '@/hooks/useLocalData';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import PullRefreshIndicator from '@/components/shared/PullRefreshIndicator';
 
 const STORAGE_KEY = 'speakingExams';
 
 const defaultExams = [
+
   {
     id: 1,
     title: '2023 Mock Paper 4 — Climate Change',
@@ -33,7 +38,7 @@ const defaultExams = [
   },
 ];
 
-const load = () => { const s = localStorage.getItem(STORAGE_KEY); return s ? JSON.parse(s) : defaultExams; };
+const load = () => { try { const s = localStorage.getItem(STORAGE_KEY); return s ? JSON.parse(s) : defaultExams; } catch { return defaultExams; } };
 const persist = (d) => localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
 
 function speak(text) { if (!('speechSynthesis' in window)) return; window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'en-US'; u.rate = 0.95; window.speechSynthesis.speak(u); }
@@ -142,7 +147,7 @@ function SpeakingEditor({ exam, onSave, onCancel }) {
 }
 
 // --- Library ---
-function SpeakingLibrary({ exams, isEditor, onView, onEdit, onDelete }) {
+function SpeakingLibrary({ exams, isEditor, onView, onEdit, onDelete, onBulkImport }) {
   const [sel, setSel] = useState('All'); const [selSub, setSelSub] = useState(null);
   const [search, setSearch] = useState(''); const [page, setPage] = useState(1); const PER = 10;
   const topicTree = {};
@@ -162,7 +167,10 @@ function SpeakingLibrary({ exams, isEditor, onView, onEdit, onDelete }) {
     <div className="px-4 lg:px-8 py-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div><h1 className="text-2xl font-bold text-foreground">Speaking Exam Library</h1><p className="text-sm text-muted-foreground mt-1">HKDSE Paper 4 speaking practice materials</p></div>
-        {isEditor && <button onClick={() => onEdit(null)} className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors">+ Add Exam Practice</button>}
+        <div className="flex gap-2">
+          {isEditor && onBulkImport && <button onClick={onBulkImport} className="px-3 py-2 bg-muted border border-border text-foreground rounded-xl text-sm font-semibold hover:bg-border select-none">📥 Import</button>}
+          {isEditor && <button onClick={() => onEdit(null)} className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors select-none">+ Add Exam Practice</button>}
+        </div>
       </div>
       <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search exams..." className="w-full rounded-xl border border-input px-3 py-2 text-sm mb-5" />
       <div className="flex gap-5 items-start">
@@ -219,7 +227,6 @@ function SpeakingReadView({ exam, isEditor, onBack, onSaveAnnotation }) {
   const [showRuby, setShowRuby] = useState(false);
   const [showMargin, setShowMargin] = useState(false);
   const [activeWord, setActiveWord] = useState(null);
-  const [showPrint, setShowPrint] = useState(false);
   const annotations = exam.annotations || {};
 
   const handleWordClick = (word) => { speak(word); if (!showMargin && !showRuby) setActiveWord(activeWord === word ? null : word); };
@@ -261,7 +268,7 @@ function SpeakingReadView({ exam, isEditor, onBack, onSaveAnnotation }) {
             <button onClick={() => setShowRuby(v => !v)} className={`text-xs px-3 py-1.5 rounded-lg font-medium border transition-colors ${showRuby ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-muted text-muted-foreground border-border hover:bg-accent'}`}>📖 {showRuby ? 'Hide' : 'Show'} Annotations</button>
             <button onClick={() => setShowMargin(v => !v)} className={`text-xs px-3 py-1.5 rounded-lg font-medium border transition-colors ${showMargin ? 'bg-primary/10 text-primary border-primary/30' : 'bg-muted text-muted-foreground border-border hover:bg-accent'}`}>💬 {showMargin ? 'Hide' : 'Show'} Margin</button>
           </>}
-          <button onClick={() => setShowPrint(true)} className="text-xs bg-card border border-border text-foreground hover:bg-muted px-3 py-1.5 rounded-lg font-medium transition-colors">🖨️ Print…</button>
+          <button onClick={() => window.print()} className="text-xs bg-card border border-border text-foreground hover:bg-muted px-3 py-1.5 rounded-lg font-medium transition-colors select-none">🖨️ Print</button>
         </div>
       </div>
 
@@ -341,35 +348,43 @@ function SpeakingReadView({ exam, isEditor, onBack, onSaveAnnotation }) {
         </div>
       )}
 
-      {showPrint && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-card rounded-2xl shadow-xl w-full max-w-sm p-6">
-            <h3 className="text-lg font-bold text-foreground mb-4">🖨️ Print Options</h3>
-            <button onClick={() => { window.print(); setShowPrint(false); }} className="w-full text-left mb-2 px-4 py-3 rounded-xl bg-secondary border border-border font-semibold text-sm hover:bg-muted transition-colors">1. Print: Clean Exam Paper (Full)</button>
-            <button onClick={() => { const t = exam.title + '\n\n' + Object.entries(annotations).sort().map(([w, m]) => `${w}: ${m}`).join('\n'); navigator.clipboard?.writeText(t).then(() => alert('Copied!')); setShowPrint(false); }} className="w-full text-left mb-3 px-4 py-3 rounded-xl bg-secondary border border-border font-semibold text-sm hover:bg-muted transition-colors">📋 Copy Text + Vocab to Clipboard</button>
-            <button onClick={() => setShowPrint(false)} className="w-full px-4 py-2 border border-border rounded-xl text-sm hover:bg-muted">Cancel</button>
-          </div>
-        </div>
-      )}
+
+    </div>
+  );
+}
+
+function SpeakingBulkImport({ onImport, onCancel }) {
+  const handleFile = (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => { try { const data = JSON.parse(ev.target.result); onImport(Array.isArray(data) ? data : [data]); } catch { alert('Invalid JSON file.'); } };
+    reader.readAsText(file);
+  };
+  return (
+    <div className="px-4 lg:px-8 py-6 max-w-lg mx-auto">
+      <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
+        <h2 className="text-xl font-bold text-foreground mb-2">Bulk Import Speaking Exams</h2>
+        <p className="text-sm text-muted-foreground mb-4">Upload a JSON file with an array of speaking exam objects. Each needs at least <code className="bg-muted px-1 rounded">title</code>.</p>
+        <input type="file" accept=".json" onChange={handleFile} className="block w-full text-sm file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-primary file:text-primary-foreground file:font-semibold mb-5" />
+        <button onClick={onCancel} className="px-4 py-2 bg-muted border border-border rounded-xl text-sm font-semibold hover:bg-border select-none">Cancel</button>
+      </div>
     </div>
   );
 }
 
 // --- Main Module ---
 export default function SpeakingModule({ isEditor }) {
-  const [exams, setExams] = useState(load);
-  const [view, setView] = useState('list');
-  const [active, setActive] = useState(null);
-  const [editing, setEditing] = useState(null);
+  const navigate = useNavigate();
+  const listRef = useRef(null);
+  const [exams, setExams] = useLocalData(STORAGE_KEY, defaultExams);
+  const refreshing = usePullToRefresh(() => { setExams(load()); }, listRef);
 
   const update = (data) => { setExams(data); persist(data); };
-
   const saveExam = (data) => {
     if (data.id) update(exams.map(e => e.id === data.id ? data : e));
     else update([...exams, { ...data, id: Date.now() }]);
-    setView('list');
+    navigate('/speaking');
   };
-
   const handleSaveAnnotation = (examId, word, meaning) => {
     const updated = exams.map(e => {
       if (e.id !== examId) return e;
@@ -378,18 +393,30 @@ export default function SpeakingModule({ isEditor }) {
       return { ...e, annotations };
     });
     update(updated);
-    setActive(updated.find(e => e.id === examId));
   };
 
-  if (view === 'edit') return <SpeakingEditor exam={editing} onSave={saveExam} onCancel={() => setView('list')} />;
-  if (view === 'read') return <SpeakingReadView exam={active} isEditor={isEditor} onBack={() => setView('list')} onSaveAnnotation={handleSaveAnnotation} />;
   return (
-    <SpeakingLibrary
-      exams={exams}
-      isEditor={isEditor}
-      onView={p => { setActive(p); setView('read'); }}
-      onEdit={p => { setEditing(p); setView('edit'); }}
-      onDelete={id => update(exams.filter(e => e.id !== id))}
-    />
+    <Routes>
+      <Route path="/" element={
+        <>
+          <PullRefreshIndicator refreshing={refreshing} />
+          <SpeakingLibrary exams={exams} isEditor={isEditor}
+            onView={p => navigate(`/speaking/read/${p.id}`)}
+            onEdit={p => navigate(p ? `/speaking/edit/${p.id}` : '/speaking/edit/new')}
+            onDelete={id => update(exams.filter(e => e.id !== id))}
+            onBulkImport={isEditor ? () => navigate('/speaking/bulk') : undefined}
+          />
+        </>
+      } />
+      <Route path="/read/:id" element={(() => {
+        const W = () => { const [es] = useLocalData(STORAGE_KEY, defaultExams); const id = parseInt(window.location.pathname.split('/').pop()); const exam = es.find(e => e.id === id) || es[0]; return exam ? <SpeakingReadView exam={exam} isEditor={isEditor} onBack={() => navigate('/speaking')} onSaveAnnotation={handleSaveAnnotation} /> : null; };
+        return <W />;
+      })()} />
+      <Route path="/edit/:id" element={(() => {
+        const W = () => { const [es] = useLocalData(STORAGE_KEY, defaultExams); const idStr = window.location.pathname.split('/').pop(); const exam = idStr === 'new' ? null : es.find(e => e.id === parseInt(idStr)); return <SpeakingEditor exam={exam} onSave={saveExam} onCancel={() => navigate('/speaking')} />; };
+        return <W />;
+      })()} />
+      <Route path="/bulk" element={<SpeakingBulkImport onImport={(arr) => { update([...exams, ...arr.map(p => ({ ...p, id: Date.now() + Math.random() }))]); navigate('/speaking'); }} onCancel={() => navigate('/speaking')} />} />
+    </Routes>
   );
 }

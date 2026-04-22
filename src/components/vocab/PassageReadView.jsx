@@ -3,13 +3,12 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import AnnotatedPassage from '@/components/vocab/AnnotatedPassage';
 import MarginPane from '@/components/vocab/MarginPane';
-import PrintModal from '@/components/vocab/PrintModal';
 
 export default function PassageReadView({ passage, isEditor, onBack, onSaveAnnotation }) {
   const [showMargin, setShowMargin] = useState(false);
   const [showRuby, setShowRuby] = useState(false);
   const [activeWord, setActiveWord] = useState(null);
-  const [showPrint, setShowPrint] = useState(false);
+  // No modal needed — print directly
   const contentRef = useRef(null);
 
   const speak = (text) => {
@@ -77,7 +76,7 @@ export default function PassageReadView({ passage, isEditor, onBack, onSaveAnnot
             >💬 {showMargin ? 'Hide' : 'Show'} Margin</button>
           </>}
 
-          <button onClick={() => setShowPrint(true)} className="text-xs bg-card border border-border text-foreground hover:bg-muted px-3 py-1.5 rounded-lg font-medium transition-colors">🖨️ Print…</button>
+          <button onClick={() => window.print()} className="text-xs bg-card border border-border text-foreground hover:bg-muted px-3 py-1.5 rounded-lg font-medium transition-colors select-none">🖨️ Print</button>
         </div>
       </div>
 
@@ -127,9 +126,7 @@ export default function PassageReadView({ passage, isEditor, onBack, onSaveAnnot
         </div>
       )}
 
-      {showPrint && (
-        <PrintModal passage={passage} isEditor={isEditor} onClose={() => setShowPrint(false)} />
-      )}
+
     </div>
   );
 }

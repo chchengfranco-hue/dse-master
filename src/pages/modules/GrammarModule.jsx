@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { Routes, Route, useNavigate } from 'react-router-dom';
+import { useLocalData } from '@/hooks/useLocalData';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import PullRefreshIndicator from '@/components/shared/PullRefreshIndicator';
 
 const STORAGE_KEY = 'grammarExercises';
-
-const defaultExercises = [
+const DEFAULT = [
   {
-    id: 1,
-    title: 'Present Perfect vs Past Simple',
-    topic: 'Tenses', subtopic: 'Perfect Tenses',
+    id: 1, title: 'Present Perfect vs Past Simple', topic: 'Tenses', subtopic: 'Perfect Tenses',
     mcqData: [
       { q: 'She ___ to the store yesterday.', opts: ['goes', 'went', 'has gone', 'going'], ansLetter: 'B', exp: '"Yesterday" indicates a completed past action → Past Simple.' },
       { q: 'I ___ this movie three times so far.', opts: ['watched', 'watch', 'have watched', 'am watching'], ansLetter: 'C', exp: '"So far" indicates an experience up to now → Present Perfect.' },
@@ -14,9 +15,7 @@ const defaultExercises = [
     ],
   },
   {
-    id: 2,
-    title: 'Passive Voice',
-    topic: 'Grammar', subtopic: 'Passive Voice',
+    id: 2, title: 'Passive Voice', topic: 'Grammar', subtopic: 'Passive Voice',
     mcqData: [
       { q: 'The letter ___ by the secretary this morning.', opts: ['typed', 'was typed', 'is typing', 'has typed'], ansLetter: 'B', exp: 'The subject receives the action → Passive Voice. "This morning" = past time.' },
       { q: 'The project ___ before the deadline.', opts: ['completes', 'is completing', 'must be completed', 'completing'], ansLetter: 'C', exp: 'Modal + passive: must + be + past participle.' },
@@ -24,7 +23,7 @@ const defaultExercises = [
   },
 ];
 
-const load = () => { const s = localStorage.getItem(STORAGE_KEY); return s ? JSON.parse(s) : defaultExercises; };
+const load = () => { try { const s = localStorage.getItem(STORAGE_KEY); return s ? JSON.parse(s) : DEFAULT; } catch { return DEFAULT; } };
 const persist = (d) => localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
 
 // --- Editor ---
@@ -43,7 +42,7 @@ function GrammarEditor({ exercise, onSave, onCancel }) {
     const mcqData = [];
     for (let i = 0; i < lines.length; i++) {
       const parts = lines[i].split('|').map(p => p.trim());
-      if (parts.length < 6) { alert(`Error on line ${i + 1}: Not enough parts (separated by |)`); return; }
+      if (parts.length < 6) { alert(`Error on line ${i + 1}: Not enough parts`); return; }
       mcqData.push({ q: parts[0], opts: [parts[1], parts[2], parts[3], parts[4]], ansLetter: (parts[5] || 'A').toUpperCase(), exp: parts[6] || '' });
     }
     onSave({ id: form.id, title: form.title.trim(), topic: form.topic.trim() || 'Uncategorized', subtopic: form.subtopic.trim() || 'General', mcqData });
@@ -57,13 +56,13 @@ function GrammarEditor({ exercise, onSave, onCancel }) {
           <input className="rounded-xl border border-input px-3 py-2 text-sm" placeholder="Sub-topic (e.g. Present Perfect)" value={form.subtopic} onChange={e => s('subtopic', e.target.value)} />
         </div>
         <input className="w-full rounded-xl border border-input px-3 py-2 text-sm mb-3" placeholder="Exercise Title" value={form.title} onChange={e => s('title', e.target.value)} />
-        <h3 className="text-sm font-bold text-primary mb-2 border-b border-border pb-1">Multiple Choice Questions (Batch Input)</h3>
-        <p className="text-xs text-muted-foreground mb-1">Format: <code className="bg-muted px-1 rounded">Question | Option A | Option B | Option C | Option D | Correct Letter | Explanation</code></p>
+        <h3 className="text-sm font-bold text-primary mb-2 border-b border-border pb-1">MCQ Questions (Batch Input)</h3>
+        <p className="text-xs text-muted-foreground mb-1">Format: <code className="bg-muted px-1 rounded">Question | A | B | C | D | Answer | Explanation</code></p>
         <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 mb-3">Example: <code>She ___ yesterday. | goes | went | has gone | going | B | "Yesterday" = Past Simple.</code></p>
         <textarea className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-48 resize-y mb-5" placeholder={"I ___ an apple every day. | eat | ate | eaten | eating | A | Habitual action = Present Simple."} value={form.batchData} onChange={e => s('batchData', e.target.value)} />
         <div className="flex gap-2">
-          <button onClick={handleSave} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors">Save Exercise</button>
-          <button onClick={onCancel} className="px-4 py-2 bg-muted text-foreground rounded-lg text-sm font-semibold hover:bg-border transition-colors border border-border">Cancel</button>
+          <button onClick={handleSave} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors select-none">Save Exercise</button>
+          <button onClick={onCancel} className="px-4 py-2 bg-muted text-foreground rounded-lg text-sm font-semibold hover:bg-border transition-colors border border-border select-none">Cancel</button>
         </div>
       </div>
     </div>
@@ -71,7 +70,7 @@ function GrammarEditor({ exercise, onSave, onCancel }) {
 }
 
 // --- Library ---
-function GrammarLibrary({ exercises, isEditor, onView, onEdit, onDelete }) {
+function GrammarLibrary({ exercises, isEditor, onView, onEdit, onDelete, onBulkImport, refreshing }) {
   const [sel, setSel] = useState('All'); const [selSub, setSelSub] = useState(null);
   const topicTree = {};
   exercises.forEach(p => {
@@ -82,19 +81,23 @@ function GrammarLibrary({ exercises, isEditor, onView, onEdit, onDelete }) {
   const filtered = exercises.filter(p => sel === 'All' || (selSub ? p.topic === sel && p.subtopic === selSub : p.topic === sel));
   return (
     <div className="px-4 lg:px-8 py-6 max-w-5xl mx-auto">
+      <PullRefreshIndicator refreshing={refreshing} />
       <div className="flex items-center justify-between mb-6">
         <div><h1 className="text-2xl font-bold text-foreground">Grammar Exercises</h1><p className="text-sm text-muted-foreground mt-1">Multiple choice grammar practice</p></div>
-        {isEditor && <button onClick={() => onEdit(null)} className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors">+ Add Exercise</button>}
+        <div className="flex gap-2">
+          {isEditor && onBulkImport && <button onClick={onBulkImport} className="px-3 py-2 bg-muted border border-border text-foreground rounded-xl text-sm font-semibold hover:bg-border transition-colors select-none">📥 Import</button>}
+          {isEditor && <button onClick={() => onEdit(null)} className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors select-none">+ Add</button>}
+        </div>
       </div>
       <div className="flex gap-5 items-start">
         <aside className="w-52 shrink-0 bg-card rounded-2xl border border-border p-4 hidden sm:block">
           <h3 className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">Categories</h3>
-          <button onClick={() => { setSel('All'); setSelSub(null); }} className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium mb-1 transition-colors ${sel === 'All' ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'}`}>All Exercises ({exercises.length})</button>
+          <button onClick={() => { setSel('All'); setSelSub(null); }} className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium mb-1 transition-colors select-none ${sel === 'All' ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'}`}>All Exercises ({exercises.length})</button>
           {Object.keys(topicTree).sort().map(t => (
             <div key={t}>
-              <button onClick={() => { setSel(t); setSelSub(null); }} className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium mb-1 transition-colors ${sel === t && !selSub ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'}`}>{t} ({exercises.filter(p => p.topic === t).length})</button>
+              <button onClick={() => { setSel(t); setSelSub(null); }} className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium mb-1 transition-colors select-none ${sel === t && !selSub ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'}`}>{t} ({exercises.filter(p => p.topic === t).length})</button>
               {Array.from(topicTree[t]).sort().map(st => (
-                <button key={st} onClick={() => { setSel(t); setSelSub(st); }} className={`w-full text-left px-3 py-1.5 pl-6 rounded-xl text-xs mb-0.5 transition-colors ${sel === t && selSub === st ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}>{st}</button>
+                <button key={st} onClick={() => { setSel(t); setSelSub(st); }} className={`w-full text-left px-3 py-1.5 pl-6 rounded-xl text-xs mb-0.5 transition-colors select-none ${sel === t && selSub === st ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}>{st}</button>
               ))}
             </div>
           ))}
@@ -108,10 +111,10 @@ function GrammarLibrary({ exercises, isEditor, onView, onEdit, onDelete }) {
                 {p.topic && <span className="text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-medium mt-2 inline-block">{p.topic}{p.subtopic && p.subtopic !== 'General' ? ` › ${p.subtopic}` : ''}</span>}
               </div>
               <div className="flex gap-2 shrink-0">
-                <button onClick={() => onView(p)} className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">Practice</button>
+                <button onClick={() => onView(p)} className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors select-none">Practice</button>
                 {isEditor && <>
-                  <button onClick={() => onEdit(p)} className="px-3 py-1.5 bg-muted text-foreground rounded-lg text-sm font-medium hover:bg-border transition-colors border border-border">Edit</button>
-                  <button onClick={() => { if (confirm('Delete?')) onDelete(p.id); }} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors border border-red-200">Delete</button>
+                  <button onClick={() => onEdit(p)} className="px-3 py-1.5 bg-muted text-foreground rounded-lg text-sm font-medium hover:bg-border transition-colors border border-border select-none">Edit</button>
+                  <button onClick={() => { if (confirm('Delete?')) onDelete(p.id); }} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors border border-red-200 select-none">Delete</button>
                 </>}
               </div>
             </div>
@@ -130,20 +133,17 @@ function GrammarPracticeView({ exercise, onBack }) {
 
   const handleSubmit = () => {
     const total = exercise.mcqData?.length || 0;
-    const answeredAll = Object.keys(selected).length === total;
-    if (!answeredAll && !confirm("You haven't answered all questions. Submit anyway? Unanswered will be marked incorrect.")) return;
+    if (Object.keys(selected).length < total && !confirm("Haven't answered all. Submit anyway?")) return;
     setSubmitted(true);
   };
-
-  const handleReset = () => { setSelected({}); setSubmitted(false); };
 
   const downloadWord = () => {
     const title = exercise.title;
     let html = exercise.mcqData.map((q, i) => {
       const optsHtml = q.opts.map((o, oi) => `<p style="margin:2px 0;">${letters[oi]}. ${o}</p>`).join('');
-      return `<div style="margin-bottom:20px;"><p style="font-weight:bold;font-size:13pt;">${i + 1}. ${q.q}</p>${optsHtml}</div>`;
+      return `<div style="margin-bottom:20px;"><p style="font-weight:bold;">${i + 1}. ${q.q}</p>${optsHtml}</div>`;
     }).join('');
-    const content = `<html xmlns:w='urn:schemas-microsoft-com:office:word'><head><meta charset='utf-8'><title>${title}</title></head><body style='font-family:"Times New Roman";font-size:12pt;'><h1 style='color:#0284c7;'>${title}</h1><p>Name: ____________________ Date: ___________</p>${html}</body></html>`;
+    const content = `<html><head><meta charset='utf-8'><title>${title}</title></head><body style='font-family:serif;'><h1>${title}</h1>${html}</body></html>`;
     const blob = new Blob(['\ufeff', content], { type: 'application/msword' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = title.replace(/\s+/g, '_') + '.doc';
@@ -151,35 +151,30 @@ function GrammarPracticeView({ exercise, onBack }) {
   };
 
   let score = 0;
-  if (submitted) { exercise.mcqData?.forEach((q, i) => { if (selected[i] === q.ansLetter) score++; }); }
+  if (submitted) exercise.mcqData?.forEach((q, i) => { if (selected[i] === q.ansLetter) score++; });
 
   return (
     <div className="px-4 lg:px-8 py-6 max-w-3xl mx-auto">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
-        <button onClick={onBack} className="px-3 py-1.5 bg-card border border-border rounded-lg text-sm hover:bg-muted transition-colors">← Back to Library</button>
+        <button onClick={onBack} className="px-3 py-1.5 bg-card border border-border rounded-lg text-sm hover:bg-muted transition-colors select-none">← Back to Library</button>
         <div className="flex gap-2">
-          <button onClick={downloadWord} className="text-xs bg-card border border-primary text-primary hover:bg-primary/5 px-3 py-1.5 rounded-lg font-medium transition-colors">📥 Download Word (.doc)</button>
-          <button onClick={() => window.print()} className="text-xs bg-card border border-primary text-primary hover:bg-primary/5 px-3 py-1.5 rounded-lg font-medium transition-colors">🖨️ Print Worksheet</button>
+          <button onClick={downloadWord} className="text-xs bg-card border border-primary text-primary hover:bg-primary/5 px-3 py-1.5 rounded-lg font-medium transition-colors select-none">📥 Download Word</button>
+          <button onClick={() => window.print()} className="text-xs bg-card border border-primary text-primary hover:bg-primary/5 px-3 py-1.5 rounded-lg font-medium transition-colors select-none">🖨️ Print</button>
         </div>
       </div>
-
       <div className="mb-6 pb-4 border-b border-border">
         <h2 className="text-2xl font-bold text-foreground mb-1">{exercise.title}</h2>
         {exercise.topic && <span className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">{exercise.topic}{exercise.subtopic && exercise.subtopic !== 'General' ? ` › ${exercise.subtopic}` : ''}</span>}
       </div>
-
       {submitted && (
         <div className="bg-primary/10 border border-primary/30 rounded-2xl p-4 mb-6 text-center">
           <p className="text-xl font-bold text-primary">🎉 Score: {score} / {exercise.mcqData?.length}</p>
           <p className="text-sm text-muted-foreground mt-1">Review your answers and explanations below.</p>
         </div>
       )}
-
       <div className="space-y-5">
         {(exercise.mcqData || []).map((q, idx) => {
-          const isAnswered = selected[idx] !== undefined;
           const isCorrect = submitted && selected[idx] === q.ansLetter;
-          const isWrong = submitted && isAnswered && selected[idx] !== q.ansLetter;
           return (
             <div key={idx} className="bg-card rounded-2xl border border-border p-5 shadow-sm">
               <h3 className="text-base font-bold text-primary mb-4">{idx + 1}. {q.q}</h3>
@@ -190,10 +185,8 @@ function GrammarPracticeView({ exercise, onBack }) {
                   const isCorr = submitted && letter === q.ansLetter;
                   const isInc = submitted && isSel && letter !== q.ansLetter;
                   return (
-                    <label key={letter} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all text-sm ${isCorr ? 'bg-green-50 border-green-400 text-green-900 font-semibold' : isInc ? 'bg-red-50 border-red-400 text-red-900' : isSel ? 'bg-sky-50 border-primary shadow-sm' : 'bg-background border-border hover:bg-accent'}`}>
-                      <input type="radio" name={`q${idx}`} value={letter} checked={isSel} disabled={submitted}
-                        onChange={() => setSelected(s => ({ ...s, [idx]: letter }))}
-                        className="w-4 h-4 accent-primary cursor-pointer" />
+                    <label key={letter} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all text-sm select-none ${isCorr ? 'bg-green-50 border-green-400 text-green-900 font-semibold' : isInc ? 'bg-red-50 border-red-400 text-red-900' : isSel ? 'bg-sky-50 border-primary shadow-sm' : 'bg-background border-border hover:bg-accent'}`}>
+                      <input type="radio" name={`q${idx}`} value={letter} checked={isSel} disabled={submitted} onChange={() => setSelected(s => ({ ...s, [idx]: letter }))} className="w-4 h-4 accent-primary cursor-pointer" />
                       <strong>{letter}.</strong> {opt}
                     </label>
                   );
@@ -201,49 +194,81 @@ function GrammarPracticeView({ exercise, onBack }) {
               </div>
               {submitted && (
                 <div className="mt-3 bg-amber-50 border-l-4 border-amber-400 px-4 py-3 rounded-r-xl text-sm text-amber-900">
-                  <strong>Explanation:</strong> {selected[idx] === q.ansLetter ? `Correct! ` : `The correct answer is ${q.ansLetter}. `}{q.exp}
+                  <strong>Explanation:</strong> {selected[idx] === q.ansLetter ? 'Correct! ' : `The correct answer is ${q.ansLetter}. `}{q.exp}
                 </div>
               )}
             </div>
           );
         })}
       </div>
-
       <div className="mt-6 text-center">
-        {!submitted ? (
-          <button onClick={handleSubmit} className="px-8 py-3 bg-green-600 text-white rounded-xl font-bold text-base hover:bg-green-700 transition-colors w-full max-w-sm">📝 Submit All Answers</button>
-        ) : (
-          <button onClick={handleReset} className="px-6 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold hover:bg-primary/90 transition-colors">🔄 Try Again</button>
-        )}
+        {!submitted
+          ? <button onClick={handleSubmit} className="px-8 py-3 bg-green-600 text-white rounded-xl font-bold text-base hover:bg-green-700 transition-colors w-full max-w-sm select-none">📝 Submit All Answers</button>
+          : <button onClick={() => { setSelected({}); setSubmitted(false); }} className="px-6 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold hover:bg-primary/90 transition-colors select-none">🔄 Try Again</button>
+        }
       </div>
     </div>
   );
 }
 
-// --- Main Module ---
+function BulkImport({ onImport, onCancel }) {
+  const handleFile = (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        const arr = Array.isArray(data) ? data : [data];
+        onImport(arr.map(p => ({ ...p, id: Date.now() + Math.random() })));
+      } catch { alert('Invalid JSON file.'); }
+    };
+    reader.readAsText(file);
+  };
+  return (
+    <div className="px-4 lg:px-8 py-6 max-w-lg mx-auto">
+      <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
+        <h2 className="text-xl font-bold text-foreground mb-2">Bulk Import Grammar Exercises</h2>
+        <p className="text-sm text-muted-foreground mb-4">Upload a JSON file with an array of grammar exercise objects. Each needs <code className="bg-muted px-1 rounded">title</code> and <code className="bg-muted px-1 rounded">mcqData</code>.</p>
+        <input type="file" accept=".json" onChange={handleFile} className="block w-full text-sm text-muted-foreground file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-primary file:text-primary-foreground file:font-semibold hover:file:bg-primary/90 mb-5" />
+        <button onClick={onCancel} className="px-4 py-2 bg-muted border border-border rounded-xl text-sm font-semibold hover:bg-border select-none">Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+// --- Main ---
 export default function GrammarModule({ isEditor }) {
-  const [exercises, setExercises] = useState(load);
-  const [view, setView] = useState('list');
-  const [active, setActive] = useState(null);
-  const [editing, setEditing] = useState(null);
+  const navigate = useNavigate();
+  const listRef = useRef(null);
+  const [exercises, setExercises] = useLocalData(STORAGE_KEY, DEFAULT);
+  const refreshing = usePullToRefresh(() => { setExercises(load()); }, listRef);
 
   const update = (data) => { setExercises(data); persist(data); };
-
   const saveEx = (data) => {
     if (data.id) update(exercises.map(e => e.id === data.id ? data : e));
     else update([...exercises, { ...data, id: Date.now() }]);
-    setView('list');
+    navigate('/grammar');
   };
 
-  if (view === 'edit') return <GrammarEditor exercise={editing} onSave={saveEx} onCancel={() => setView('list')} />;
-  if (view === 'practice') return <GrammarPracticeView exercise={active} onBack={() => setView('list')} />;
   return (
-    <GrammarLibrary
-      exercises={exercises}
-      isEditor={isEditor}
-      onView={p => { setActive(p); setView('practice'); }}
-      onEdit={p => { setEditing(p); setView('edit'); }}
-      onDelete={id => update(exercises.filter(e => e.id !== id))}
-    />
+    <Routes>
+      <Route path="/" element={
+        <GrammarLibrary exercises={exercises} isEditor={isEditor} refreshing={refreshing}
+          onView={p => navigate(`/grammar/practice/${p.id}`)}
+          onEdit={p => navigate(p ? `/grammar/edit/${p.id}` : '/grammar/edit/new')}
+          onDelete={id => update(exercises.filter(e => e.id !== id))}
+          onBulkImport={isEditor ? () => navigate('/grammar/bulk') : null}
+        />
+      } />
+      <Route path="/practice/:id" element={(() => {
+        const W = () => { const [exs] = useLocalData(STORAGE_KEY, DEFAULT); const id = parseInt(window.location.pathname.split('/').pop()); const ex = exs.find(e => e.id === id) || exs[0]; return ex ? <GrammarPracticeView exercise={ex} onBack={() => navigate('/grammar')} /> : null; };
+        return <W />;
+      })()} />
+      <Route path="/edit/:id" element={(() => {
+        const W = () => { const [exs] = useLocalData(STORAGE_KEY, DEFAULT); const idStr = window.location.pathname.split('/').pop(); const ex = idStr === 'new' ? null : exs.find(e => e.id === parseInt(idStr)); return <GrammarEditor exercise={ex} onSave={saveEx} onCancel={() => navigate('/grammar')} />; };
+        return <W />;
+      })()} />
+      <Route path="/bulk" element={<BulkImport onImport={(arr) => { update([...exercises, ...arr]); navigate('/grammar'); }} onCancel={() => navigate('/grammar')} />} />
+    </Routes>
   );
 }

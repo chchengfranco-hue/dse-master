@@ -1,6 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import { useNavigate, Routes, Route } from 'react-router-dom';
+import { useLocalData } from '@/hooks/useLocalData';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import PullRefreshIndicator from '@/components/shared/PullRefreshIndicator';
 
 const STORAGE_KEY = 'writingModels';
+
 
 const defaultModels = [
   {
@@ -58,7 +63,7 @@ In my view, the challenge lies not in eliminating social media but in cultivatin
   },
 ];
 
-const load = () => { const s = localStorage.getItem(STORAGE_KEY); return s ? JSON.parse(s) : defaultModels; };
+const load = () => { try { const s = localStorage.getItem(STORAGE_KEY); return s ? JSON.parse(s) : defaultModels; } catch { return defaultModels; } };
 const persist = (d) => localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
 
 function speak(text) { if (!('speechSynthesis' in window)) return; window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'en-US'; u.rate = 0.85; window.speechSynthesis.speak(u); }
@@ -147,7 +152,7 @@ function WritingEditor({ model, onSave, onCancel }) {
 }
 
 // --- Library ---
-function WritingLibrary({ models, isEditor, onView, onEdit, onDelete }) {
+function WritingLibrary({ models, isEditor, onView, onEdit, onDelete, onBulkImport }) {
   const [sel, setSel] = useState('All'); const [selSub, setSelSub] = useState(null);
   const [search, setSearch] = useState(''); const [page, setPage] = useState(1); const PER = 10;
   const topicTree = {};
@@ -167,7 +172,10 @@ function WritingLibrary({ models, isEditor, onView, onEdit, onDelete }) {
     <div className="px-4 lg:px-8 py-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div><h1 className="text-2xl font-bold text-foreground">Writing Models Library</h1><p className="text-sm text-muted-foreground mt-1">Sample essays and writing models for HKDSE</p></div>
-        {isEditor && <button onClick={() => onEdit(null)} className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors">+ Add Writing Model</button>}
+        <div className="flex gap-2">
+          {isEditor && onBulkImport && <button onClick={onBulkImport} className="px-3 py-2 bg-muted border border-border text-foreground rounded-xl text-sm font-semibold hover:bg-border select-none">📥 Import</button>}
+          {isEditor && <button onClick={() => onEdit(null)} className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors select-none">+ Add Writing Model</button>}
+        </div>
       </div>
       <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search writing models..." className="w-full rounded-xl border border-input px-3 py-2 text-sm mb-5" />
       <div className="flex gap-5 items-start">
@@ -222,7 +230,6 @@ function WritingReadView({ model, isEditor, onBack, onSaveAnnotation }) {
   const [showRuby, setShowRuby] = useState(false);
   const [showMargin, setShowMargin] = useState(false);
   const [activeWord, setActiveWord] = useState(null);
-  const [showPrint, setShowPrint] = useState(false);
   const annotations = model.annotations || {};
   const annotationCount = Object.keys(annotations).length;
 
@@ -253,7 +260,7 @@ function WritingReadView({ model, isEditor, onBack, onSaveAnnotation }) {
             <button onClick={() => setShowRuby(v => !v)} className={`text-xs px-3 py-1.5 rounded-lg font-medium border transition-colors ${showRuby ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-muted text-muted-foreground border-border hover:bg-accent'}`}>📖 {showRuby ? 'Hide' : 'Show'} Ruby</button>
             <button onClick={() => setShowMargin(v => !v)} className={`text-xs px-3 py-1.5 rounded-lg font-medium border transition-colors ${showMargin ? 'bg-primary/10 text-primary border-primary/30' : 'bg-muted text-muted-foreground border-border hover:bg-accent'}`}>💬 {showMargin ? 'Hide' : 'Show'} Margin</button>
           </>}
-          <button onClick={() => setShowPrint(true)} className="text-xs bg-card border border-border text-foreground hover:bg-muted px-3 py-1.5 rounded-lg font-medium transition-colors">🖨️ Print…</button>
+          <button onClick={() => window.print()} className="text-xs bg-card border border-border text-foreground hover:bg-muted px-3 py-1.5 rounded-lg font-medium transition-colors select-none">🖨️ Print</button>
         </div>
       </div>
 
@@ -304,35 +311,43 @@ function WritingReadView({ model, isEditor, onBack, onSaveAnnotation }) {
         </div>
       )}
 
-      {showPrint && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-card rounded-2xl shadow-xl w-full max-w-sm p-6">
-            <h3 className="text-lg font-bold text-foreground mb-4">🖨️ Print Options</h3>
-            <button onClick={() => { window.print(); setShowPrint(false); }} className="w-full text-left mb-2 px-4 py-3 rounded-xl bg-secondary border border-border font-semibold text-sm hover:bg-muted transition-colors">1. Print: Clean Writing Model</button>
-            <button onClick={() => { const t = model.title + (model.question ? '\n\nQuestion:\n' + model.question : '') + '\n\nModel:\n' + model.content + (annotationCount ? '\n\nVocabulary:\n' + Object.entries(annotations).sort().map(([w, m]) => `${w}: ${m}`).join('\n') : ''); navigator.clipboard?.writeText(t).then(() => alert('Copied!')); setShowPrint(false); }} className="w-full text-left mb-3 px-4 py-3 rounded-xl bg-secondary border border-border font-semibold text-sm hover:bg-muted transition-colors">📋 Copy Model + Vocab to Clipboard</button>
-            <button onClick={() => setShowPrint(false)} className="w-full px-4 py-2 border border-border rounded-xl text-sm hover:bg-muted">Cancel</button>
-          </div>
-        </div>
-      )}
+
+    </div>
+  );
+}
+
+function WritingBulkImport({ onImport, onCancel }) {
+  const handleFile = (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => { try { const data = JSON.parse(ev.target.result); onImport(Array.isArray(data) ? data : [data]); } catch { alert('Invalid JSON file.'); } };
+    reader.readAsText(file);
+  };
+  return (
+    <div className="px-4 lg:px-8 py-6 max-w-lg mx-auto">
+      <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
+        <h2 className="text-xl font-bold text-foreground mb-2">Bulk Import Writing Models</h2>
+        <p className="text-sm text-muted-foreground mb-4">Upload a JSON file with an array of writing model objects. Each needs <code className="bg-muted px-1 rounded">title</code> and <code className="bg-muted px-1 rounded">content</code>.</p>
+        <input type="file" accept=".json" onChange={handleFile} className="block w-full text-sm file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-primary file:text-primary-foreground file:font-semibold mb-5" />
+        <button onClick={onCancel} className="px-4 py-2 bg-muted border border-border rounded-xl text-sm font-semibold hover:bg-border select-none">Cancel</button>
+      </div>
     </div>
   );
 }
 
 // --- Main Module ---
 export default function WritingModule({ isEditor }) {
-  const [models, setModels] = useState(load);
-  const [view, setView] = useState('list');
-  const [active, setActive] = useState(null);
-  const [editing, setEditing] = useState(null);
+  const navigate = useNavigate();
+  const listRef = useRef(null);
+  const [models, setModels] = useLocalData(STORAGE_KEY, defaultModels);
+  const refreshing = usePullToRefresh(() => { setModels(load()); }, listRef);
 
   const update = (data) => { setModels(data); persist(data); };
-
   const saveModel = (data) => {
     if (data.id) update(models.map(m => m.id === data.id ? data : m));
     else update([...models, { ...data, id: Date.now() }]);
-    setView('list');
+    navigate('/writing');
   };
-
   const handleSaveAnnotation = (modelId, word, meaning) => {
     const updated = models.map(m => {
       if (m.id !== modelId) return m;
@@ -341,18 +356,30 @@ export default function WritingModule({ isEditor }) {
       return { ...m, annotations };
     });
     update(updated);
-    setActive(updated.find(m => m.id === modelId));
   };
 
-  if (view === 'edit') return <WritingEditor model={editing} onSave={saveModel} onCancel={() => setView('list')} />;
-  if (view === 'read') return <WritingReadView model={active} isEditor={isEditor} onBack={() => setView('list')} onSaveAnnotation={handleSaveAnnotation} />;
   return (
-    <WritingLibrary
-      models={models}
-      isEditor={isEditor}
-      onView={p => { setActive(p); setView('read'); }}
-      onEdit={p => { setEditing(p); setView('edit'); }}
-      onDelete={id => update(models.filter(m => m.id !== id))}
-    />
+    <Routes>
+      <Route path="/" element={
+        <>
+          <PullRefreshIndicator refreshing={refreshing} />
+          <WritingLibrary models={models} isEditor={isEditor}
+            onView={p => navigate(`/writing/read/${p.id}`)}
+            onEdit={p => navigate(p ? `/writing/edit/${p.id}` : '/writing/edit/new')}
+            onDelete={id => update(models.filter(m => m.id !== id))}
+            onBulkImport={isEditor ? () => navigate('/writing/bulk') : undefined}
+          />
+        </>
+      } />
+      <Route path="/read/:id" element={(() => {
+        const W = () => { const [ms] = useLocalData(STORAGE_KEY, defaultModels); const id = parseInt(window.location.pathname.split('/').pop()); const model = ms.find(m => m.id === id) || ms[0]; return model ? <WritingReadView model={model} isEditor={isEditor} onBack={() => navigate('/writing')} onSaveAnnotation={handleSaveAnnotation} /> : null; };
+        return <W />;
+      })()} />
+      <Route path="/edit/:id" element={(() => {
+        const W = () => { const [ms] = useLocalData(STORAGE_KEY, defaultModels); const idStr = window.location.pathname.split('/').pop(); const model = idStr === 'new' ? null : ms.find(m => m.id === parseInt(idStr)); return <WritingEditor model={model} onSave={saveModel} onCancel={() => navigate('/writing')} />; };
+        return <W />;
+      })()} />
+      <Route path="/bulk" element={<WritingBulkImport onImport={(arr) => { update([...models, ...arr.map(p => ({ ...p, id: Date.now() + Math.random() }))]); navigate('/writing'); }} onCancel={() => navigate('/writing')} />} />
+    </Routes>
   );
 }
