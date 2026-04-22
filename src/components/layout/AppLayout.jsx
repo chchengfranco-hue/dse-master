@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { BookOpen, PenTool, Grid3X3, MessageSquare, Book, Users, CheckSquare, Star, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/lib/UserContext';
+import { useNavigate, useLocation } from 'react-router-dom';
 import LoginModal from '@/components/auth/LoginModal';
 import VocabModule from '@/pages/modules/VocabModule';
 import WritingModule from '@/pages/modules/WritingModule';
@@ -24,8 +25,24 @@ const baseModules = [
 
 export default function AppLayout() {
   const { isAuthenticated, isEditor, currentUser, login, logout, ready } = useUser();
-  const [activeModule, setActiveModule] = useState('vocab');
   const [showMore, setShowMore] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Derive active tab from current path
+  const activeModule = (() => {
+    const p = location.pathname;
+    if (p.startsWith('/writing')) return 'writing';
+    if (p.startsWith('/cloze')) return 'cloze';
+    if (p.startsWith('/essential')) return 'essential';
+    if (p.startsWith('/speaking')) return 'speaking';
+    if (p.startsWith('/grammar')) return 'grammar';
+    if (p.startsWith('/evaluate')) return 'evaluate';
+    if (p.startsWith('/users')) return 'users';
+    return 'vocab'; // default: '/' and '/vocab/*'
+  })();
+
+  const getTabPath = (id) => id === 'vocab' ? '/vocab' : `/${id}`;
 
   if (!ready) {
     return (
@@ -54,7 +71,7 @@ export default function AppLayout() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-card border-b border-border px-4 py-3 flex justify-between items-center sticky top-0 z-40">
+      <header className="bg-card border-b border-border px-4 py-3 flex justify-between items-center sticky top-0 z-40 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-md shadow-primary/25">
             <span className="text-xl">📚</span>
@@ -100,8 +117,8 @@ export default function AppLayout() {
                 const Icon = mod.icon;
                 const isActive = activeModule === mod.id;
                 return (
-                  <button key={mod.id} onClick={() => { setActiveModule(mod.id); setShowMore(false); }}
-                    className={cn("flex flex-col items-center justify-center py-3 rounded-xl transition-all", isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-muted")}>
+                  <button key={mod.id} onClick={() => { navigate(getTabPath(mod.id)); setShowMore(false); }}
+                    className={cn("flex flex-col items-center justify-center py-3 rounded-xl transition-all select-none", isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-muted")}>
                     <Icon className="w-5 h-5" />
                     <span className="text-[10px] mt-1 font-medium">{mod.label}</span>
                   </button>
@@ -116,8 +133,8 @@ export default function AppLayout() {
             const Icon = mod.icon;
             const isActive = activeModule === mod.id;
             return (
-              <button key={mod.id} onClick={() => { setActiveModule(mod.id); setShowMore(false); }}
-                className={cn("flex flex-col items-center justify-center flex-1 h-12 rounded-xl mx-0.5 transition-all duration-200",
+              <button key={mod.id} onClick={() => { navigate(getTabPath(mod.id)); setShowMore(false); }}
+                className={cn("flex flex-col items-center justify-center flex-1 h-12 rounded-xl mx-0.5 transition-all duration-200 select-none",
                   isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
                 <Icon className="w-5 h-5" />
                 <span className="text-[10px] mt-0.5 font-medium">{mod.label}</span>
@@ -125,7 +142,7 @@ export default function AppLayout() {
             );
           })}
           <button onClick={() => setShowMore(v => !v)}
-            className={cn("flex flex-col items-center justify-center flex-1 h-12 rounded-xl mx-0.5 transition-all duration-200",
+            className={cn("flex flex-col items-center justify-center flex-1 h-12 rounded-xl mx-0.5 transition-all duration-200 select-none",
               (showMore || modules.slice(4).some(m => m.id === activeModule)) ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
             <MoreHorizontal className="w-5 h-5" />
             <span className="text-[10px] mt-0.5 font-medium">More</span>
