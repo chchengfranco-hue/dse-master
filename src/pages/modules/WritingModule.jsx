@@ -235,6 +235,8 @@ function WritingReadView({ model, isEditor, onBack, onSaveAnnotation }) {
 
   const handleWordClick = (word) => { speak(word); if (!showMargin && !showRuby) setActiveWord(activeWord === word ? null : word); };
 
+  const handlePrint = () => window.print();
+
   const playFull = () => speak(model.content);
 
   const handleTextSelect = useCallback(() => {
@@ -260,7 +262,7 @@ function WritingReadView({ model, isEditor, onBack, onSaveAnnotation }) {
             <button onClick={() => setShowRuby(v => !v)} className={`text-xs px-3 py-1.5 rounded-lg font-medium border transition-colors ${showRuby ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-muted text-muted-foreground border-border hover:bg-accent'}`}>📖 {showRuby ? 'Hide' : 'Show'} Ruby</button>
             <button onClick={() => setShowMargin(v => !v)} className={`text-xs px-3 py-1.5 rounded-lg font-medium border transition-colors ${showMargin ? 'bg-primary/10 text-primary border-primary/30' : 'bg-muted text-muted-foreground border-border hover:bg-accent'}`}>💬 {showMargin ? 'Hide' : 'Show'} Margin</button>
           </>}
-          <button onClick={() => window.print()} className="text-xs bg-card border border-border text-foreground hover:bg-muted px-3 py-1.5 rounded-lg font-medium transition-colors select-none">🖨️ Print</button>
+          <button onClick={handlePrint} className="text-xs bg-card border border-border text-foreground hover:bg-muted px-3 py-1.5 rounded-lg font-medium transition-colors select-none">🖨️ Print</button>
         </div>
       </div>
 

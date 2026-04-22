@@ -90,6 +90,106 @@
   }
 }
 
+@media print {
+  /* Hide all UI chrome */
+  header,
+  nav,
+  footer,
+  button,
+  aside,
+  .no-print,
+  [data-vaul-drawer-direction] > div:first-child,
+  [data-radix-scroll-area-scrollbar] {
+    display: none !important;
+  }
+
+  /* Reset layout for clean paper output */
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 12pt !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Page settings */
+  @page {
+    margin: 1.5cm 2cm;
+    size: A4 portrait;
+  }
+
+  /* Remove rounded corners, shadows, borders for print */
+  * {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    background-color: transparent !important;
+    color: #000 !important;
+  }
+
+  /* Keep certain background colors for semantic blocks */
+  .bg-sky-50, .bg-amber-50, .bg-blue-50, .bg-red-50, .bg-emerald-50 {
+    background-color: #f8f8f8 !important;
+    border: 1px solid #ccc !important;
+  }
+
+  /* Ensure content fills page width */
+  .max-w-5xl, .max-w-3xl, .max-w-lg {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Make the content area full width (no margin sidebar) */
+  .flex.gap-5.items-start > .flex-1 {
+    width: 100% !important;
+  }
+
+  /* Print title styling */
+  h1, h2 {
+    font-size: 16pt !important;
+    font-weight: bold !important;
+    margin-bottom: 8pt !important;
+    page-break-after: avoid !important;
+  }
+
+  h3 {
+    font-size: 13pt !important;
+    font-weight: bold !important;
+    page-break-after: avoid !important;
+  }
+
+  p, li {
+    font-size: 11pt !important;
+    line-height: 1.6 !important;
+  }
+
+  /* Avoid breaking inside key sections */
+  li, tr, .brainstorm-hint {
+    page-break-inside: avoid !important;
+  }
+
+  /* Borders show clearly on paper */
+  .border, .border-border, [class*="border-l-4"] {
+    border-color: #999 !important;
+  }
+
+  /* Table print styling */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  th, td {
+    border: 1px solid #999 !important;
+    padding: 6pt 8pt !important;
+    font-size: 10pt !important;
+  }
+
+  thead tr {
+    background-color: #eee !important;
+  }
+}
+
 @layer utilities {
   /* Disable selection on nav/header/interactive chrome */
   header,
