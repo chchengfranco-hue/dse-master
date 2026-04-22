@@ -232,6 +232,23 @@ function SpeakingReadView({ exam, isEditor, onBack, onSaveAnnotation }) {
 
   const handleWordClick = (word) => { speak(word); if (!showMargin && !showRuby) setActiveWord(activeWord === word ? null : word); };
 
+  const handlePrint = (withHints) => {
+    const style = document.createElement('style');
+    style.id = '__print_style__';
+    style.innerHTML = `
+      @media print {
+        .brainstorm-hint { display: ${withHints ? 'block' : 'none'} !important; }
+        nav, header, button, .no-print { display: none !important; }
+        /* hide the vaul drawer drag bar */
+        [data-vaul-drawer-direction] > div:first-child,
+        [data-radix-scroll-area-scrollbar] { display: none !important; }
+      }
+    `;
+    document.head.appendChild(style);
+    window.print();
+    document.head.removeChild(style);
+  };
+
   const playFull = () => {
     let text = '';
     const p = exam.partA;
@@ -269,7 +286,8 @@ function SpeakingReadView({ exam, isEditor, onBack, onSaveAnnotation }) {
             <button onClick={() => setShowRuby(v => !v)} className={`text-xs px-3 py-1.5 rounded-lg font-medium border transition-colors ${showRuby ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-muted text-muted-foreground border-border hover:bg-accent'}`}>📖 {showRuby ? 'Hide' : 'Show'} Annotations</button>
             <button onClick={() => setShowMargin(v => !v)} className={`text-xs px-3 py-1.5 rounded-lg font-medium border transition-colors ${showMargin ? 'bg-primary/10 text-primary border-primary/30' : 'bg-muted text-muted-foreground border-border hover:bg-accent'}`}>💬 {showMargin ? 'Hide' : 'Show'} Margin</button>
           </>}
-          <button onClick={() => window.print()} className="text-xs bg-card border border-border text-foreground hover:bg-muted px-3 py-1.5 rounded-lg font-medium transition-colors select-none">🖨️ Print</button>
+          <button onClick={() => handlePrint(true)} className="text-xs bg-card border border-border text-foreground hover:bg-muted px-3 py-1.5 rounded-lg font-medium transition-colors select-none">🖨️ Print</button>
+          <button onClick={() => handlePrint(false)} className="text-xs bg-card border border-border text-foreground hover:bg-muted px-3 py-1.5 rounded-lg font-medium transition-colors select-none">🖨️ Print (No Hints)</button>
         </div>
       </div>
 
@@ -301,7 +319,7 @@ function SpeakingReadView({ exam, isEditor, onBack, onSaveAnnotation }) {
                     <li key={i} className="list-disc">
                       <AnnotatedContent text={f} annotations={annotations} showRuby={showRuby} activeWord={activeWord} onWordClick={handleWordClick} />
                       {pA.focusIdeas?.[i] && (
-                        <div className="mt-2 bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-3 py-2 text-sm whitespace-pre-wrap">
+                        <div className="brainstorm-hint mt-2 bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-3 py-2 text-sm whitespace-pre-wrap">
                           💡 <strong>Brainstorming Ideas:</strong><br />{pA.focusIdeas[i]}
                         </div>
                       )}
@@ -320,7 +338,7 @@ function SpeakingReadView({ exam, isEditor, onBack, onSaveAnnotation }) {
                   <li key={i} className="list-decimal">
                     <AnnotatedContent text={item.q} annotations={annotations} showRuby={showRuby} activeWord={activeWord} onWordClick={handleWordClick} />
                     {item.g && (
-                      <div className="mt-2 bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-3 py-2 text-sm whitespace-pre-wrap">
+                      <div className="brainstorm-hint mt-2 bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-3 py-2 text-sm whitespace-pre-wrap">
                         💡 <strong>Brainstorming Guidelines:</strong><br />{item.g}
                       </div>
                     )}
