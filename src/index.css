@@ -92,225 +92,266 @@
 
 @media print {
   @page {
-    margin: 2cm 2.2cm;
+    margin: 1.8cm 1.8cm;
     size: A4 portrait;
   }
 
-  /* ── Hide all interactive UI chrome ── */
-  header, nav, footer, button, aside,
-  .no-print,
-  [data-vaul-drawer-direction] > div:first-child,
-  [data-radix-scroll-area-scrollbar] {
-    display: none !important;
-  }
-
-  /* ── Base reset ── */
-  html, body {
-    background: #fff !important;
-    color: #1a1a2e !important;
-    font-family: 'Georgia', 'Times New Roman', serif !important;
-    font-size: 11pt !important;
-    line-height: 1.7 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  /* ── Layout: remove all wrappers, make content full-width ── */
+  /* ─── Force color printing ─── */
   * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
     box-shadow: none !important;
     text-shadow: none !important;
   }
 
-  .max-w-5xl, .max-w-3xl, .max-w-lg, .max-w-xl {
-    max-width: 100% !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
+  /* ─── Hide ALL UI chrome ─── */
+  header, nav, footer, button,
+  .no-print,
+  /* vaul drawer handle / drag bar */
+  [data-vaul-drawer-direction],
+  [data-vaul-drawer-direction] > *,
+  [data-radix-scroll-area-scrollbar],
+  /* bottom tab bar */
+  .fixed.bottom-0,
+  /* top sticky header */
+  .sticky.top-0,
+  /* any fixed overlay */
+  .fixed {
+    display: none !important;
   }
 
-  /* Flatten flex layouts so content stretches full width */
-  .flex.gap-5.items-start {
+  /* ─── Base ─── */
+  html, body {
+    background: #fff !important;
+    color: #222 !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 10.5pt !important;
+    line-height: 1.65 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* ─── Name / Date header line (like the reference PDF) ─── */
+  body::before {
+    content: "Name: ________________________________     Date: ___________________";
     display: block !important;
-  }
-
-  /* ── Typography hierarchy ── */
-  h1 {
-    font-size: 18pt !important;
-    font-weight: 700 !important;
-    color: #2d1b69 !important;
-    border-bottom: 2.5pt solid #2d1b69 !important;
+    font-size: 10pt !important;
+    color: #1a8ecf !important;
+    margin-bottom: 18pt !important;
+    border-bottom: 0.5pt solid #ccc !important;
     padding-bottom: 6pt !important;
-    margin-bottom: 10pt !important;
-    page-break-after: avoid !important;
+    font-family: Arial, Helvetica, sans-serif !important;
   }
 
-  h2 {
-    font-size: 15pt !important;
+  /* ─── Remove container constraints ─── */
+  .max-w-5xl, .max-w-3xl, .max-w-lg, .max-w-xl, .max-w-2xl {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* px-4, lg:px-8, py-6 wrappers */
+  [class*="px-"], [class*="py-"] {
+    padding: 0 !important;
+  }
+
+  /* ─── Main two-column layout (passage + vocab sidebar) ───
+     Match the PDF: wide passage left, narrow vocab cards right */
+  .flex.gap-5.items-start {
+    display: grid !important;
+    grid-template-columns: 62% 35% !important;
+    gap: 16pt !important;
+    align-items: start !important;
+  }
+
+  /* Make the main content panel borderless / flat */
+  .flex-1.min-w-0.bg-card,
+  .flex-1.min-w-0 {
+    border: none !important;
+    background: #fff !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  /* ─── Passage text ─── */
+  .leading-loose, .leading-relaxed {
+    line-height: 1.75 !important;
+    font-size: 10.5pt !important;
+  }
+
+  /* Annotated / highlighted words — bold, no background */
+  .bg-sky-100 {
+    background: none !important;
     font-weight: 700 !important;
-    color: #2d1b69 !important;
-    margin-bottom: 8pt !important;
+    color: #222 !important;
+    border-bottom: none !important;
+  }
+
+  /* Ruby annotations — show cleanly */
+  ruby rt {
+    font-size: 7pt !important;
+    color: #1a8ecf !important;
+    font-weight: 600 !important;
+  }
+
+  /* ─── Typography ─── */
+  h1, h2 {
+    font-size: 14pt !important;
+    font-weight: 700 !important;
+    color: #1a8ecf !important;
+    margin-bottom: 10pt !important;
+    line-height: 1.3 !important;
     page-break-after: avoid !important;
+    border: none !important;
+    background: none !important;
   }
 
   h3 {
-    font-size: 12pt !important;
+    font-size: 11pt !important;
     font-weight: 700 !important;
-    color: #2d1b69 !important;
-    border-bottom: 1pt solid #bbb !important;
+    color: #1a8ecf !important;
+    border-bottom: 1pt solid #ccc !important;
     padding-bottom: 3pt !important;
-    margin-bottom: 6pt !important;
-    margin-top: 14pt !important;
+    margin: 10pt 0 5pt !important;
     page-break-after: avoid !important;
+    background: none !important;
   }
 
   p, li, span {
-    font-size: 11pt !important;
-    color: #1a1a2e !important;
-    line-height: 1.7 !important;
+    color: #222 !important;
   }
 
-  /* ── Content containers: clean bordered boxes ── */
-  .bg-card, .rounded-2xl, .rounded-xl, [class*="rounded"] {
-    border-radius: 0 !important;
+  /* ─── Vocab sidebar cards (right column) ───
+     Match PDF: word in blue bold, PoS + meaning in grey, thin border box */
+  aside.w-40,
+  aside {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 5pt !important;
+    width: 100% !important;
+  }
+
+  aside .rounded-lg,
+  aside > div {
+    display: block !important;
+    border: 0.75pt solid #aacde8 !important;
+    border-radius: 2pt !important;
+    padding: 4pt 6pt !important;
     background: #fff !important;
-    border: none !important;
-  }
-
-  /* ── Semantic highlight blocks ── */
-  .bg-sky-50, [class*="border-sky"],
-  .bg-blue-50, [class*="border-blue"] {
-    background-color: #eef6fb !important;
-    border-left: 3pt solid #2d7dd2 !important;
-    padding: 8pt 10pt !important;
-    margin-bottom: 10pt !important;
-    border-top: none !important;
-    border-right: none !important;
-    border-bottom: none !important;
-  }
-
-  .bg-amber-50, [class*="border-amber"] {
-    background-color: #fdf8ed !important;
-    border-left: 3pt solid #d4870a !important;
-    padding: 8pt 10pt !important;
-    margin-bottom: 10pt !important;
-    border-top: none !important;
-    border-right: none !important;
-    border-bottom: none !important;
-  }
-
-  .bg-emerald-50, [class*="border-emerald"] {
-    background-color: #edfaf3 !important;
-    border-left: 3pt solid #1a9950 !important;
-    padding: 8pt 10pt !important;
-    margin-bottom: 10pt !important;
-    border-top: none !important;
-    border-right: none !important;
-    border-bottom: none !important;
-  }
-
-  .bg-red-50, [class*="border-red"] {
-    background-color: #fef2f2 !important;
-    border-left: 3pt solid #d14343 !important;
-    padding: 8pt 10pt !important;
-    margin-bottom: 10pt !important;
-    border-top: none !important;
-    border-right: none !important;
-    border-bottom: none !important;
-  }
-
-  /* Brainstorm hint box */
-  .brainstorm-hint {
-    background-color: #fdf8ed !important;
-    border-left: 3pt solid #d4870a !important;
-    border-top: none !important; border-right: none !important; border-bottom: none !important;
-    padding: 6pt 10pt !important;
-    margin-top: 5pt !important;
-    font-size: 10pt !important;
     page-break-inside: avoid !important;
   }
 
-  /* Annotated word underlines */
-  .bg-sky-100 {
-    background: none !important;
-    border-bottom: 1pt dotted #2d7dd2 !important;
-    color: #1a1a2e !important;
+  aside strong,
+  aside .text-primary {
+    display: block !important;
+    font-size: 9.5pt !important;
+    font-weight: 700 !important;
+    color: #1a8ecf !important;
+    margin-bottom: 1pt !important;
   }
 
-  /* ── Word bank box ── */
+  aside span,
+  aside .text-muted-foreground,
+  aside div {
+    font-size: 8.5pt !important;
+    color: #555 !important;
+    line-height: 1.4 !important;
+  }
+
+  /* ─── Passage passage block (blue left border, like PDF) ─── */
+  .border-l-4.border-primary,
+  [class*="border-l-4"] {
+    border-left: 3pt solid #1a8ecf !important;
+    background: #f0f8ff !important;
+    padding: 8pt 10pt !important;
+    margin-bottom: 8pt !important;
+    border-top: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+  }
+
+  /* ─── Brainstorm / hint boxes ─── */
+  .brainstorm-hint {
+    background: #fffbf0 !important;
+    border-left: 3pt solid #e8a020 !important;
+    border-top: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+    padding: 5pt 8pt !important;
+    margin-top: 4pt !important;
+    font-size: 9pt !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* ─── Word bank (cloze) ─── */
   .border-dashed {
-    border: 1.5pt dashed #999 !important;
-    padding: 8pt !important;
-    margin-bottom: 10pt !important;
+    border: 1pt dashed #999 !important;
+    padding: 7pt 10pt !important;
     background: #fafafa !important;
+    margin-bottom: 10pt !important;
   }
 
-  /* ── Table styling ── */
+  /* ─── Cloze answer blanks ─── */
+  input[type="text"] {
+    border: none !important;
+    border-bottom: 1pt solid #333 !important;
+    background: transparent !important;
+    min-width: 55pt !important;
+  }
+
+  /* ─── Tables (vocab table view) ─── */
   table {
     width: 100% !important;
     border-collapse: collapse !important;
-    margin-bottom: 12pt !important;
-    font-size: 10pt !important;
+    font-size: 9.5pt !important;
+    margin-bottom: 10pt !important;
   }
 
-  thead tr {
-    background-color: #2d1b69 !important;
+  thead tr, th {
+    background-color: #1a8ecf !important;
     color: #fff !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  th {
-    color: #fff !important;
-    background-color: #2d1b69 !important;
-    padding: 5pt 8pt !important;
-    font-weight: 600 !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+    padding: 4pt 7pt !important;
+    font-weight: 700 !important;
   }
 
   td {
     border: 0.5pt solid #ccc !important;
-    padding: 5pt 8pt !important;
+    padding: 4pt 7pt !important;
     vertical-align: top !important;
-    color: #1a1a2e !important;
+    color: #222 !important;
   }
 
   tr:nth-child(even) td {
-    background-color: #f7f7fb !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+    background-color: #f5faff !important;
   }
 
-  /* ── Page break control ── */
-  li, tr {
+  /* ─── Page breaks ─── */
+  li, tr, .brainstorm-hint {
     page-break-inside: avoid !important;
   }
 
-  /* ── Answer lines for cloze ── */
-  input[type="text"] {
-    border-top: none !important;
-    border-left: none !important;
-    border-right: none !important;
-    border-bottom: 1pt solid #333 !important;
-    min-width: 60pt !important;
-    background: transparent !important;
-  }
-
-  /* ── Passage text area ── */
-  .leading-loose, .leading-relaxed {
-    line-height: 1.85 !important;
-  }
-
-  /* ── Tags / badges: hidden on print ── */
+  /* ─── Badges / pills: flatten ─── */
   [class*="rounded-full"] {
-    display: inline !important;
     background: none !important;
     border: none !important;
     padding: 0 !important;
-    font-weight: 600 !important;
     font-size: 9pt !important;
+    font-weight: 600 !important;
     color: #555 !important;
+    display: inline !important;
+  }
+
+  /* ─── Removed decorative card styling ─── */
+  .bg-card, .rounded-2xl, .rounded-xl {
+    background: #fff !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* ─── Part labels (Speaking / Writing) ─── */
+  .border-b-2 {
+    border-bottom: 1.5pt solid #1a8ecf !important;
   }
 }
 
