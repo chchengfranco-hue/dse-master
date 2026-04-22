@@ -370,7 +370,7 @@ export default function EssentialVocabModule({ isEditor }) {
 
   return (
     <Routes>
-      <Route path="/" element={
+      <Route path="/essential" element={
         <>
           <PullRefreshIndicator refreshing={refreshing} />
           <EVLibrary sets={sets} isEditor={isEditor}
@@ -381,15 +381,15 @@ export default function EssentialVocabModule({ isEditor }) {
           />
         </>
       } />
-      <Route path="/read/:id" element={(() => {
+      <Route path="/essential/read/:id" element={(() => {
         const W = () => { const [ss] = useLocalData(STORAGE_KEY, defaultSets); const id = parseInt(window.location.pathname.split('/').pop()); const set = ss.find(s => s.id === id) || ss[0]; return set ? <EVReadView set={set} onBack={() => navigate('/essential')} /> : null; };
         return <W />;
       })()} />
-      <Route path="/edit/:id" element={(() => {
+      <Route path="/essential/edit/:id" element={(() => {
         const W = () => { const [ss] = useLocalData(STORAGE_KEY, defaultSets); const idStr = window.location.pathname.split('/').pop(); const set = idStr === 'new' ? null : ss.find(s => s.id === parseInt(idStr)); return <EVEditor set={set} onSave={saveSet} onCancel={() => navigate('/essential')} />; };
         return <W />;
       })()} />
-      <Route path="/bulk" element={<EVBulkImport onImport={(arr) => { update([...sets, ...arr.map(p => ({ ...p, id: Date.now() + Math.random() }))]); navigate('/essential'); }} onCancel={() => navigate('/essential')} />} />
+      <Route path="/essential/bulk" element={<EVBulkImport onImport={(arr) => { update([...sets, ...arr.map(p => ({ ...p, id: Date.now() + Math.random() }))]); navigate('/essential'); }} onCancel={() => navigate('/essential')} />} />
     </Routes>
   );
 }

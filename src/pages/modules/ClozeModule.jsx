@@ -350,7 +350,7 @@ export default function ClozeModule({ isEditor }) {
 
   return (
     <Routes>
-      <Route path="/" element={
+      <Route path="/cloze" element={
         <ClozeLibrary exercises={exercises} isEditor={isEditor} refreshing={refreshing}
           onView={p => navigate(`/cloze/read/${p.id}`)}
           onEdit={p => navigate(p ? `/cloze/edit/${p.id}` : '/cloze/edit/new')}
@@ -358,15 +358,15 @@ export default function ClozeModule({ isEditor }) {
           onBulkImport={isEditor ? () => navigate('/cloze/bulk') : null}
         />
       } />
-      <Route path="/read/:id" element={(() => {
+      <Route path="/cloze/read/:id" element={(() => {
         const W = () => { const [exs] = useLocalData(STORAGE_KEY, DEFAULT); const id = parseInt(window.location.pathname.split('/').pop()); const ex = exs.find(e => e.id === id) || exs[0]; return ex ? <ClozeReadView exercise={ex} isEditor={isEditor} onBack={() => navigate('/cloze')} onSaveAnnotation={handleSaveAnnotation} /> : null; };
         return <W />;
       })()} />
-      <Route path="/edit/:id" element={(() => {
+      <Route path="/cloze/edit/:id" element={(() => {
         const W = () => { const [exs] = useLocalData(STORAGE_KEY, DEFAULT); const idStr = window.location.pathname.split('/').pop(); const ex = idStr === 'new' ? null : exs.find(e => e.id === parseInt(idStr)); return <ClozeEditor exercise={ex} onSave={saveExercise} onCancel={() => navigate('/cloze')} />; };
         return <W />;
       })()} />
-      <Route path="/bulk" element={<BulkImport onImport={(arr) => { update([...exercises, ...arr.map(p => ({ ...p, id: Date.now() + Math.random() }))]); navigate('/cloze'); }} onCancel={() => navigate('/cloze')} />} />
+      <Route path="/cloze/bulk" element={<BulkImport onImport={(arr) => { update([...exercises, ...arr.map(p => ({ ...p, id: Date.now() + Math.random() }))]); navigate('/cloze'); }} onCancel={() => navigate('/cloze')} />} />
     </Routes>
   );
 }

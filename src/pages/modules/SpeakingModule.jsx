@@ -398,7 +398,7 @@ export default function SpeakingModule({ isEditor }) {
 
   return (
     <Routes>
-      <Route path="/" element={
+      <Route path="/speaking" element={
         <>
           <PullRefreshIndicator refreshing={refreshing} />
           <SpeakingLibrary exams={exams} isEditor={isEditor}
@@ -409,15 +409,15 @@ export default function SpeakingModule({ isEditor }) {
           />
         </>
       } />
-      <Route path="/read/:id" element={(() => {
+      <Route path="/speaking/read/:id" element={(() => {
         const W = () => { const [es] = useLocalData(STORAGE_KEY, defaultExams); const id = parseInt(window.location.pathname.split('/').pop()); const exam = es.find(e => e.id === id) || es[0]; return exam ? <SpeakingReadView exam={exam} isEditor={isEditor} onBack={() => navigate('/speaking')} onSaveAnnotation={handleSaveAnnotation} /> : null; };
         return <W />;
       })()} />
-      <Route path="/edit/:id" element={(() => {
+      <Route path="/speaking/edit/:id" element={(() => {
         const W = () => { const [es] = useLocalData(STORAGE_KEY, defaultExams); const idStr = window.location.pathname.split('/').pop(); const exam = idStr === 'new' ? null : es.find(e => e.id === parseInt(idStr)); return <SpeakingEditor exam={exam} onSave={saveExam} onCancel={() => navigate('/speaking')} />; };
         return <W />;
       })()} />
-      <Route path="/bulk" element={<SpeakingBulkImport onImport={(arr) => { update([...exams, ...arr.map(p => ({ ...p, id: Date.now() + Math.random() }))]); navigate('/speaking'); }} onCancel={() => navigate('/speaking')} />} />
+      <Route path="/speaking/bulk" element={<SpeakingBulkImport onImport={(arr) => { update([...exams, ...arr.map(p => ({ ...p, id: Date.now() + Math.random() }))]); navigate('/speaking'); }} onCancel={() => navigate('/speaking')} />} />
     </Routes>
   );
 }

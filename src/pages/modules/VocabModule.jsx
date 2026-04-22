@@ -100,9 +100,10 @@ export default function VocabModule({ isEditor }) {
 
   return (
     <Routes>
+      <Route path="/vocab" element={<LibraryWrapper isEditor={isEditor} />} />
       <Route path="/" element={<LibraryWrapper isEditor={isEditor} />} />
-      <Route path="/bulk" element={<BulkImport onImport={(arr) => update([...passages, ...arr])} onCancel={() => {}} />} />
-      <Route path="/read/:id" element={
+      <Route path="/vocab/bulk" element={<BulkImport onImport={(arr) => update([...passages, ...arr])} onCancel={() => {}} />} />
+      <Route path="/vocab/read/:id" element={
         (() => {
           const ReadWrapper = () => {
             const navigate = useNavigate();
@@ -116,7 +117,7 @@ export default function VocabModule({ isEditor }) {
           return <ReadWrapper />;
         })()
       } />
-      <Route path="/edit/:id" element={
+      <Route path="/vocab/edit/:id" element={
         (() => {
           const EditWrapper = () => {
             const navigate = useNavigate();

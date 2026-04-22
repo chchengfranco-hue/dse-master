@@ -258,7 +258,7 @@ export default function GrammarModule({ isEditor }) {
 
   return (
     <Routes>
-      <Route path="/" element={
+      <Route path="/grammar" element={
         <GrammarLibrary exercises={exercises} isEditor={isEditor} refreshing={refreshing}
           onView={p => navigate(`/grammar/practice/${p.id}`)}
           onEdit={p => navigate(p ? `/grammar/edit/${p.id}` : '/grammar/edit/new')}
@@ -266,15 +266,15 @@ export default function GrammarModule({ isEditor }) {
           onBulkImport={isEditor ? () => navigate('/grammar/bulk') : null}
         />
       } />
-      <Route path="/practice/:id" element={(() => {
+      <Route path="/grammar/practice/:id" element={(() => {
         const W = () => { const [exs] = useLocalData(STORAGE_KEY, DEFAULT); const id = parseInt(window.location.pathname.split('/').pop()); const ex = exs.find(e => e.id === id) || exs[0]; return ex ? <GrammarPracticeView exercise={ex} onBack={() => navigate('/grammar')} /> : null; };
         return <W />;
       })()} />
-      <Route path="/edit/:id" element={(() => {
+      <Route path="/grammar/edit/:id" element={(() => {
         const W = () => { const [exs] = useLocalData(STORAGE_KEY, DEFAULT); const idStr = window.location.pathname.split('/').pop(); const ex = idStr === 'new' ? null : exs.find(e => e.id === parseInt(idStr)); return <GrammarEditor exercise={ex} onSave={saveEx} onCancel={() => navigate('/grammar')} />; };
         return <W />;
       })()} />
-      <Route path="/bulk" element={<BulkImport onImport={(arr) => { update([...exercises, ...arr]); navigate('/grammar'); }} onCancel={() => navigate('/grammar')} />} />
+      <Route path="/grammar/bulk" element={<BulkImport onImport={(arr) => { update([...exercises, ...arr]); navigate('/grammar'); }} onCancel={() => navigate('/grammar')} />} />
     </Routes>
   );
 }

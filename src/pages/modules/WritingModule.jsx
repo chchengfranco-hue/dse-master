@@ -360,7 +360,7 @@ export default function WritingModule({ isEditor }) {
 
   return (
     <Routes>
-      <Route path="/" element={
+      <Route path="/writing" element={
         <>
           <PullRefreshIndicator refreshing={refreshing} />
           <WritingLibrary models={models} isEditor={isEditor}
@@ -371,15 +371,15 @@ export default function WritingModule({ isEditor }) {
           />
         </>
       } />
-      <Route path="/read/:id" element={(() => {
+      <Route path="/writing/read/:id" element={(() => {
         const W = () => { const [ms] = useLocalData(STORAGE_KEY, defaultModels); const id = parseInt(window.location.pathname.split('/').pop()); const model = ms.find(m => m.id === id) || ms[0]; return model ? <WritingReadView model={model} isEditor={isEditor} onBack={() => navigate('/writing')} onSaveAnnotation={handleSaveAnnotation} /> : null; };
         return <W />;
       })()} />
-      <Route path="/edit/:id" element={(() => {
+      <Route path="/writing/edit/:id" element={(() => {
         const W = () => { const [ms] = useLocalData(STORAGE_KEY, defaultModels); const idStr = window.location.pathname.split('/').pop(); const model = idStr === 'new' ? null : ms.find(m => m.id === parseInt(idStr)); return <WritingEditor model={model} onSave={saveModel} onCancel={() => navigate('/writing')} />; };
         return <W />;
       })()} />
-      <Route path="/bulk" element={<WritingBulkImport onImport={(arr) => { update([...models, ...arr.map(p => ({ ...p, id: Date.now() + Math.random() }))]); navigate('/writing'); }} onCancel={() => navigate('/writing')} />} />
+      <Route path="/writing/bulk" element={<WritingBulkImport onImport={(arr) => { update([...models, ...arr.map(p => ({ ...p, id: Date.now() + Math.random() }))]); navigate('/writing'); }} onCancel={() => navigate('/writing')} />} />
     </Routes>
   );
 }

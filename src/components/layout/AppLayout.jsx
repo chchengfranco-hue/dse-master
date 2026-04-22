@@ -39,7 +39,8 @@ export default function AppLayout() {
     if (p.startsWith('/grammar')) return 'grammar';
     if (p.startsWith('/evaluate')) return 'evaluate';
     if (p.startsWith('/users')) return 'users';
-    return 'vocab'; // default: '/' and '/vocab/*'
+    if (p.startsWith('/vocab')) return 'vocab';
+    return 'vocab'; // default: '/'
   })();
 
   const getTabPath = (id) => id === 'vocab' ? '/vocab' : `/${id}`;
