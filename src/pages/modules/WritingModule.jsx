@@ -199,8 +199,8 @@ function WritingLibrary({ models, isEditor, onView, onEdit, onDelete, onBulkImpo
                 <h3 className="font-semibold text-foreground">{p.title}</h3>
                 {p.question && <p className="text-xs text-muted-foreground mt-1 line-clamp-2 italic">{p.question}</p>}
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {p.topic && <span className="text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-medium">{p.topic}{p.subtopic && p.subtopic !== 'General' ? ` › ${p.subtopic}` : ''}</span>}
-                  {p.annotations && Object.keys(p.annotations).length > 0 && <span className="text-xs bg-muted text-muted-foreground px-2.5 py-0.5 rounded-full">{Object.keys(p.annotations).length} annotations</span>}
+                  {p.topic && <span className="text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-medium">{p.topic}</span>}
+                  {p.subtopic && p.subtopic !== 'General' && <span className="text-xs bg-secondary text-secondary-foreground px-2.5 py-0.5 rounded-full font-medium">{p.subtopic}</span>}
                 </div>
               </div>
               <div className="flex gap-2 shrink-0">

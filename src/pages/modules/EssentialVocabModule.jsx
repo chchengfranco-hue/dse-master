@@ -185,7 +185,8 @@ function EVLibrary({ sets, isEditor, onView, onEdit, onDelete, onBulkImport }) {
                   {isEditor && p.customCode && <span className="font-mono text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded border border-border">🏷️ {p.customCode}</span>}
                 </div>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {p.topic && <span className="text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-medium">{p.topic}{p.subtopic && p.subtopic !== 'General' ? ` › ${p.subtopic}` : ''}</span>}
+                  {p.topic && <span className="text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-medium">{p.topic}</span>}
+                  {p.subtopic && p.subtopic !== 'General' && <span className="text-xs bg-secondary text-secondary-foreground px-2.5 py-0.5 rounded-full font-medium">{p.subtopic}</span>}
                   {p.vocabData?.length > 0 && <span className="text-xs bg-muted text-muted-foreground px-2.5 py-0.5 rounded-full">{p.vocabData.length} words</span>}
                 </div>
               </div>

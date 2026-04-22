@@ -210,7 +210,8 @@ function ClozeLibrary({ exercises, isEditor, onView, onEdit, onDelete, onBulkImp
               <div>
                 <h3 className="font-semibold text-foreground">{p.title}</h3>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {p.topic && <span className="text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-medium">{p.topic}{p.subtopic && p.subtopic !== 'General' ? ` › ${p.subtopic}` : ''}</span>}
+                  {p.topic && <span className="text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-medium">{p.topic}</span>}
+                  {p.subtopic && p.subtopic !== 'General' && <span className="text-xs bg-secondary text-secondary-foreground px-2.5 py-0.5 rounded-full font-medium">{p.subtopic}</span>}
                   <span className="text-xs bg-muted text-muted-foreground px-2.5 py-0.5 rounded-full">{p.hasOptions === 'bank' ? 'Word Bank' : p.hasOptions === 'mcq' ? 'MCQ Dropdown' : 'Text Input'}</span>
                 </div>
               </div>

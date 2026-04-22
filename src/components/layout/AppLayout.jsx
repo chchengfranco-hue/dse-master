@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BookOpen, PenTool, Grid3X3, MessageSquare, Book, Users, CheckSquare, Star } from 'lucide-react';
+import { BookOpen, PenTool, Grid3X3, MessageSquare, Book, Users, CheckSquare, Star, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/lib/UserContext';
 import LoginModal from '@/components/auth/LoginModal';
@@ -25,6 +25,7 @@ const baseModules = [
 export default function AppLayout() {
   const { isAuthenticated, isEditor, currentUser, login, logout, ready } = useUser();
   const [activeModule, setActiveModule] = useState('vocab');
+  const [showMore, setShowMore] = useState(false);
 
   if (!ready) {
     return (
@@ -90,27 +91,45 @@ export default function AppLayout() {
       </main>
 
       {/* Bottom nav */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-40 px-2 pb-[env(safe-area-inset-bottom)]">
-        <div className="flex justify-around items-center h-16">
-          {modules.map((mod) => {
+      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-40 pb-[env(safe-area-inset-bottom)]">
+        {/* More drawer */}
+        {showMore && (
+          <>
+            <div className="absolute bottom-full left-0 right-0 bg-card border-t border-border shadow-lg rounded-t-2xl p-3 grid grid-cols-4 gap-2">
+              {modules.slice(4).map((mod) => {
+                const Icon = mod.icon;
+                const isActive = activeModule === mod.id;
+                return (
+                  <button key={mod.id} onClick={() => { setActiveModule(mod.id); setShowMore(false); }}
+                    className={cn("flex flex-col items-center justify-center py-3 rounded-xl transition-all", isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-muted")}>
+                    <Icon className="w-5 h-5" />
+                    <span className="text-[10px] mt-1 font-medium">{mod.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="fixed inset-0 z-[-1]" onClick={() => setShowMore(false)} />
+          </>
+        )}
+        <div className="flex justify-around items-center h-16 px-2">
+          {modules.slice(0, 4).map((mod) => {
             const Icon = mod.icon;
             const isActive = activeModule === mod.id;
             return (
-              <button
-                key={mod.id}
-                onClick={() => setActiveModule(mod.id)}
-                className={cn(
-                  "flex flex-col items-center justify-center flex-1 h-12 rounded-xl mx-0.5 transition-all duration-200",
-                  isActive ?
-                  "text-primary bg-primary/10" :
-                  "text-muted-foreground hover:text-foreground hover:bg-muted"
-                )}>
-                
+              <button key={mod.id} onClick={() => { setActiveModule(mod.id); setShowMore(false); }}
+                className={cn("flex flex-col items-center justify-center flex-1 h-12 rounded-xl mx-0.5 transition-all duration-200",
+                  isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
                 <Icon className="w-5 h-5" />
                 <span className="text-[10px] mt-0.5 font-medium">{mod.label}</span>
-              </button>);
-
+              </button>
+            );
           })}
+          <button onClick={() => setShowMore(v => !v)}
+            className={cn("flex flex-col items-center justify-center flex-1 h-12 rounded-xl mx-0.5 transition-all duration-200",
+              (showMore || modules.slice(4).some(m => m.id === activeModule)) ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
+            <MoreHorizontal className="w-5 h-5" />
+            <span className="text-[10px] mt-0.5 font-medium">More</span>
+          </button>
         </div>
       </nav>
     </div>);

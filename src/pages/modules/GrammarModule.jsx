@@ -108,7 +108,10 @@ function GrammarLibrary({ exercises, isEditor, onView, onEdit, onDelete, onBulkI
             <div key={p.id} className="bg-card rounded-2xl border border-border p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:shadow-md transition-shadow">
               <div>
                 <h3 className="font-semibold text-foreground">{p.title} <span className="text-sm text-muted-foreground font-normal ml-2">({p.mcqData?.length || 0} Qs)</span></h3>
-                {p.topic && <span className="text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-medium mt-2 inline-block">{p.topic}{p.subtopic && p.subtopic !== 'General' ? ` › ${p.subtopic}` : ''}</span>}
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {p.topic && <span className="text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-medium">{p.topic}</span>}
+                  {p.subtopic && p.subtopic !== 'General' && <span className="text-xs bg-secondary text-secondary-foreground px-2.5 py-0.5 rounded-full font-medium">{p.subtopic}</span>}
+                </div>
               </div>
               <div className="flex gap-2 shrink-0">
                 <button onClick={() => onView(p)} className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors select-none">Practice</button>
@@ -164,7 +167,10 @@ function GrammarPracticeView({ exercise, onBack }) {
       </div>
       <div className="mb-6 pb-4 border-b border-border">
         <h2 className="text-2xl font-bold text-foreground mb-1">{exercise.title}</h2>
-        {exercise.topic && <span className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">{exercise.topic}{exercise.subtopic && exercise.subtopic !== 'General' ? ` › ${exercise.subtopic}` : ''}</span>}
+        <div className="flex flex-wrap gap-2">
+          {exercise.topic && <span className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">{exercise.topic}</span>}
+          {exercise.subtopic && exercise.subtopic !== 'General' && <span className="text-xs bg-secondary text-secondary-foreground px-3 py-1 rounded-full font-medium">{exercise.subtopic}</span>}
+        </div>
       </div>
       {submitted && (
         <div className="bg-primary/10 border border-primary/30 rounded-2xl p-4 mb-6 text-center">
