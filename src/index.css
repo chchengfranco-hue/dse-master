@@ -103,7 +103,9 @@
   [data-vaul-drawer-direction] > *,
   [data-radix-scroll-area-scrollbar],
   /* vaul drag bar handle */
-  [data-vaul-drawer-direction] > div:first-child {
+  [data-vaul-drawer-direction] > div:first-child,
+  /* scrollbars */
+  ::-webkit-scrollbar {
     display: none !important;
   }
 }
