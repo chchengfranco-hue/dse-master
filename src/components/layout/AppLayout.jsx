@@ -14,12 +14,12 @@ import GrammarModule from '@/pages/modules/GrammarModule';
 import UserManagement from '@/pages/modules/UserManagement';
 
 const baseModules = [
-{ id: 'vocab', icon: BookOpen, label: 'Reading' },
-{ id: 'writing', icon: PenTool, label: 'Writing' },
-{ id: 'cloze', icon: Grid3X3, label: 'Cloze' },
-{ id: 'essential', icon: Book, label: 'Vocab' },
-{ id: 'speaking', icon: MessageSquare, label: 'Speaking' },
-{ id: 'grammar', icon: CheckSquare, label: 'Grammar' }];
+{ id: 'vocab', icon: BookOpen, label: 'Thematic Idea Bank' },
+{ id: 'writing', icon: PenTool, label: 'Sample Writing' },
+{ id: 'cloze', icon: Grid3X3, label: 'Vocabulary Exercise' },
+{ id: 'essential', icon: Book, label: 'Essential Vocabulary' },
+{ id: 'speaking', icon: MessageSquare, label: 'Speaking Practice' },
+{ id: 'grammar', icon: CheckSquare, label: 'Grammar Exercise' }];
 
 
 
