@@ -1,7 +1,7 @@
 // Shared topic → subtopic hierarchy used across modules
 
 export const TOPIC_TREE = {
-  'School Life': ['Academic Performance', 'School Culture', 'Extracurricular Activities', 'Relationships & Bullying', 'Examinations & Stress'],
+  'School Life': ['Academic Performance', 'School Culture', 'Extracurricular Activities', 'Graduation','Education x Technology'],
   'Work and Careers': ['Job Market', 'Work-Life Balance', 'Career Planning', 'Leadership & Management', 'Remote Work'],
   'Wildlife and Biodiversity': ['Endangered Species', 'Conservation', 'Ecosystems', 'Animal Rights', 'Deforestation'],
   'The Environment': ['Climate Change', 'Pollution', 'Renewable Energy', 'Sustainable Development', 'Natural Disasters'],
