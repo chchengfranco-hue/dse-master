@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BookOpen, PenTool, Grid3X3, MessageSquare, Book, Users, CheckSquare, Star, MoreHorizontal, ChevronLeft } from 'lucide-react';
+import { BookOpen, PenTool, Grid3X3, MessageSquare, Book, Users, CheckSquare, MoreHorizontal, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/lib/UserContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -11,7 +11,6 @@ import ClozeModule from '@/pages/modules/ClozeModule';
 import EssentialVocabModule from '@/pages/modules/EssentialVocabModule';
 import SpeakingModule from '@/pages/modules/SpeakingModule';
 import GrammarModule from '@/pages/modules/GrammarModule';
-import EssayEvaluatorModule from '@/pages/modules/EssayEvaluatorModule';
 import UserManagement from '@/pages/modules/UserManagement';
 
 const baseModules = [
@@ -21,7 +20,7 @@ const baseModules = [
 { id: 'essential', icon: Book, label: 'Vocab' },
 { id: 'speaking', icon: MessageSquare, label: 'Speaking' },
 { id: 'grammar', icon: CheckSquare, label: 'Grammar' },
-{ id: 'evaluate', icon: Star, label: 'Evaluate' }];
+];
 
 
 export default function AppLayout() {
@@ -38,7 +37,6 @@ export default function AppLayout() {
     if (p.startsWith('/essential')) return 'essential';
     if (p.startsWith('/speaking')) return 'speaking';
     if (p.startsWith('/grammar')) return 'grammar';
-    if (p.startsWith('/evaluate')) return 'evaluate';
     if (p.startsWith('/users')) return 'users';
     if (p.startsWith('/vocab')) return 'vocab';
     return 'vocab'; // default: '/'
@@ -49,7 +47,7 @@ export default function AppLayout() {
   // Detect if we're on a child/detail route (not the module root)
   const isChildRoute = (() => {
     const p = location.pathname;
-    const roots = ['/vocab', '/writing', '/cloze', '/essential', '/speaking', '/grammar', '/evaluate', '/users', '/'];
+    const roots = ['/vocab', '/writing', '/cloze', '/essential', '/speaking', '/grammar', '/users', '/'];
     return !roots.includes(p);
   })();
 
@@ -152,7 +150,6 @@ export default function AppLayout() {
             {activeModule === 'essential' && <EssentialVocabModule isEditor={isEditor} />}
             {activeModule === 'speaking' && <SpeakingModule isEditor={isEditor} />}
             {activeModule === 'grammar' && <GrammarModule isEditor={isEditor} />}
-            {activeModule === 'evaluate' && <EssayEvaluatorModule isEditor={isEditor} />}
             {activeModule === 'users' && isEditor && <UserManagement />}
           </motion.div>
         </AnimatePresence>
