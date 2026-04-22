@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { BookOpen, PenTool, Grid3X3, MessageSquare, Book, Users, CheckSquare, Star, MoreHorizontal } from 'lucide-react';
+import { BookOpen, PenTool, Grid3X3, MessageSquare, Book, Users, CheckSquare, Star, MoreHorizontal, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/lib/UserContext';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import LoginModal from '@/components/auth/LoginModal';
 import VocabModule from '@/pages/modules/VocabModule';
 import WritingModule from '@/pages/modules/WritingModule';
@@ -45,6 +46,25 @@ export default function AppLayout() {
 
   const getTabPath = (id) => id === 'vocab' ? '/vocab' : `/${id}`;
 
+  // Detect if we're on a child/detail route (not the module root)
+  const isChildRoute = (() => {
+    const p = location.pathname;
+    const roots = ['/vocab', '/writing', '/cloze', '/essential', '/speaking', '/grammar', '/evaluate', '/users', '/'];
+    return !roots.includes(p);
+  })();
+
+  // Dynamic header title for child routes
+  const childPageTitle = (() => {
+    const p = location.pathname;
+    if (p.includes('/read/') || p.includes('/practice/')) return 'Reading';
+    if (p.includes('/edit/')) return 'Edit';
+    if (p.includes('/bulk')) return 'Import';
+    return '';
+  })();
+
+  // Back destination = the module root
+  const handleBack = () => navigate(getTabPath(activeModule));
+
   if (!ready) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-background">
@@ -72,25 +92,44 @@ export default function AppLayout() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-card border-b border-border px-4 py-3 flex justify-between items-center sticky top-0 z-40 pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-md shadow-primary/25">
-            <span className="text-xl">📚</span>
-          </div>
-          <div>
-            <h1 className="text-base font-bold text-foreground leading-tight">Ace HKDSE Learning</h1>
-            <p className="text-[10px] text-muted-foreground">English Learning Platform</p>
-          </div>
+      <header className="bg-card border-b border-border px-4 flex items-center sticky top-0 z-40 h-14 pt-[env(safe-area-inset-top)] select-none" style={{ paddingTop: 'max(0px, env(safe-area-inset-top))', height: 'calc(3.5rem + env(safe-area-inset-top))' }}>
+        {/* Left: back button or logo */}
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          {isChildRoute ? (
+            <button onClick={handleBack} className="flex items-center gap-1 text-primary font-medium text-sm active:opacity-60 transition-opacity -ml-1 pr-2">
+              <ChevronLeft className="w-5 h-5" />
+              <span>{modules.find(m => m.id === activeModule)?.label || 'Back'}</span>
+            </button>
+          ) : (
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center shadow-md shadow-primary/25 shrink-0">
+                <span className="text-lg">📚</span>
+              </div>
+              <div className="hidden sm:block">
+                <h1 className="text-base font-bold text-foreground leading-tight">Ace HKDSE Learning</h1>
+                <p className="text-[10px] text-muted-foreground">English Learning Platform</p>
+              </div>
+              <h1 className="sm:hidden text-base font-bold text-foreground">Ace HKDSE</h1>
+            </div>
+          )}
         </div>
-        <div className="flex items-center gap-2">
+
+        {/* Center: page title on child routes */}
+        {isChildRoute && (
+          <div className="absolute left-1/2 -translate-x-1/2 text-base font-semibold text-foreground pointer-events-none">
+            {childPageTitle}
+          </div>
+        )}
+
+        {/* Right: user info + logout */}
+        <div className="flex items-center gap-2 flex-1 justify-end">
           <div className="hidden sm:flex items-center gap-1 bg-muted px-3 py-1.5 rounded-lg border border-border">
             <span className="text-sm font-medium text-foreground">{currentUser}</span>
             {isEditor && <span className="text-xs text-muted-foreground ml-1">(Editor)</span>}
           </div>
           <button
             onClick={logout}
-            className="text-sm bg-muted hover:bg-border px-3 py-1.5 rounded-lg transition-colors font-medium text-foreground border border-border">
-            
+            className="text-sm bg-muted hover:bg-border active:bg-border px-3 py-1.5 rounded-lg transition-colors font-medium text-foreground border border-border">
             Logout
           </button>
         </div>
@@ -98,14 +137,25 @@ export default function AppLayout() {
 
       {/* Content */}
       <main className="flex-1 overflow-y-auto pb-24">
-        {activeModule === 'vocab' && <VocabModule isEditor={isEditor} />}
-        {activeModule === 'writing' && <WritingModule isEditor={isEditor} />}
-        {activeModule === 'cloze' && <ClozeModule isEditor={isEditor} />}
-        {activeModule === 'essential' && <EssentialVocabModule isEditor={isEditor} />}
-        {activeModule === 'speaking' && <SpeakingModule isEditor={isEditor} />}
-        {activeModule === 'grammar' && <GrammarModule isEditor={isEditor} />}
-        {activeModule === 'evaluate' && <EssayEvaluatorModule isEditor={isEditor} />}
-        {activeModule === 'users' && isEditor && <UserManagement />}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, x: isChildRoute ? 24 : -24 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: isChildRoute ? -24 : 24 }}
+            transition={{ duration: 0.2, ease: 'easeInOut' }}
+            className="min-h-full"
+          >
+            {activeModule === 'vocab' && <VocabModule isEditor={isEditor} />}
+            {activeModule === 'writing' && <WritingModule isEditor={isEditor} />}
+            {activeModule === 'cloze' && <ClozeModule isEditor={isEditor} />}
+            {activeModule === 'essential' && <EssentialVocabModule isEditor={isEditor} />}
+            {activeModule === 'speaking' && <SpeakingModule isEditor={isEditor} />}
+            {activeModule === 'grammar' && <GrammarModule isEditor={isEditor} />}
+            {activeModule === 'evaluate' && <EssayEvaluatorModule isEditor={isEditor} />}
+            {activeModule === 'users' && isEditor && <UserManagement />}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Bottom nav */}

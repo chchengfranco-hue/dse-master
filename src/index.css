@@ -89,3 +89,21 @@
     overscroll-behavior-y: none;
   }
 }
+
+@layer utilities {
+  /* Disable selection on nav/header/interactive chrome */
+  header,
+  nav,
+  button:not(.selectable),
+  .card-item {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* Ensure passage/article text and inputs remain selectable */
+  p, span, article, .prose, .whitespace-pre-wrap,
+  input, textarea {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+}

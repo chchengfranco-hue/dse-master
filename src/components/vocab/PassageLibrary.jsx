@@ -58,7 +58,7 @@ export default function PassageLibrary({ passages, isEditor, onRead, onEdit, onD
         <div className="flex-1 min-w-0 space-y-3">
           {paged.length === 0 && <div className="text-center py-16 text-muted-foreground">No passages found.</div>}
           {paged.map(p => (
-            <div key={p.id} className="bg-card rounded-2xl border border-border p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:shadow-md transition-shadow">
+            <div key={p.id} className="bg-card rounded-2xl border border-border p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:shadow-md active:scale-[0.98] active:bg-muted transition-all card-item">
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-foreground">{p.title}</h3>
                 <div className="flex flex-wrap gap-2 mt-2">

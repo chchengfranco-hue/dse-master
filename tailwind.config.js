@@ -3,6 +3,9 @@ module.exports = {
     darkMode: ["class"],
     content: ["./index.html", "./src/**/*.{ts,tsx,js,jsx}"],
     safelist: [
+      'active:scale-[0.98]',
+      'active:bg-muted',
+      'card-item',
       'from-purple-500', 'to-purple-700',
       'from-blue-500', 'to-blue-700',
       'from-amber-500', 'to-amber-700',

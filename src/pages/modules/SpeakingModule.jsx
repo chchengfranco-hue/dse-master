@@ -189,7 +189,7 @@ function SpeakingLibrary({ exams, isEditor, onView, onEdit, onDelete, onBulkImpo
         <div className="flex-1 min-w-0 space-y-3">
           {paged.length === 0 && <div className="text-center py-16 text-muted-foreground">No exams found.</div>}
           {paged.map(p => (
-            <div key={p.id} className="bg-card rounded-2xl border border-border p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:shadow-md transition-shadow">
+            <div key={p.id} className="bg-card rounded-2xl border border-border p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:shadow-md active:scale-[0.98] active:bg-muted transition-all card-item">
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="font-semibold text-foreground">{p.title}</h3>
