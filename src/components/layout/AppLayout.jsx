@@ -59,7 +59,7 @@ export default function AppLayout() {
             <span className="text-xl">📚</span>
           </div>
           <div>
-            <h1 className="text-base font-bold text-foreground leading-tight">AceHKDSE Learning Hub</h1>
+            <h1 className="text-base font-bold text-foreground leading-tight">Ace HKDSE Learning</h1>
             <p className="text-[10px] text-muted-foreground">English Learning Platform</p>
           </div>
         </div>
