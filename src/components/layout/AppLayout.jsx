@@ -19,8 +19,8 @@ const baseModules = [
 { id: 'cloze', icon: Grid3X3, label: 'Cloze' },
 { id: 'essential', icon: Book, label: 'Vocab' },
 { id: 'speaking', icon: MessageSquare, label: 'Speaking' },
-{ id: 'grammar', icon: CheckSquare, label: 'Grammar' },
-];
+{ id: 'grammar', icon: CheckSquare, label: 'Grammar' }];
+
 
 
 export default function AppLayout() {
@@ -80,7 +80,7 @@ export default function AppLayout() {
     return (
       <div className="flex flex-col min-h-screen bg-background">
         <header className="bg-card border-b border-border p-4 text-center">
-          <h1 className="text-xl font-bold text-foreground">HKDSE Learning Hub</h1>
+          <h1 className="text-xl font-bold text-foreground">Ace H</h1>
         </header>
         <LoginModal onLogin={login} />
       </div>);
@@ -93,13 +93,13 @@ export default function AppLayout() {
       <header className="bg-card border-b border-border px-4 flex items-center sticky top-0 z-40 h-14 pt-[env(safe-area-inset-top)] select-none" style={{ paddingTop: 'max(0px, env(safe-area-inset-top))', height: 'calc(3.5rem + env(safe-area-inset-top))' }}>
         {/* Left: back button or logo */}
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          {isChildRoute ? (
-            <button onClick={handleBack} className="flex items-center gap-1 text-primary font-medium text-sm active:opacity-60 transition-opacity -ml-1 pr-2">
+          {isChildRoute ?
+          <button onClick={handleBack} className="flex items-center gap-1 text-primary font-medium text-sm active:opacity-60 transition-opacity -ml-1 pr-2">
               <ChevronLeft className="w-5 h-5" />
-              <span>{modules.find(m => m.id === activeModule)?.label || 'Back'}</span>
-            </button>
-          ) : (
-            <div className="flex items-center gap-3">
+              <span>{modules.find((m) => m.id === activeModule)?.label || 'Back'}</span>
+            </button> :
+
+          <div className="flex items-center gap-3">
               <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center shadow-md shadow-primary/25 shrink-0">
                 <span className="text-lg">📚</span>
               </div>
@@ -109,15 +109,15 @@ export default function AppLayout() {
               </div>
               <h1 className="sm:hidden text-base font-bold text-foreground">Ace HKDSE</h1>
             </div>
-          )}
+          }
         </div>
 
         {/* Center: page title on child routes */}
-        {isChildRoute && (
-          <div className="absolute left-1/2 -translate-x-1/2 text-base font-semibold text-foreground pointer-events-none">
+        {isChildRoute &&
+        <div className="absolute left-1/2 -translate-x-1/2 text-base font-semibold text-foreground pointer-events-none">
             {childPageTitle}
           </div>
-        )}
+        }
 
         {/* Right: user info + logout */}
         <div className="flex items-center gap-2 flex-1 justify-end">
@@ -142,8 +142,8 @@ export default function AppLayout() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: isChildRoute ? -24 : 24 }}
             transition={{ duration: 0.2, ease: 'easeInOut' }}
-            className="min-h-full"
-          >
+            className="min-h-full">
+            
             {activeModule === 'vocab' && <VocabModule isEditor={isEditor} />}
             {activeModule === 'writing' && <WritingModule isEditor={isEditor} />}
             {activeModule === 'cloze' && <ClozeModule isEditor={isEditor} />}
@@ -158,40 +158,40 @@ export default function AppLayout() {
       {/* Bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-40 pb-[env(safe-area-inset-bottom)]">
         {/* More drawer */}
-        {showMore && (
-          <>
+        {showMore &&
+        <>
             <div className="absolute bottom-full left-0 right-0 bg-card border-t border-border shadow-lg rounded-t-2xl p-3 grid grid-cols-4 gap-2">
               {modules.slice(4).map((mod) => {
-                const Icon = mod.icon;
-                const isActive = activeModule === mod.id;
-                return (
-                  <button key={mod.id} onClick={() => { navigate(getTabPath(mod.id)); setShowMore(false); }}
-                    className={cn("flex flex-col items-center justify-center py-3 rounded-xl transition-all select-none", isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-muted")}>
+              const Icon = mod.icon;
+              const isActive = activeModule === mod.id;
+              return (
+                <button key={mod.id} onClick={() => {navigate(getTabPath(mod.id));setShowMore(false);}}
+                className={cn("flex flex-col items-center justify-center py-3 rounded-xl transition-all select-none", isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-muted")}>
                     <Icon className="w-5 h-5" />
                     <span className="text-[10px] mt-1 font-medium">{mod.label}</span>
-                  </button>
-                );
-              })}
+                  </button>);
+
+            })}
             </div>
             <div className="fixed inset-0 z-[-1]" onClick={() => setShowMore(false)} />
           </>
-        )}
+        }
         <div className="flex justify-around items-center h-16 px-2">
           {modules.slice(0, 4).map((mod) => {
             const Icon = mod.icon;
             const isActive = activeModule === mod.id;
             return (
-              <button key={mod.id} onClick={() => { navigate(getTabPath(mod.id)); setShowMore(false); }}
-                className={cn("flex flex-col items-center justify-center flex-1 h-12 rounded-xl mx-0.5 transition-all duration-200 select-none",
-                  isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
+              <button key={mod.id} onClick={() => {navigate(getTabPath(mod.id));setShowMore(false);}}
+              className={cn("flex flex-col items-center justify-center flex-1 h-12 rounded-xl mx-0.5 transition-all duration-200 select-none",
+              isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
                 <Icon className="w-5 h-5" />
                 <span className="text-[10px] mt-0.5 font-medium">{mod.label}</span>
-              </button>
-            );
+              </button>);
+
           })}
-          <button onClick={() => setShowMore(v => !v)}
-            className={cn("flex flex-col items-center justify-center flex-1 h-12 rounded-xl mx-0.5 transition-all duration-200 select-none",
-              (showMore || modules.slice(4).some(m => m.id === activeModule)) ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
+          <button onClick={() => setShowMore((v) => !v)}
+          className={cn("flex flex-col items-center justify-center flex-1 h-12 rounded-xl mx-0.5 transition-all duration-200 select-none",
+          showMore || modules.slice(4).some((m) => m.id === activeModule) ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
             <MoreHorizontal className="w-5 h-5" />
             <span className="text-[10px] mt-0.5 font-medium">More</span>
           </button>
