@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BookOpen, PenTool, Grid3X3, MessageSquare, Book, Users, CheckSquare, MoreHorizontal, ChevronLeft } from 'lucide-react';
+import { BookOpen, PenTool, Grid3X3, MessageSquare, Book, Users, CheckSquare, MoreHorizontal, ChevronLeft, BarChart2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/lib/UserContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -12,6 +12,7 @@ import EssentialVocabModule from '@/pages/modules/EssentialVocabModule';
 import SpeakingModule from '@/pages/modules/SpeakingModule';
 import GrammarModule from '@/pages/modules/GrammarModule';
 import UserManagement from '@/pages/modules/UserManagement';
+import ProgressPage from '@/pages/Progress';
 
 const baseModules = [
 { id: 'vocab', icon: BookOpen, label: 'Thematic Idea Bank' },
@@ -19,7 +20,8 @@ const baseModules = [
 { id: 'cloze', icon: Grid3X3, label: 'Vocabulary Exercise' },
 { id: 'essential', icon: Book, label: 'Essential Vocabulary' },
 { id: 'speaking', icon: MessageSquare, label: 'Speaking Practice' },
-{ id: 'grammar', icon: CheckSquare, label: 'Grammar Exercise' }];
+{ id: 'grammar', icon: CheckSquare, label: 'Grammar Exercise' },
+{ id: 'progress', icon: BarChart2, label: 'Progress' }];
 
 
 
@@ -38,6 +40,7 @@ export default function AppLayout() {
     if (p.startsWith('/speaking')) return 'speaking';
     if (p.startsWith('/grammar')) return 'grammar';
     if (p.startsWith('/users')) return 'users';
+    if (p.startsWith('/progress')) return 'progress';
     if (p.startsWith('/vocab')) return 'vocab';
     return 'vocab'; // default: '/'
   })();
@@ -47,7 +50,7 @@ export default function AppLayout() {
   // Detect if we're on a child/detail route (not the module root)
   const isChildRoute = (() => {
     const p = location.pathname;
-    const roots = ['/vocab', '/writing', '/cloze', '/essential', '/speaking', '/grammar', '/users', '/'];
+    const roots = ['/vocab', '/writing', '/cloze', '/essential', '/speaking', '/grammar', '/users', '/progress', '/'];
     return !roots.includes(p);
   })();
 
@@ -151,6 +154,7 @@ export default function AppLayout() {
             {activeModule === 'speaking' && <SpeakingModule isEditor={isEditor} />}
             {activeModule === 'grammar' && <GrammarModule isEditor={isEditor} />}
             {activeModule === 'users' && isEditor && <UserManagement />}
+            {activeModule === 'progress' && <ProgressPage />}
           </motion.div>
         </AnimatePresence>
       </main>
