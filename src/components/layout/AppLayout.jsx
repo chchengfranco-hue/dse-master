@@ -80,7 +80,7 @@ export default function AppLayout() {
     return (
       <div className="flex flex-col min-h-screen bg-background">
         <header className="bg-card border-b border-border p-4 text-center">
-          <h1 className="text-xl font-bold text-foreground">Ace H</h1>
+          <h1 className="text-xl font-bold text-foreground">Ace HKDSE English</h1>
         </header>
         <LoginModal onLogin={login} />
       </div>);
