@@ -18,6 +18,10 @@
       "type": "string",
       "description": "Custom reference code (e.g. SP-001)"
     },
+    "exam_ref": {
+      "type": "string",
+      "description": "Past exam paper reference (e.g. 2023 DSE Paper 4 Q2)"
+    },
     "part_a": {
       "type": "object",
       "description": "Part A group discussion content",
