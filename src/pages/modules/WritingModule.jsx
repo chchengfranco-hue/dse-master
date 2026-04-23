@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate, Routes, Route } from 'react-router-dom';
 import { TOPIC_TREE } from '@/lib/topicTree';
 import { base44 } from '@/api/base44Client';
+import { contentApi } from '@/lib/contentApi';
 
 function useWritingModels() {
   const [models, setModels] = useState([]);
@@ -378,8 +379,8 @@ export default function WritingModule({ isEditor }) {
 
   const saveModel = async (data) => {
     const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, content: data.content, annotations: data.annotations || {}, image_url: data.imageUrl || '', question: data.question || '', is_published: true };
-    if (data.id) await base44.entities.WritingModel.update(data.id, payload);
-    else await base44.entities.WritingModel.create(payload);
+    if (data.id) await contentApi.update('WritingModel', data.id, payload);
+    else await contentApi.create('WritingModel', payload);
     navigate('/writing');
   };
 
@@ -387,7 +388,7 @@ export default function WritingModule({ isEditor }) {
     const model = await base44.entities.WritingModel.get(modelId);
     const annotations = { ...(model.annotations || {}) };
     if (!meaning) delete annotations[word]; else annotations[word] = meaning;
-    await base44.entities.WritingModel.update(modelId, { annotations });
+    await contentApi.update('WritingModel', modelId, { annotations });
     reload();
   };
 
@@ -399,7 +400,7 @@ export default function WritingModule({ isEditor }) {
           : <WritingLibrary models={models} isEditor={isEditor}
               onView={p => navigate(`/writing/read/${p.id}`)}
               onEdit={p => navigate(p ? `/writing/edit/${p.id}` : '/writing/edit/new')}
-              onDelete={async id => { await base44.entities.WritingModel.delete(id); reload(); }}
+              onDelete={async id => { await contentApi.delete('WritingModel', id); reload(); }}
               onBulkImport={undefined}
             />
       } />

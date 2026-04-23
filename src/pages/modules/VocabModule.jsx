@@ -6,6 +6,7 @@ import PassageEditor from '@/components/vocab/PassageEditor';
 import PullRefreshIndicator from '@/components/shared/PullRefreshIndicator';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { base44 } from '@/api/base44Client';
+import { contentApi } from '@/lib/contentApi';
 
 function usePassages() {
   const [passages, setPassages] = useState([]);
@@ -52,7 +53,7 @@ function LibraryWrapper({ isEditor }) {
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this passage?')) return;
-    await base44.entities.ReadingPassage.delete(id);
+    await contentApi.delete('ReadingPassage', id);
     reload();
   };
 
@@ -75,8 +76,8 @@ export default function VocabModule({ isEditor }) {
 
   const savePassage = async (data) => {
     const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, content: data.content, annotations: data.annotations, image_url: data.imageUrl || '', is_published: true };
-    if (data.id && data.id !== 'new') await base44.entities.ReadingPassage.update(data.id, payload);
-    else await base44.entities.ReadingPassage.create(payload);
+    if (data.id && data.id !== 'new') await contentApi.update('ReadingPassage', data.id, payload);
+    else await contentApi.create('ReadingPassage', payload);
     navigate('/vocab');
   };
 
@@ -84,7 +85,7 @@ export default function VocabModule({ isEditor }) {
     const passage = await base44.entities.ReadingPassage.get(passageId);
     const annotations = { ...(passage.annotations || {}) };
     if (!meaning) delete annotations[word]; else annotations[word] = meaning;
-    await base44.entities.ReadingPassage.update(passageId, { annotations });
+    await contentApi.update('ReadingPassage', passageId, { annotations });
   };
 
   return (

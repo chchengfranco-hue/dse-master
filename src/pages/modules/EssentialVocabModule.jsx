@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import { contentApi } from '@/lib/contentApi';
 
 function useVocabSets() {
   const [sets, setSets] = useState([]);
@@ -372,8 +373,8 @@ export default function EssentialVocabModule({ isEditor }) {
 
   const saveSet = async (data) => {
     const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, custom_code: data.customCode || '', passage: data.passage || '', vocab_data: data.vocabData || [], is_published: true };
-    if (data.id) await base44.entities.VocabSet.update(data.id, payload);
-    else await base44.entities.VocabSet.create(payload);
+    if (data.id) await contentApi.update('VocabSet', data.id, payload);
+    else await contentApi.create('VocabSet', payload);
     navigate('/essential');
   };
 
@@ -385,7 +386,7 @@ export default function EssentialVocabModule({ isEditor }) {
           : <EVLibrary sets={sets} isEditor={isEditor}
               onView={p => navigate(`/essential/read/${p.id}`)}
               onEdit={p => navigate(p ? `/essential/edit/${p.id}` : '/essential/edit/new')}
-              onDelete={async id => { await base44.entities.VocabSet.delete(id); reload(); }}
+              onDelete={async id => { await contentApi.delete('VocabSet', id); reload(); }}
               onBulkImport={undefined}
             />
       } />

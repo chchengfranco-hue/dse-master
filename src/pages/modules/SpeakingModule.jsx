@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import { contentApi } from '@/lib/contentApi';
 
 function useSpeakingExams() {
   const [exams, setExams] = useState([]);
@@ -413,8 +414,8 @@ export default function SpeakingModule({ isEditor }) {
 
   const saveExam = async (data) => {
     const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, custom_code: data.customCode || '', annotations: data.annotations || {}, part_a: { ...data.partA, focus_ideas: data.partA?.focusIdeas || [] }, part_b: data.partB || [], is_published: true };
-    if (data.id) await base44.entities.SpeakingExam.update(data.id, payload);
-    else await base44.entities.SpeakingExam.create(payload);
+    if (data.id) await contentApi.update('SpeakingExam', data.id, payload);
+    else await contentApi.create('SpeakingExam', payload);
     navigate('/speaking');
   };
 
@@ -422,7 +423,7 @@ export default function SpeakingModule({ isEditor }) {
     const exam = await base44.entities.SpeakingExam.get(examId);
     const annotations = { ...(exam.annotations || {}) };
     if (!meaning) delete annotations[word]; else annotations[word] = meaning;
-    await base44.entities.SpeakingExam.update(examId, { annotations });
+    await contentApi.update('SpeakingExam', examId, { annotations });
     reload();
   };
 
@@ -434,7 +435,7 @@ export default function SpeakingModule({ isEditor }) {
           : <SpeakingLibrary exams={exams} isEditor={isEditor}
               onView={p => navigate(`/speaking/read/${p.id}`)}
               onEdit={p => navigate(p ? `/speaking/edit/${p.id}` : '/speaking/edit/new')}
-              onDelete={async id => { await base44.entities.SpeakingExam.delete(id); reload(); }}
+              onDelete={async id => { await contentApi.delete('SpeakingExam', id); reload(); }}
               onBulkImport={undefined}
             />
       } />

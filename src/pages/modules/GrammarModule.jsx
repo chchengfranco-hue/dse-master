@@ -3,6 +3,7 @@ import { Routes, Route, useNavigate } from 'react-router-dom';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import PullRefreshIndicator from '@/components/shared/PullRefreshIndicator';
 import { base44 } from '@/api/base44Client';
+import { contentApi } from '@/lib/contentApi';
 
 function useGrammarExercises() {
   const [exercises, setExercises] = useState([]);
@@ -244,8 +245,8 @@ export default function GrammarModule({ isEditor }) {
 
   const saveEx = async (data) => {
     const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, mcq_data: data.mcqData.map(q => ({ ...q, ans_letter: q.ansLetter })), is_published: true };
-    if (data.id) await base44.entities.GrammarExercise.update(data.id, payload);
-    else await base44.entities.GrammarExercise.create(payload);
+    if (data.id) await contentApi.update('GrammarExercise', data.id, payload);
+    else await contentApi.create('GrammarExercise', payload);
     navigate('/grammar');
   };
 
@@ -257,7 +258,7 @@ export default function GrammarModule({ isEditor }) {
           : <GrammarLibrary exercises={exercises} isEditor={isEditor} refreshing={false}
               onView={p => navigate(`/grammar/practice/${p.id}`)}
               onEdit={p => navigate(p ? `/grammar/edit/${p.id}` : '/grammar/edit/new')}
-              onDelete={async id => { await base44.entities.GrammarExercise.delete(id); reload(); }}
+              onDelete={async id => { await contentApi.delete('GrammarExercise', id); reload(); }}
               onBulkImport={null}
             />
       } />

@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { base44 } from '@/api/base44Client';
+import { contentApi } from '@/lib/contentApi';
 
 function useClozeExercises() {
   const [exercises, setExercises] = useState([]);
@@ -347,8 +348,8 @@ export default function ClozeModule({ isEditor }) {
 
   const saveExercise = async (data) => {
     const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, has_options: data.hasOptions || 'bank', content: data.content, annotations: data.annotations || {}, is_published: true };
-    if (data.id) await base44.entities.ClozeExercise.update(data.id, payload);
-    else await base44.entities.ClozeExercise.create(payload);
+    if (data.id) await contentApi.update('ClozeExercise', data.id, payload);
+    else await contentApi.create('ClozeExercise', payload);
     navigate('/cloze');
   };
 
@@ -356,7 +357,7 @@ export default function ClozeModule({ isEditor }) {
     const ex = await base44.entities.ClozeExercise.get(exId);
     const annotations = { ...(ex.annotations || {}) };
     if (!meaning) delete annotations[word]; else annotations[word] = meaning;
-    await base44.entities.ClozeExercise.update(exId, { annotations });
+    await contentApi.update('ClozeExercise', exId, { annotations });
     reload();
   };
 
@@ -368,7 +369,7 @@ export default function ClozeModule({ isEditor }) {
           : <ClozeLibrary exercises={exercises} isEditor={isEditor} refreshing={false}
               onView={p => navigate(`/cloze/read/${p.id}`)}
               onEdit={p => navigate(p ? `/cloze/edit/${p.id}` : '/cloze/edit/new')}
-              onDelete={async id => { await base44.entities.ClozeExercise.delete(id); reload(); }}
+              onDelete={async id => { await contentApi.delete('ClozeExercise', id); reload(); }}
               onBulkImport={null}
             />
       } />
