@@ -18,6 +18,10 @@
       "type": "string",
       "description": "Optional image URL"
     },
+    "exam_ref": {
+      "type": "string",
+      "description": "Past exam paper reference (e.g. 2023 DSE Paper 2 Q3)"
+    },
     "question": {
       "type": "string",
       "description": "The exam question or writing prompt"

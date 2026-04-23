@@ -125,6 +125,7 @@ function WritingEditor({ model, onSave, onCancel }) {
     topic: model?.topic || '',
     subtopic: model?.subtopic || '',
     imageUrl: model?.imageUrl || '',
+    examRef: model?.exam_ref || '',
     question: model?.question || '',
     content: model?.content || '',
     status: model?.status || 'published',
@@ -145,7 +146,7 @@ function WritingEditor({ model, onSave, onCancel }) {
     if (!form.title.trim() || !form.content.trim()) return alert('Title and Content are required.');
     const annotations = {};
     form.annotationsText.split('\n').forEach(line => { const idx = line.indexOf(':'); if (idx > 0) { const w = line.slice(0, idx).trim(), m = line.slice(idx + 1).trim(); if (w && m) annotations[w] = m; } });
-    onSave({ id: form.id, title: form.title.trim(), topic: form.topic || 'Uncategorized', subtopic: form.subtopic || 'General', imageUrl: form.imageUrl.trim(), question: form.question.trim(), content: form.content.trim(), annotations, status: form.status });
+    onSave({ id: form.id, title: form.title.trim(), topic: form.topic || 'Uncategorized', subtopic: form.subtopic || 'General', imageUrl: form.imageUrl.trim(), examRef: form.examRef.trim(), question: form.question.trim(), content: form.content.trim(), annotations, status: form.status });
   };
   return (
     <div className="px-4 lg:px-8 py-6 max-w-3xl mx-auto">
@@ -174,7 +175,16 @@ function WritingEditor({ model, onSave, onCancel }) {
             ))}
           </select>
         </div>
-        <input className="w-full rounded-xl border border-input px-3 py-2 text-sm mb-3" placeholder="Prompt / Essay Title" value={form.title} onChange={e => s('title', e.target.value)} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+          <div>
+            <label className="text-xs font-semibold text-foreground mb-1 block">Essay / Writing Title <span className="text-destructive">*</span></label>
+            <input className="w-full rounded-xl border border-input px-3 py-2 text-sm" placeholder="e.g. The Impact of Technology" value={form.title} onChange={e => s('title', e.target.value)} />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-foreground mb-1 block">Past Exam Paper Reference <span className="text-muted-foreground font-normal">(optional)</span></label>
+            <input className="w-full rounded-xl border border-input px-3 py-2 text-sm" placeholder="e.g. 2023 DSE Paper 2 Q3" value={form.examRef || ''} onChange={e => s('examRef', e.target.value)} />
+          </div>
+        </div>
         <input className="w-full rounded-xl border border-input px-3 py-2 text-sm mb-3" placeholder="Image URL (Optional)" value={form.imageUrl} onChange={e => s('imageUrl', e.target.value)} />
         <p className="text-xs font-semibold text-foreground mb-1">Exam Question / Prompt</p>
         <textarea className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-24 resize-y mb-3" placeholder="Enter the exam question or writing prompt here..." value={form.question} onChange={e => s('question', e.target.value)} />
@@ -247,6 +257,7 @@ function WritingLibrary({ models, isEditor, onView, onEdit, onDelete, onBulkImpo
                 <div className="flex flex-wrap gap-2 mt-2">
                   {p.topic && <span className="text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-medium">{p.topic}</span>}
                   {p.subtopic && p.subtopic !== 'General' && <span className="text-xs bg-secondary text-secondary-foreground px-2.5 py-0.5 rounded-full font-medium">{p.subtopic}</span>}
+                  {p.exam_ref && <span className="text-xs bg-sky-100 text-sky-700 px-2.5 py-0.5 rounded-full font-medium border border-sky-200">📄 {p.exam_ref}</span>}
                   {isEditor && p.status === 'draft' && <span className="text-xs bg-amber-100 text-amber-700 px-2.5 py-0.5 rounded-full font-semibold border border-amber-300">🔒 Draft</span>}
                 </div>
               </div>
@@ -315,7 +326,10 @@ function WritingReadView({ model, isEditor, onBack, onSaveAnnotation }) {
 
       <div className="mb-4">
         <h2 className="text-2xl font-bold text-foreground mb-2">{model.title}</h2>
-        {model.topic && <span className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">{model.topic}{model.subtopic && model.subtopic !== 'General' ? ` › ${model.subtopic}` : ''}</span>}
+        <div className="flex flex-wrap gap-2 items-center">
+          {model.topic && <span className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">{model.topic}{model.subtopic && model.subtopic !== 'General' ? ` › ${model.subtopic}` : ''}</span>}
+          {model.exam_ref && <span className="text-xs bg-sky-100 text-sky-700 px-3 py-1 rounded-full font-medium border border-sky-200">📄 {model.exam_ref}</span>}
+        </div>
       </div>
 
       {/* Question Box */}
@@ -390,7 +404,7 @@ export default function WritingModule({ isEditor }) {
   const { models, loading, reload } = useWritingModels(isEditor);
 
   const saveModel = async (data) => {
-    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, content: data.content, annotations: data.annotations || {}, image_url: data.imageUrl || '', question: data.question || '', status: data.status || 'published', is_published: data.status !== 'draft' };
+    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, content: data.content, annotations: data.annotations || {}, image_url: data.imageUrl || '', exam_ref: data.examRef || '', question: data.question || '', status: data.status || 'published', is_published: data.status !== 'draft' };
     if (data.id) await contentApi.update('WritingModel', data.id, payload);
     else await contentApi.create('WritingModel', payload);
     navigate('/writing');
@@ -432,7 +446,7 @@ export default function WritingModule({ isEditor }) {
           const idStr = window.location.pathname.split('/').pop();
           useEffect(() => {
             if (idStr === 'new') { setModel(null); return; }
-            base44.entities.WritingModel.get(idStr).then(m => setModel({ ...m, imageUrl: m.image_url || '', annotations: m.annotations || {} }));
+            base44.entities.WritingModel.get(idStr).then(m => setModel({ ...m, imageUrl: m.image_url || '', exam_ref: m.exam_ref || '', annotations: m.annotations || {} }));
           }, [idStr]);
           if (model === undefined) return <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>;
           return <WritingEditor model={model} onSave={saveModel} onCancel={() => navigate('/writing')} />;
