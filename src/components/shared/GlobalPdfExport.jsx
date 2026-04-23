@@ -16,11 +16,15 @@ export default function GlobalPdfExport({ onClose }) {
   const [loadingItems, setLoadingItems] = useState(false);
   const [selected, setSelected] = useState(new Set());
   const [generating, setGenerating] = useState(false);
+  const [filterTopic, setFilterTopic] = useState('');
+  const [filterSubtopic, setFilterSubtopic] = useState('');
 
   useEffect(() => {
     if (!activeModule) return;
     setLoadingItems(true);
     setSelected(new Set());
+    setFilterTopic('');
+    setFilterSubtopic('');
     const mod = MODULES.find(m => m.key === activeModule);
     base44.entities[mod.entity].list('-created_date', 300).then(data => {
       const filtered = data.filter(i => i.status === 'published' || (i.status == null && i.is_published !== false));
@@ -29,6 +33,22 @@ export default function GlobalPdfExport({ onClose }) {
     });
   }, [activeModule]);
 
+  // Derive topic tree from loaded items
+  const topicTree = {};
+  items.forEach(i => {
+    const t = i.topic || 'Uncategorized';
+    const st = i.subtopic && i.subtopic !== 'General' ? i.subtopic : null;
+    if (!topicTree[t]) topicTree[t] = new Set();
+    if (st) topicTree[t].add(st);
+  });
+  const topics = Object.keys(topicTree).sort();
+
+  const visibleItems = items.filter(i => {
+    if (filterTopic && (i.topic || 'Uncategorized') !== filterTopic) return false;
+    if (filterSubtopic && (i.subtopic && i.subtopic !== 'General' ? i.subtopic : '') !== filterSubtopic) return false;
+    return true;
+  });
+
   const toggle = (id) => setSelected(prev => {
     const next = new Set(prev);
     next.has(id) ? next.delete(id) : next.add(id);
@@ -36,9 +56,17 @@ export default function GlobalPdfExport({ onClose }) {
   });
 
   const toggleAll = () => {
-    if (selected.size === items.length) setSelected(new Set());
-    else setSelected(new Set(items.map(i => i.id)));
+    const visibleIds = visibleItems.map(i => i.id);
+    const allVisible = visibleIds.every(id => selected.has(id));
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (allVisible) visibleIds.forEach(id => next.delete(id));
+      else visibleIds.forEach(id => next.add(id));
+      return next;
+    });
   };
+
+  const allVisibleSelected = visibleItems.length > 0 && visibleItems.every(i => selected.has(i.id));
 
   const exportPdf = async () => {
     if (selected.size === 0) return alert('Please select at least one item.');
@@ -139,13 +167,37 @@ export default function GlobalPdfExport({ onClose }) {
         {/* Item picker */}
         {activeModule && (
           <>
-            {/* Select all */}
+            {/* Topic / Subtopic filter */}
+            {!loadingItems && topics.length > 0 && (
+              <div className="px-5 pt-3 pb-2 border-b border-border shrink-0 space-y-2">
+                <div className="flex flex-wrap gap-1.5">
+                  <button onClick={() => { setFilterTopic(''); setFilterSubtopic(''); }}
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${!filterTopic ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground hover:bg-border'}`}>All</button>
+                  {topics.map(t => (
+                    <button key={t} onClick={() => { setFilterTopic(t); setFilterSubtopic(''); }}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${filterTopic === t ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground hover:bg-border'}`}>{t}</button>
+                  ))}
+                </div>
+                {filterTopic && topicTree[filterTopic] && Array.from(topicTree[filterTopic]).length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    <button onClick={() => setFilterSubtopic('')}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${!filterSubtopic ? 'bg-secondary text-secondary-foreground' : 'bg-muted text-muted-foreground hover:bg-border'}`}>All {filterTopic}</button>
+                    {Array.from(topicTree[filterTopic]).sort().map(st => (
+                      <button key={st} onClick={() => setFilterSubtopic(st)}
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${filterSubtopic === st ? 'bg-secondary text-secondary-foreground' : 'bg-muted text-muted-foreground hover:bg-border'}`}>{st}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Select all (visible) */}
             <div className="px-5 py-2 border-b border-border shrink-0 flex items-center justify-between">
               <button onClick={toggleAll} className="flex items-center gap-2 text-sm text-foreground font-medium hover:text-primary transition-colors">
-                {selected.size === items.length && items.length > 0
+                {allVisibleSelected
                   ? <CheckSquare className="w-4 h-4 text-primary" />
                   : <Square className="w-4 h-4 text-muted-foreground" />}
-                {selected.size === items.length && items.length > 0 ? 'Deselect All' : 'Select All'}
+                {allVisibleSelected ? 'Deselect Visible' : 'Select Visible'}
               </button>
               <span className="text-xs text-muted-foreground">{selected.size} / {items.length} selected</span>
             </div>
@@ -153,9 +205,9 @@ export default function GlobalPdfExport({ onClose }) {
             <div className="flex-1 overflow-y-auto px-5 py-3 space-y-1.5">
               {loadingItems
                 ? <div className="flex justify-center py-10"><div className="w-5 h-5 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>
-                : items.length === 0
+                : visibleItems.length === 0
                   ? <p className="text-center py-10 text-muted-foreground text-sm">No published items found.</p>
-                  : items.map(item => (
+                  : visibleItems.map(item => (
                     <button key={item.id} onClick={() => toggle(item.id)}
                       className={`w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all ${selected.has(item.id) ? 'border-primary/40 bg-primary/5' : 'border-border bg-background hover:bg-muted'}`}>
                       {selected.has(item.id)
