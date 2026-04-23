@@ -432,7 +432,7 @@ export default function SpeakingModule({ isEditor }) {
   const { exams, loading, reload } = useSpeakingExams(isEditor);
 
   const saveExam = async (data) => {
-    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, custom_code: data.customCode || '', exam_ref: data.examRef || '', annotations: data.annotations || {}, part_a: { ...data.partA, focus_ideas: data.partA?.focusIdeas || [] }, part_b: data.partB || [], status: data.status || 'published', is_published: data.status !== 'draft' };
+    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, custom_code: data.customCode || '', exam_ref: data.examRef || '', annotations: data.annotations || {}, part_a: { ...data.partA, passage_title: data.partA?.passageTitle || '', focus_ideas: data.partA?.focusIdeas || [] }, part_b: data.partB || [], status: data.status || 'published', is_published: data.status !== 'draft' };
     if (data.id) await contentApi.update('SpeakingExam', data.id, payload);else
     await contentApi.create('SpeakingExam', payload);
     navigate('/speaking');
@@ -466,7 +466,7 @@ export default function SpeakingModule({ isEditor }) {
             base44.entities.SpeakingExam.get(id).then((e) => setExam({
               ...e,
               annotations: e.annotations || {},
-              partA: e.part_a ? { ...e.part_a, focusIdeas: e.part_a.focus_ideas || e.part_a.focusIdeas || [] } : {},
+              partA: e.part_a ? { ...e.part_a, passageTitle: e.part_a.passage_title || e.part_a.passageTitle || '', focusIdeas: e.part_a.focus_ideas || e.part_a.focusIdeas || [] } : {},
               partB: e.part_b || []
             }));
           }, [id]);
@@ -484,7 +484,7 @@ export default function SpeakingModule({ isEditor }) {
             base44.entities.SpeakingExam.get(idStr).then((e) => setExam({
               ...e,
               annotations: e.annotations || {},
-              partA: e.part_a ? { ...e.part_a, focusIdeas: e.part_a.focus_ideas || e.part_a.focusIdeas || [] } : {},
+              partA: e.part_a ? { ...e.part_a, passageTitle: e.part_a.passage_title || e.part_a.passageTitle || '', focusIdeas: e.part_a.focus_ideas || e.part_a.focusIdeas || [] } : {},
               partB: e.part_b || []
             }));
           }, [idStr]);
