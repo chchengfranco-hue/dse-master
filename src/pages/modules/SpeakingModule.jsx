@@ -103,7 +103,8 @@ function SpeakingEditor({ exam, onSave, onCancel }) {
     title: exam?.title || '',
     topic: exam?.topic || '',
     subtopic: exam?.subtopic || '',
-    customCode: exam?.customCode || '',
+    customCode: exam?.customCode || exam?.custom_code || '',
+    examRef: exam?.examRef || exam?.exam_ref || '',
     status: exam?.status || 'published',
     intro: exam?.partA?.intro || '',
     passageTitle: exam?.partA?.passageTitle || '',
@@ -123,7 +124,7 @@ function SpeakingEditor({ exam, onSave, onCancel }) {
     const partB = qLines.map((line) => {const parts = line.split('|');return { q: parts[0].trim(), g: parts[1] ? parts[1].trim() : '' };});
     const annotations = {};
     form.annotationsText.split('\n').forEach((line) => {const idx = line.indexOf(':');if (idx > 0) {const w = line.slice(0, idx).trim(),m = line.slice(idx + 1).trim();if (w && m) annotations[w] = m;}});
-    onSave({ id: form.id, title: form.title.trim(), topic: form.topic.trim() || 'Uncategorized', subtopic: form.subtopic.trim() || 'General', customCode: form.customCode.trim(), partA: { intro: form.intro.trim(), passageTitle: form.passageTitle.trim(), passage: form.passage.trim(), situation: form.situation.trim(), focus: fArr, focusIdeas: gfArr }, partB, annotations, status: form.status });
+    onSave({ id: form.id, title: form.title.trim(), topic: form.topic.trim() || 'Uncategorized', subtopic: form.subtopic.trim() || 'General', customCode: form.customCode.trim(), examRef: (form.examRef || '').trim(), partA: { intro: form.intro.trim(), passageTitle: form.passageTitle.trim(), passage: form.passage.trim(), situation: form.situation.trim(), focus: fArr, focusIdeas: gfArr }, partB, annotations, status: form.status });
   };
   return (
     <div className="px-4 lg:px-8 py-6 max-w-3xl mx-auto">
@@ -134,8 +135,14 @@ function SpeakingEditor({ exam, onSave, onCancel }) {
           <input className="rounded-xl border border-input px-3 py-2 text-sm" placeholder="Sub-topic" value={form.subtopic} onChange={(e) => s('subtopic', e.target.value)} />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-          <input className="rounded-xl border border-input px-3 py-2 text-sm" placeholder="Exam Title (e.g. 2021 Paper 4)" value={form.title} onChange={(e) => s('title', e.target.value)} />
-          <input className="rounded-xl border border-input px-3 py-2 text-sm" placeholder="Custom Code (e.g. SP-001)" value={form.customCode} onChange={(e) => s('customCode', e.target.value)} />
+          <div>
+            <label className="text-xs font-semibold text-foreground mb-1 block">Exam / Paper Title <span className="text-destructive">*</span></label>
+            <input className="w-full rounded-xl border border-input px-3 py-2 text-sm" placeholder="e.g. Climate Change Discussion" value={form.title} onChange={(e) => s('title', e.target.value)} />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-foreground mb-1 block">Past Exam Paper Reference <span className="text-muted-foreground font-normal">(optional)</span></label>
+            <input className="w-full rounded-xl border border-input px-3 py-2 text-sm" placeholder="e.g. 2023 DSE Paper 4" value={form.examRef || ''} onChange={(e) => s('examRef', e.target.value)} />
+          </div>
         </div>
         <h3 className="text-sm font-bold text-primary mb-2 mt-4 border-b border-border pb-1">Part A: Group Discussion</h3>
         <input className="w-full rounded-xl border border-input px-3 py-2 text-sm mb-3" placeholder="Topic Introduction (e.g. You are doing a project on...)" value={form.intro} onChange={(e) => s('intro', e.target.value)} />
@@ -218,7 +225,7 @@ function SpeakingLibrary({ exams, isEditor, onView, onEdit, onDelete, onBulkImpo
                 <div className="flex flex-wrap gap-2 mt-2">
                   {p.topic && <span className="text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-medium">{p.topic}</span>}
                   {p.subtopic && p.subtopic !== 'General' && <span className="text-xs bg-secondary text-secondary-foreground px-2.5 py-0.5 rounded-full font-medium">{p.subtopic}</span>}
-                  
+                  {p.exam_ref && <span className="text-xs bg-sky-100 text-sky-700 px-2.5 py-0.5 rounded-full font-medium border border-sky-200">📄 {p.exam_ref}</span>}
                   {isEditor && p.status === 'draft' && <span className="text-xs bg-amber-100 text-amber-700 px-2.5 py-0.5 rounded-full font-semibold border border-amber-300">🔒 Draft</span>}
                 </div>
               </div>
@@ -318,7 +325,10 @@ function SpeakingReadView({ exam, isEditor, onBack, onSaveAnnotation }) {
 
       <div className="mb-4">
         <h2 className="text-2xl font-bold text-foreground mb-2">{exam.title}</h2>
-        {exam.topic && <span className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">{exam.topic}{exam.subtopic && exam.subtopic !== 'General' ? ` › ${exam.subtopic}` : ''}</span>}
+        <div className="flex flex-wrap gap-2 items-center">
+          {exam.topic && <span className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">{exam.topic}{exam.subtopic && exam.subtopic !== 'General' ? ` › ${exam.subtopic}` : ''}</span>}
+          {exam.exam_ref && <span className="text-xs bg-sky-100 text-sky-700 px-3 py-1 rounded-full font-medium border border-sky-200">📄 {exam.exam_ref}</span>}
+        </div>
       </div>
 
       {isEditor && <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 mb-5 text-sm"><strong>Editor Mode:</strong> Highlight any word to add/remove annotations.</div>}
@@ -422,7 +432,7 @@ export default function SpeakingModule({ isEditor }) {
   const { exams, loading, reload } = useSpeakingExams(isEditor);
 
   const saveExam = async (data) => {
-    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, custom_code: data.customCode || '', annotations: data.annotations || {}, part_a: { ...data.partA, focus_ideas: data.partA?.focusIdeas || [] }, part_b: data.partB || [], status: data.status || 'published', is_published: data.status !== 'draft' };
+    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, custom_code: data.customCode || '', exam_ref: data.examRef || '', annotations: data.annotations || {}, part_a: { ...data.partA, focus_ideas: data.partA?.focusIdeas || [] }, part_b: data.partB || [], status: data.status || 'published', is_published: data.status !== 'draft' };
     if (data.id) await contentApi.update('SpeakingExam', data.id, payload);else
     await contentApi.create('SpeakingExam', payload);
     navigate('/speaking');
