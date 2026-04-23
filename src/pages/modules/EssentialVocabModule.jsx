@@ -2,8 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { contentApi } from '@/lib/contentApi';
-import BulkPdfExport from '@/components/shared/BulkPdfExport';
-import { FileDown } from 'lucide-react';
+
 
 function useVocabSets(isEditor) {
   const [sets, setSets] = useState([]);
@@ -161,7 +160,6 @@ function EVEditor({ set, onSave, onCancel }) {
 function EVLibrary({ sets, isEditor, onView, onEdit, onDelete, onBulkImport }) {
   const [sel, setSel] = useState('All'); const [selSub, setSelSub] = useState(null);
   const [search, setSearch] = useState(''); const [page, setPage] = useState(1); const PER = 10;
-  const [showPdfExport, setShowPdfExport] = useState(false);
   const topicTree = {};
   sets.forEach(p => {
     const t = p.topic || 'Uncategorized', st = p.subtopic || 'General';
@@ -181,20 +179,9 @@ function EVLibrary({ sets, isEditor, onView, onEdit, onDelete, onBulkImport }) {
         <div><h1 className="text-2xl font-bold text-foreground">Essential Vocabulary</h1><p className="text-sm text-muted-foreground mt-1">HKDSE vocabulary sets with context passages</p></div>
         <div className="flex gap-2">
           {isEditor && onBulkImport && <button onClick={onBulkImport} className="px-3 py-2 bg-muted border border-border text-foreground rounded-xl text-sm font-semibold hover:bg-border select-none">📥 Import</button>}
-          {isEditor && <button onClick={() => setShowPdfExport(true)} className="flex items-center gap-1.5 px-3 py-2 bg-muted border border-border text-foreground rounded-xl text-sm font-semibold hover:bg-border transition-colors select-none"><FileDown className="w-4 h-4" /> PDF</button>}
           {isEditor && <button onClick={() => onEdit(null)} className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors select-none">+ Add Vocab Set</button>}
         </div>
       </div>
-      {showPdfExport && (
-        <BulkPdfExport
-          items={sets}
-          moduleLabel="Essential Vocabulary"
-          getTitle={s => s.title}
-          getMeta={s => [s.topic, s.subtopic && s.subtopic !== 'General' ? s.subtopic : ''].filter(Boolean).join(' › ')}
-          getBody={s => (s.passage ? `Context:\n${s.passage}\n\n` : '') + (s.vocabData || []).map(v => `${v.word} (${v.pos}) — ${v.meaning}${v.example ? '. E.g. ' + v.example : ''}`).join('\n')}
-          onClose={() => setShowPdfExport(false)}
-        />
-      )}
       <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search vocab sets..." className="w-full rounded-xl border border-input px-3 py-2 text-sm mb-5" />
       <div className="flex gap-5 items-start">
         <aside className="w-52 shrink-0 bg-card rounded-2xl border border-border p-4 hidden sm:block">

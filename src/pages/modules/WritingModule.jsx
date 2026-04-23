@@ -4,8 +4,7 @@ import { getTopicTree } from '@/pages/modules/TopicEditor';
 import { base44 } from '@/api/base44Client';
 import { contentApi } from '@/lib/contentApi';
 import RichTextArea from '@/components/shared/RichTextArea';
-import BulkPdfExport from '@/components/shared/BulkPdfExport';
-import { FileDown } from 'lucide-react';
+
 
 function useWritingModels(isEditor) {
   const [models, setModels] = useState([]);
@@ -202,7 +201,6 @@ function WritingEditor({ model, onSave, onCancel }) {
 function WritingLibrary({ models, isEditor, onView, onEdit, onDelete, onBulkImport }) {
   const [sel, setSel] = useState('All'); const [selSub, setSelSub] = useState(null);
   const [search, setSearch] = useState(''); const [page, setPage] = useState(1); const PER = 10;
-  const [showPdfExport, setShowPdfExport] = useState(false);
   const topicTree = {};
   models.forEach(p => {
     const t = p.topic || 'Uncategorized', st = p.subtopic || 'General';
@@ -222,7 +220,6 @@ function WritingLibrary({ models, isEditor, onView, onEdit, onDelete, onBulkImpo
         <div><h1 className="text-2xl font-bold text-foreground">Writing Models Library</h1><p className="text-sm text-muted-foreground mt-1">Sample essays and writing models for HKDSE</p></div>
         <div className="flex gap-2">
           {isEditor && onBulkImport && <button onClick={onBulkImport} className="px-3 py-2 bg-muted border border-border text-foreground rounded-xl text-sm font-semibold hover:bg-border select-none">📥 Import</button>}
-          {isEditor && <button onClick={() => setShowPdfExport(true)} className="flex items-center gap-1.5 px-3 py-2 bg-muted border border-border text-foreground rounded-xl text-sm font-semibold hover:bg-border transition-colors select-none"><FileDown className="w-4 h-4" /> PDF</button>}
           {isEditor && <button onClick={() => onEdit(null)} className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors select-none">+ Add Writing Model</button>}
         </div>
       </div>
@@ -271,16 +268,6 @@ function WritingLibrary({ models, isEditor, onView, onEdit, onDelete, onBulkImpo
           )}
         </div>
       </div>
-    {showPdfExport && (
-      <BulkPdfExport
-        items={models}
-        moduleLabel="Writing Models"
-        getTitle={m => m.title}
-        getMeta={m => [m.topic, m.subtopic && m.subtopic !== 'General' ? m.subtopic : ''].filter(Boolean).join(' › ')}
-        getBody={m => (m.question ? `Question:\n${m.question}\n\nModel Answer:\n${m.content}` : m.content)}
-        onClose={() => setShowPdfExport(false)}
-      />
-    )}
     </div>
   );
 }

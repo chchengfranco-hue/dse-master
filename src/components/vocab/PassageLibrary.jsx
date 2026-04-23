@@ -1,9 +1,7 @@
 import { useState } from 'react';
-import BulkPdfExport from '@/components/shared/BulkPdfExport';
-import { FileDown } from 'lucide-react';
+
 
 export default function PassageLibrary({ passages, isEditor, onRead, onEdit, onDelete, onBulkImport, onManageTopics }) {
-  const [showPdfExport, setShowPdfExport] = useState(false);
   const [sel, setSel] = useState('All');
   const [selSub, setSelSub] = useState(null);
   const [search, setSearch] = useState('');
@@ -41,9 +39,6 @@ export default function PassageLibrary({ passages, isEditor, onRead, onEdit, onD
             <button onClick={onManageTopics} className="px-3 py-2 bg-muted border border-border text-foreground rounded-xl text-sm font-semibold hover:bg-border transition-colors select-none">🗂 Topics</button>
           )}
           {isEditor && (
-            <button onClick={() => setShowPdfExport(true)} className="flex items-center gap-1.5 px-3 py-2 bg-muted border border-border text-foreground rounded-xl text-sm font-semibold hover:bg-border transition-colors select-none"><FileDown className="w-4 h-4" /> PDF</button>
-          )}
-          {isEditor && (
             <button onClick={() => onEdit(null)} className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors select-none">+ Add Passage</button>
           )}
         </div>
@@ -69,16 +64,6 @@ export default function PassageLibrary({ passages, isEditor, onRead, onEdit, onD
         )}
       </div>
 
-      {showPdfExport && (
-        <BulkPdfExport
-          items={passages}
-          moduleLabel="Reading Passages"
-          getTitle={p => p.title}
-          getMeta={p => [p.topic, p.subtopic && p.subtopic !== 'General' ? p.subtopic : ''].filter(Boolean).join(' › ')}
-          getBody={p => p.content}
-          onClose={() => setShowPdfExport(false)}
-        />
-      )}
       <div className="flex-1 min-w-0 space-y-3">
           {paged.length === 0 && <div className="text-center py-16 text-muted-foreground">No passages found.</div>}
           {paged.map(p => (

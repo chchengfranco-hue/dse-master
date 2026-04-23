@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { BookOpen, PenTool, Grid3X3, MessageSquare, Book, Users, CheckSquare, MoreHorizontal, ChevronLeft, TrendingUp } from 'lucide-react';
+import { BookOpen, PenTool, Grid3X3, MessageSquare, Book, Users, CheckSquare, MoreHorizontal, ChevronLeft, TrendingUp, FileDown } from 'lucide-react';
+import GlobalPdfExport from '@/components/shared/GlobalPdfExport';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/lib/UserContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -28,6 +29,7 @@ const baseModules = [
 export default function AppLayout() {
   const { isAuthenticated, isEditor, currentUser, login, logout, ready } = useUser();
   const [showMore, setShowMore] = useState(false);
+  const [showGlobalPdf, setShowGlobalPdf] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -127,6 +129,12 @@ export default function AppLayout() {
 
         {/* Right: user info + logout */}
         <div className="flex items-center gap-2 flex-1 justify-end">
+          {isEditor && !isChildRoute && (
+            <button onClick={() => setShowGlobalPdf(true)} className="flex items-center gap-1.5 text-sm bg-muted hover:bg-border px-3 py-1.5 rounded-lg transition-colors font-medium text-foreground border border-border select-none">
+              <FileDown className="w-4 h-4" />
+              <span className="hidden sm:inline">Export PDF</span>
+            </button>
+          )}
           <div className="hidden sm:flex items-center gap-1 bg-muted px-3 py-1.5 rounded-lg border border-border">
             <span className="text-sm font-medium text-foreground">{currentUser}</span>
             {isEditor && <span className="text-xs text-muted-foreground ml-1">(Editor)</span>}
@@ -204,6 +212,7 @@ export default function AppLayout() {
           </button>
         </div>
       </nav>
+      {showGlobalPdf && <GlobalPdfExport onClose={() => setShowGlobalPdf(false)} />}
     </div>);
 
 }
