@@ -1,30 +1,25 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
-import { useLocalData } from '@/hooks/useLocalData';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import PullRefreshIndicator from '@/components/shared/PullRefreshIndicator';
+import { base44 } from '@/api/base44Client';
 
-const STORAGE_KEY = 'grammarExercises';
-const DEFAULT = [
-  {
-    id: 1, title: 'Present Perfect vs Past Simple', topic: 'Tenses', subtopic: 'Perfect Tenses',
-    mcqData: [
-      { q: 'She ___ to the store yesterday.', opts: ['goes', 'went', 'has gone', 'going'], ansLetter: 'B', exp: '"Yesterday" indicates a completed past action → Past Simple.' },
-      { q: 'I ___ this movie three times so far.', opts: ['watched', 'watch', 'have watched', 'am watching'], ansLetter: 'C', exp: '"So far" indicates an experience up to now → Present Perfect.' },
-      { q: 'They ___ in Hong Kong since 2015.', opts: ['live', 'lived', 'have lived', 'are living'], ansLetter: 'C', exp: '"Since 2015" indicates an action from the past continuing to now → Present Perfect.' },
-    ],
-  },
-  {
-    id: 2, title: 'Passive Voice', topic: 'Grammar', subtopic: 'Passive Voice',
-    mcqData: [
-      { q: 'The letter ___ by the secretary this morning.', opts: ['typed', 'was typed', 'is typing', 'has typed'], ansLetter: 'B', exp: 'The subject receives the action → Passive Voice. "This morning" = past time.' },
-      { q: 'The project ___ before the deadline.', opts: ['completes', 'is completing', 'must be completed', 'completing'], ansLetter: 'C', exp: 'Modal + passive: must + be + past participle.' },
-    ],
-  },
-];
-
-const load = () => { try { const s = localStorage.getItem(STORAGE_KEY); return s ? JSON.parse(s) : DEFAULT; } catch { return DEFAULT; } };
-const persist = (d) => localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
+function useGrammarExercises() {
+  const [exercises, setExercises] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const load = async () => {
+    setLoading(true);
+    const data = await base44.entities.GrammarExercise.list('-created_date', 200);
+    // Normalize field names: ans_letter -> ansLetter
+    setExercises(data.map(e => ({
+      ...e,
+      mcqData: (e.mcq_data || []).map(q => ({ ...q, ansLetter: q.ans_letter || q.ansLetter, opts: q.opts || [] }))
+    })));
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+  return { exercises, setExercises, loading, reload: load };
+}
 
 // --- Editor ---
 function GrammarEditor({ exercise, onSave, onCancel }) {
@@ -245,36 +240,58 @@ function BulkImport({ onImport, onCancel }) {
 // --- Main ---
 export default function GrammarModule({ isEditor }) {
   const navigate = useNavigate();
-  const listRef = useRef(null);
-  const [exercises, setExercises] = useLocalData(STORAGE_KEY, DEFAULT);
-  const refreshing = usePullToRefresh(() => { setExercises(load()); }, listRef);
+  const { exercises, loading, reload } = useGrammarExercises();
 
-  const update = (data) => { setExercises(data); persist(data); };
-  const saveEx = (data) => {
-    if (data.id) update(exercises.map(e => e.id === data.id ? data : e));
-    else update([...exercises, { ...data, id: Date.now() }]);
+  const saveEx = async (data) => {
+    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, mcq_data: data.mcqData.map(q => ({ ...q, ans_letter: q.ansLetter })), is_published: true };
+    if (data.id) await base44.entities.GrammarExercise.update(data.id, payload);
+    else await base44.entities.GrammarExercise.create(payload);
     navigate('/grammar');
   };
 
   return (
     <Routes>
       <Route path="/grammar" element={
-        <GrammarLibrary exercises={exercises} isEditor={isEditor} refreshing={refreshing}
-          onView={p => navigate(`/grammar/practice/${p.id}`)}
-          onEdit={p => navigate(p ? `/grammar/edit/${p.id}` : '/grammar/edit/new')}
-          onDelete={id => update(exercises.filter(e => e.id !== id))}
-          onBulkImport={isEditor ? () => navigate('/grammar/bulk') : null}
-        />
+        loading
+          ? <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>
+          : <GrammarLibrary exercises={exercises} isEditor={isEditor} refreshing={false}
+              onView={p => navigate(`/grammar/practice/${p.id}`)}
+              onEdit={p => navigate(p ? `/grammar/edit/${p.id}` : '/grammar/edit/new')}
+              onDelete={async id => { await base44.entities.GrammarExercise.delete(id); reload(); }}
+              onBulkImport={null}
+            />
       } />
       <Route path="/grammar/practice/:id" element={(() => {
-        const W = () => { const [exs] = useLocalData(STORAGE_KEY, DEFAULT); const id = parseInt(window.location.pathname.split('/').pop()); const ex = exs.find(e => e.id === id) || exs[0]; return ex ? <GrammarPracticeView exercise={ex} onBack={() => navigate('/grammar')} /> : null; };
+        const W = () => {
+          const [ex, setEx] = useState(null);
+          const id = window.location.pathname.split('/').pop();
+          useEffect(() => {
+            base44.entities.GrammarExercise.get(id).then(e => setEx({
+              ...e,
+              mcqData: (e.mcq_data || []).map(q => ({ ...q, ansLetter: q.ans_letter || q.ansLetter }))
+            }));
+          }, [id]);
+          if (!ex) return <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>;
+          return <GrammarPracticeView exercise={ex} onBack={() => navigate('/grammar')} />;
+        };
         return <W />;
       })()} />
       <Route path="/grammar/edit/:id" element={(() => {
-        const W = () => { const [exs] = useLocalData(STORAGE_KEY, DEFAULT); const idStr = window.location.pathname.split('/').pop(); const ex = idStr === 'new' ? null : exs.find(e => e.id === parseInt(idStr)); return <GrammarEditor exercise={ex} onSave={saveEx} onCancel={() => navigate('/grammar')} />; };
+        const W = () => {
+          const [ex, setEx] = useState(undefined);
+          const idStr = window.location.pathname.split('/').pop();
+          useEffect(() => {
+            if (idStr === 'new') { setEx(null); return; }
+            base44.entities.GrammarExercise.get(idStr).then(e => setEx({
+              ...e,
+              mcqData: (e.mcq_data || []).map(q => ({ ...q, ansLetter: q.ans_letter || q.ansLetter }))
+            }));
+          }, [idStr]);
+          if (ex === undefined) return <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>;
+          return <GrammarEditor exercise={ex} onSave={saveEx} onCancel={() => navigate('/grammar')} />;
+        };
         return <W />;
       })()} />
-      <Route path="/grammar/bulk" element={<BulkImport onImport={(arr) => { update([...exercises, ...arr]); navigate('/grammar'); }} onCancel={() => navigate('/grammar')} />} />
     </Routes>
   );
 }

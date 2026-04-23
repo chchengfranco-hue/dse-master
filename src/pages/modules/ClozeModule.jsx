@@ -1,9 +1,20 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useLocalData } from '@/hooks/useLocalData';
-import { usePullToRefresh } from '@/hooks/usePullToRefresh';
-import PullRefreshIndicator from '@/components/shared/PullRefreshIndicator';
+import { base44 } from '@/api/base44Client';
+
+function useClozeExercises() {
+  const [exercises, setExercises] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const load = async () => {
+    setLoading(true);
+    const data = await base44.entities.ClozeExercise.list('-created_date', 200);
+    setExercises(data.map(e => ({ ...e, hasOptions: e.has_options || 'bank', annotations: e.annotations || {} })));
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+  return { exercises, loading, reload: load };
+}
 
 const STORAGE_KEY = 'clozeExercises';
 const DEFAULT = [
@@ -181,7 +192,6 @@ function ClozeLibrary({ exercises, isEditor, onView, onEdit, onDelete, onBulkImp
   const paged = filtered.slice((page - 1) * PER, page * PER);
   return (
     <div className="px-4 lg:px-8 py-6 max-w-5xl mx-auto">
-      <PullRefreshIndicator refreshing={refreshing} />
       <div className="flex items-center justify-between mb-6">
         <div><h1 className="text-2xl font-bold text-foreground">Cloze Exercises</h1><p className="text-sm text-muted-foreground mt-1">Fill-in-the-blank vocabulary exercises</p></div>
         <div className="flex gap-2">
@@ -333,40 +343,58 @@ function BulkImport({ onImport, onCancel }) {
 
 export default function ClozeModule({ isEditor }) {
   const navigate = useNavigate();
-  const listRef = useRef(null);
-  const [exercises, setExercises] = useLocalData(STORAGE_KEY, DEFAULT);
-  const refreshing = usePullToRefresh(() => { setExercises(load()); }, listRef);
+  const { exercises, loading, reload } = useClozeExercises();
 
-  const update = (data) => { setExercises(data); saveStorage(data); };
-  const saveExercise = (data) => {
-    if (data.id) update(exercises.map(e => e.id === data.id ? data : e));
-    else update([...exercises, { ...data, id: Date.now() }]);
+  const saveExercise = async (data) => {
+    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, has_options: data.hasOptions || 'bank', content: data.content, annotations: data.annotations || {}, is_published: true };
+    if (data.id) await base44.entities.ClozeExercise.update(data.id, payload);
+    else await base44.entities.ClozeExercise.create(payload);
     navigate('/cloze');
   };
-  const handleSaveAnnotation = (exId, word, meaning) => {
-    const updated = exercises.map(e => { if (e.id !== exId) return e; const a = { ...(e.annotations || {}) }; if (!meaning) delete a[word]; else a[word] = meaning; return { ...e, annotations: a }; });
-    update(updated);
+
+  const handleSaveAnnotation = async (exId, word, meaning) => {
+    const ex = await base44.entities.ClozeExercise.get(exId);
+    const annotations = { ...(ex.annotations || {}) };
+    if (!meaning) delete annotations[word]; else annotations[word] = meaning;
+    await base44.entities.ClozeExercise.update(exId, { annotations });
+    reload();
   };
 
   return (
     <Routes>
       <Route path="/cloze" element={
-        <ClozeLibrary exercises={exercises} isEditor={isEditor} refreshing={refreshing}
-          onView={p => navigate(`/cloze/read/${p.id}`)}
-          onEdit={p => navigate(p ? `/cloze/edit/${p.id}` : '/cloze/edit/new')}
-          onDelete={id => update(exercises.filter(e => e.id !== id))}
-          onBulkImport={isEditor ? () => navigate('/cloze/bulk') : null}
-        />
+        loading
+          ? <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>
+          : <ClozeLibrary exercises={exercises} isEditor={isEditor} refreshing={false}
+              onView={p => navigate(`/cloze/read/${p.id}`)}
+              onEdit={p => navigate(p ? `/cloze/edit/${p.id}` : '/cloze/edit/new')}
+              onDelete={async id => { await base44.entities.ClozeExercise.delete(id); reload(); }}
+              onBulkImport={null}
+            />
       } />
       <Route path="/cloze/read/:id" element={(() => {
-        const W = () => { const [exs] = useLocalData(STORAGE_KEY, DEFAULT); const id = parseInt(window.location.pathname.split('/').pop()); const ex = exs.find(e => e.id === id) || exs[0]; return ex ? <ClozeReadView exercise={ex} isEditor={isEditor} onBack={() => navigate('/cloze')} onSaveAnnotation={handleSaveAnnotation} /> : null; };
+        const W = () => {
+          const [ex, setEx] = useState(null);
+          const id = window.location.pathname.split('/').pop();
+          useEffect(() => { base44.entities.ClozeExercise.get(id).then(e => setEx({ ...e, hasOptions: e.has_options || 'bank', annotations: e.annotations || {} })); }, [id]);
+          if (!ex) return <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>;
+          return <ClozeReadView exercise={ex} isEditor={isEditor} onBack={() => navigate('/cloze')} onSaveAnnotation={handleSaveAnnotation} />;
+        };
         return <W />;
       })()} />
       <Route path="/cloze/edit/:id" element={(() => {
-        const W = () => { const [exs] = useLocalData(STORAGE_KEY, DEFAULT); const idStr = window.location.pathname.split('/').pop(); const ex = idStr === 'new' ? null : exs.find(e => e.id === parseInt(idStr)); return <ClozeEditor exercise={ex} onSave={saveExercise} onCancel={() => navigate('/cloze')} />; };
+        const W = () => {
+          const [ex, setEx] = useState(undefined);
+          const idStr = window.location.pathname.split('/').pop();
+          useEffect(() => {
+            if (idStr === 'new') { setEx(null); return; }
+            base44.entities.ClozeExercise.get(idStr).then(e => setEx({ ...e, hasOptions: e.has_options || 'bank', annotations: e.annotations || {} }));
+          }, [idStr]);
+          if (ex === undefined) return <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>;
+          return <ClozeEditor exercise={ex} onSave={saveExercise} onCancel={() => navigate('/cloze')} />;
+        };
         return <W />;
       })()} />
-      <Route path="/cloze/bulk" element={<BulkImport onImport={(arr) => { update([...exercises, ...arr.map(p => ({ ...p, id: Date.now() + Math.random() }))]); navigate('/cloze'); }} onCancel={() => navigate('/cloze')} />} />
     </Routes>
   );
 }

@@ -1,8 +1,19 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
-import { useLocalData } from '@/hooks/useLocalData';
-import { usePullToRefresh } from '@/hooks/usePullToRefresh';
-import PullRefreshIndicator from '@/components/shared/PullRefreshIndicator';
+import { base44 } from '@/api/base44Client';
+
+function useVocabSets() {
+  const [sets, setSets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const load = async () => {
+    setLoading(true);
+    const data = await base44.entities.VocabSet.list('-created_date', 200);
+    setSets(data.map(s => ({ ...s, vocabData: s.vocab_data || [], customCode: s.custom_code || '' })));
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+  return { sets, loading, reload: load };
+}
 
 const STORAGE_KEY = 'essentialVocabSets';
 
@@ -357,39 +368,50 @@ function EVBulkImport({ onImport, onCancel }) {
 // --- Main Module ---
 export default function EssentialVocabModule({ isEditor }) {
   const navigate = useNavigate();
-  const listRef = useRef(null);
-  const [sets, setSets] = useLocalData(STORAGE_KEY, defaultSets);
-  const refreshing = usePullToRefresh(() => { setSets(load()); }, listRef);
+  const { sets, loading, reload } = useVocabSets();
 
-  const update = (data) => { setSets(data); persist(data); };
-  const saveSet = (data) => {
-    if (data.id) update(sets.map(s => s.id === data.id ? data : s));
-    else update([...sets, { ...data, id: Date.now() }]);
+  const saveSet = async (data) => {
+    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, custom_code: data.customCode || '', passage: data.passage || '', vocab_data: data.vocabData || [], is_published: true };
+    if (data.id) await base44.entities.VocabSet.update(data.id, payload);
+    else await base44.entities.VocabSet.create(payload);
     navigate('/essential');
   };
 
   return (
     <Routes>
       <Route path="/essential" element={
-        <>
-          <PullRefreshIndicator refreshing={refreshing} />
-          <EVLibrary sets={sets} isEditor={isEditor}
-            onView={p => navigate(`/essential/read/${p.id}`)}
-            onEdit={p => navigate(p ? `/essential/edit/${p.id}` : '/essential/edit/new')}
-            onDelete={id => update(sets.filter(s => s.id !== id))}
-            onBulkImport={isEditor ? () => navigate('/essential/bulk') : undefined}
-          />
-        </>
+        loading
+          ? <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>
+          : <EVLibrary sets={sets} isEditor={isEditor}
+              onView={p => navigate(`/essential/read/${p.id}`)}
+              onEdit={p => navigate(p ? `/essential/edit/${p.id}` : '/essential/edit/new')}
+              onDelete={async id => { await base44.entities.VocabSet.delete(id); reload(); }}
+              onBulkImport={undefined}
+            />
       } />
       <Route path="/essential/read/:id" element={(() => {
-        const W = () => { const [ss] = useLocalData(STORAGE_KEY, defaultSets); const id = parseInt(window.location.pathname.split('/').pop()); const set = ss.find(s => s.id === id) || ss[0]; return set ? <EVReadView set={set} onBack={() => navigate('/essential')} /> : null; };
+        const W = () => {
+          const [set, setSet] = useState(null);
+          const id = window.location.pathname.split('/').pop();
+          useEffect(() => { base44.entities.VocabSet.get(id).then(s => setSet({ ...s, vocabData: s.vocab_data || [], customCode: s.custom_code || '' })); }, [id]);
+          if (!set) return <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>;
+          return <EVReadView set={set} onBack={() => navigate('/essential')} />;
+        };
         return <W />;
       })()} />
       <Route path="/essential/edit/:id" element={(() => {
-        const W = () => { const [ss] = useLocalData(STORAGE_KEY, defaultSets); const idStr = window.location.pathname.split('/').pop(); const set = idStr === 'new' ? null : ss.find(s => s.id === parseInt(idStr)); return <EVEditor set={set} onSave={saveSet} onCancel={() => navigate('/essential')} />; };
+        const W = () => {
+          const [set, setSet] = useState(undefined);
+          const idStr = window.location.pathname.split('/').pop();
+          useEffect(() => {
+            if (idStr === 'new') { setSet(null); return; }
+            base44.entities.VocabSet.get(idStr).then(s => setSet({ ...s, vocabData: s.vocab_data || [], customCode: s.custom_code || '' }));
+          }, [idStr]);
+          if (set === undefined) return <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>;
+          return <EVEditor set={set} onSave={saveSet} onCancel={() => navigate('/essential')} />;
+        };
         return <W />;
       })()} />
-      <Route path="/essential/bulk" element={<EVBulkImport onImport={(arr) => { update([...sets, ...arr.map(p => ({ ...p, id: Date.now() + Math.random() }))]); navigate('/essential'); }} onCancel={() => navigate('/essential')} />} />
     </Routes>
   );
 }

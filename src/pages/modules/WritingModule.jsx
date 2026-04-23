@@ -1,12 +1,20 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate, Routes, Route } from 'react-router-dom';
 import { TOPIC_TREE } from '@/lib/topicTree';
-import { useLocalData } from '@/hooks/useLocalData';
-import { usePullToRefresh } from '@/hooks/usePullToRefresh';
-import PullRefreshIndicator from '@/components/shared/PullRefreshIndicator';
+import { base44 } from '@/api/base44Client';
 
-const STORAGE_KEY = 'writingModels';
-
+function useWritingModels() {
+  const [models, setModels] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const load = async () => {
+    setLoading(true);
+    const data = await base44.entities.WritingModel.list('-created_date', 200);
+    setModels(data.map(m => ({ ...m, imageUrl: m.image_url || '', annotations: m.annotations || {} })));
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+  return { models, loading, reload: load };
+}
 
 const defaultModels = [
   {
@@ -63,9 +71,6 @@ In my view, the challenge lies not in eliminating social media but in cultivatin
     },
   },
 ];
-
-const load = () => { try { const s = localStorage.getItem(STORAGE_KEY); return s ? JSON.parse(s) : defaultModels; } catch { return defaultModels; } };
-const persist = (d) => localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
 
 function speak(text) { if (!('speechSynthesis' in window)) return; window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'en-US'; u.rate = 0.85; window.speechSynthesis.speak(u); }
 function getPoSClass(m) { const t = (m || '').trim().toLowerCase(); if (/^n\./.test(t)) return 'pos-noun'; if (/^v\./.test(t)) return 'pos-verb'; if (/^adj\./.test(t)) return 'pos-adj'; if (/^adv\./.test(t)) return 'pos-adv'; return 'pos-other'; }
@@ -369,48 +374,58 @@ function WritingBulkImport({ onImport, onCancel }) {
 // --- Main Module ---
 export default function WritingModule({ isEditor }) {
   const navigate = useNavigate();
-  const listRef = useRef(null);
-  const [models, setModels] = useLocalData(STORAGE_KEY, defaultModels);
-  const refreshing = usePullToRefresh(() => { setModels(load()); }, listRef);
+  const { models, loading, reload } = useWritingModels();
 
-  const update = (data) => { setModels(data); persist(data); };
-  const saveModel = (data) => {
-    if (data.id) update(models.map(m => m.id === data.id ? data : m));
-    else update([...models, { ...data, id: Date.now() }]);
+  const saveModel = async (data) => {
+    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, content: data.content, annotations: data.annotations || {}, image_url: data.imageUrl || '', question: data.question || '', is_published: true };
+    if (data.id) await base44.entities.WritingModel.update(data.id, payload);
+    else await base44.entities.WritingModel.create(payload);
     navigate('/writing');
   };
-  const handleSaveAnnotation = (modelId, word, meaning) => {
-    const updated = models.map(m => {
-      if (m.id !== modelId) return m;
-      const annotations = { ...(m.annotations || {}) };
-      if (!meaning) delete annotations[word]; else annotations[word] = meaning;
-      return { ...m, annotations };
-    });
-    update(updated);
+
+  const handleSaveAnnotation = async (modelId, word, meaning) => {
+    const model = await base44.entities.WritingModel.get(modelId);
+    const annotations = { ...(model.annotations || {}) };
+    if (!meaning) delete annotations[word]; else annotations[word] = meaning;
+    await base44.entities.WritingModel.update(modelId, { annotations });
+    reload();
   };
 
   return (
     <Routes>
       <Route path="/writing" element={
-        <>
-          <PullRefreshIndicator refreshing={refreshing} />
-          <WritingLibrary models={models} isEditor={isEditor}
-            onView={p => navigate(`/writing/read/${p.id}`)}
-            onEdit={p => navigate(p ? `/writing/edit/${p.id}` : '/writing/edit/new')}
-            onDelete={id => update(models.filter(m => m.id !== id))}
-            onBulkImport={isEditor ? () => navigate('/writing/bulk') : undefined}
-          />
-        </>
+        loading
+          ? <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>
+          : <WritingLibrary models={models} isEditor={isEditor}
+              onView={p => navigate(`/writing/read/${p.id}`)}
+              onEdit={p => navigate(p ? `/writing/edit/${p.id}` : '/writing/edit/new')}
+              onDelete={async id => { await base44.entities.WritingModel.delete(id); reload(); }}
+              onBulkImport={undefined}
+            />
       } />
       <Route path="/writing/read/:id" element={(() => {
-        const W = () => { const [ms] = useLocalData(STORAGE_KEY, defaultModels); const id = parseInt(window.location.pathname.split('/').pop()); const model = ms.find(m => m.id === id) || ms[0]; return model ? <WritingReadView model={model} isEditor={isEditor} onBack={() => navigate('/writing')} onSaveAnnotation={handleSaveAnnotation} /> : null; };
+        const W = () => {
+          const [model, setModel] = useState(null);
+          const id = window.location.pathname.split('/').pop();
+          useEffect(() => { base44.entities.WritingModel.get(id).then(m => setModel({ ...m, imageUrl: m.image_url || '', annotations: m.annotations || {} })); }, [id]);
+          if (!model) return <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>;
+          return <WritingReadView model={model} isEditor={isEditor} onBack={() => navigate('/writing')} onSaveAnnotation={handleSaveAnnotation} />;
+        };
         return <W />;
       })()} />
       <Route path="/writing/edit/:id" element={(() => {
-        const W = () => { const [ms] = useLocalData(STORAGE_KEY, defaultModels); const idStr = window.location.pathname.split('/').pop(); const model = idStr === 'new' ? null : ms.find(m => m.id === parseInt(idStr)); return <WritingEditor model={model} onSave={saveModel} onCancel={() => navigate('/writing')} />; };
+        const W = () => {
+          const [model, setModel] = useState(undefined);
+          const idStr = window.location.pathname.split('/').pop();
+          useEffect(() => {
+            if (idStr === 'new') { setModel(null); return; }
+            base44.entities.WritingModel.get(idStr).then(m => setModel({ ...m, imageUrl: m.image_url || '', annotations: m.annotations || {} }));
+          }, [idStr]);
+          if (model === undefined) return <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>;
+          return <WritingEditor model={model} onSave={saveModel} onCancel={() => navigate('/writing')} />;
+        };
         return <W />;
       })()} />
-      <Route path="/writing/bulk" element={<WritingBulkImport onImport={(arr) => { update([...models, ...arr.map(p => ({ ...p, id: Date.now() + Math.random() }))]); navigate('/writing'); }} onCancel={() => navigate('/writing')} />} />
     </Routes>
   );
 }

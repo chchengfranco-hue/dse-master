@@ -1,10 +1,24 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
-import { useLocalData } from '@/hooks/useLocalData';
-import { usePullToRefresh } from '@/hooks/usePullToRefresh';
-import PullRefreshIndicator from '@/components/shared/PullRefreshIndicator';
+import { base44 } from '@/api/base44Client';
 
-const STORAGE_KEY = 'speakingExams';
+function useSpeakingExams() {
+  const [exams, setExams] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const load = async () => {
+    setLoading(true);
+    const data = await base44.entities.SpeakingExam.list('-created_date', 200);
+    setExams(data.map(e => ({
+      ...e,
+      annotations: e.annotations || {},
+      partA: e.part_a ? { ...e.part_a, focusIdeas: e.part_a.focus_ideas || e.part_a.focusIdeas || [] } : {},
+      partB: e.part_b || [],
+    })));
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+  return { exams, loading, reload: load };
+}
 
 const defaultExams = [
 
@@ -37,9 +51,6 @@ const defaultExams = [
     },
   },
 ];
-
-const load = () => { try { const s = localStorage.getItem(STORAGE_KEY); return s ? JSON.parse(s) : defaultExams; } catch { return defaultExams; } };
-const persist = (d) => localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
 
 function speak(text) { if (!('speechSynthesis' in window)) return; window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'en-US'; u.rate = 0.95; window.speechSynthesis.speak(u); }
 
@@ -398,48 +409,70 @@ function SpeakingBulkImport({ onImport, onCancel }) {
 // --- Main Module ---
 export default function SpeakingModule({ isEditor }) {
   const navigate = useNavigate();
-  const listRef = useRef(null);
-  const [exams, setExams] = useLocalData(STORAGE_KEY, defaultExams);
-  const refreshing = usePullToRefresh(() => { setExams(load()); }, listRef);
+  const { exams, loading, reload } = useSpeakingExams();
 
-  const update = (data) => { setExams(data); persist(data); };
-  const saveExam = (data) => {
-    if (data.id) update(exams.map(e => e.id === data.id ? data : e));
-    else update([...exams, { ...data, id: Date.now() }]);
+  const saveExam = async (data) => {
+    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, custom_code: data.customCode || '', annotations: data.annotations || {}, part_a: { ...data.partA, focus_ideas: data.partA?.focusIdeas || [] }, part_b: data.partB || [], is_published: true };
+    if (data.id) await base44.entities.SpeakingExam.update(data.id, payload);
+    else await base44.entities.SpeakingExam.create(payload);
     navigate('/speaking');
   };
-  const handleSaveAnnotation = (examId, word, meaning) => {
-    const updated = exams.map(e => {
-      if (e.id !== examId) return e;
-      const annotations = { ...(e.annotations || {}) };
-      if (!meaning) delete annotations[word]; else annotations[word] = meaning;
-      return { ...e, annotations };
-    });
-    update(updated);
+
+  const handleSaveAnnotation = async (examId, word, meaning) => {
+    const exam = await base44.entities.SpeakingExam.get(examId);
+    const annotations = { ...(exam.annotations || {}) };
+    if (!meaning) delete annotations[word]; else annotations[word] = meaning;
+    await base44.entities.SpeakingExam.update(examId, { annotations });
+    reload();
   };
 
   return (
     <Routes>
       <Route path="/speaking" element={
-        <>
-          <PullRefreshIndicator refreshing={refreshing} />
-          <SpeakingLibrary exams={exams} isEditor={isEditor}
-            onView={p => navigate(`/speaking/read/${p.id}`)}
-            onEdit={p => navigate(p ? `/speaking/edit/${p.id}` : '/speaking/edit/new')}
-            onDelete={id => update(exams.filter(e => e.id !== id))}
-            onBulkImport={isEditor ? () => navigate('/speaking/bulk') : undefined}
-          />
-        </>
+        loading
+          ? <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>
+          : <SpeakingLibrary exams={exams} isEditor={isEditor}
+              onView={p => navigate(`/speaking/read/${p.id}`)}
+              onEdit={p => navigate(p ? `/speaking/edit/${p.id}` : '/speaking/edit/new')}
+              onDelete={async id => { await base44.entities.SpeakingExam.delete(id); reload(); }}
+              onBulkImport={undefined}
+            />
       } />
       <Route path="/speaking/read/:id" element={(() => {
-        const W = () => { const [es] = useLocalData(STORAGE_KEY, defaultExams); const id = parseInt(window.location.pathname.split('/').pop()); const exam = es.find(e => e.id === id) || es[0]; return exam ? <SpeakingReadView exam={exam} isEditor={isEditor} onBack={() => navigate('/speaking')} onSaveAnnotation={handleSaveAnnotation} /> : null; };
+        const W = () => {
+          const [exam, setExam] = useState(null);
+          const id = window.location.pathname.split('/').pop();
+          useEffect(() => {
+            base44.entities.SpeakingExam.get(id).then(e => setExam({
+              ...e,
+              annotations: e.annotations || {},
+              partA: e.part_a ? { ...e.part_a, focusIdeas: e.part_a.focus_ideas || e.part_a.focusIdeas || [] } : {},
+              partB: e.part_b || [],
+            }));
+          }, [id]);
+          if (!exam) return <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>;
+          return <SpeakingReadView exam={exam} isEditor={isEditor} onBack={() => navigate('/speaking')} onSaveAnnotation={handleSaveAnnotation} />;
+        };
         return <W />;
       })()} />
       <Route path="/speaking/edit/:id" element={(() => {
-        const W = () => { const [es] = useLocalData(STORAGE_KEY, defaultExams); const idStr = window.location.pathname.split('/').pop(); const exam = idStr === 'new' ? null : es.find(e => e.id === parseInt(idStr)); return <SpeakingEditor exam={exam} onSave={saveExam} onCancel={() => navigate('/speaking')} />; };
+        const W = () => {
+          const [exam, setExam] = useState(undefined);
+          const idStr = window.location.pathname.split('/').pop();
+          useEffect(() => {
+            if (idStr === 'new') { setExam(null); return; }
+            base44.entities.SpeakingExam.get(idStr).then(e => setExam({
+              ...e,
+              annotations: e.annotations || {},
+              partA: e.part_a ? { ...e.part_a, focusIdeas: e.part_a.focus_ideas || e.part_a.focusIdeas || [] } : {},
+              partB: e.part_b || [],
+            }));
+          }, [idStr]);
+          if (exam === undefined) return <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>;
+          return <SpeakingEditor exam={exam} onSave={saveExam} onCancel={() => navigate('/speaking')} />;
+        };
         return <W />;
       })()} />
-      <Route path="/speaking/bulk" element={<SpeakingBulkImport onImport={(arr) => { update([...exams, ...arr.map(p => ({ ...p, id: Date.now() + Math.random() }))]); navigate('/speaking'); }} onCancel={() => navigate('/speaking')} />} />
     </Routes>
   );
 }
