@@ -1,8 +1,11 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate, Routes, Route } from 'react-router-dom';
-import { TOPIC_TREE } from '@/lib/topicTree';
+import { getTopicTree } from '@/pages/modules/TopicEditor';
 import { base44 } from '@/api/base44Client';
 import { contentApi } from '@/lib/contentApi';
+import RichTextArea from '@/components/shared/RichTextArea';
+import BulkPdfExport from '@/components/shared/BulkPdfExport';
+import { FileDown } from 'lucide-react';
 
 function useWritingModels(isEditor) {
   const [models, setModels] = useState([]);
@@ -136,6 +139,7 @@ function WritingEditor({ model, onSave, onCancel }) {
     setForm(p => ({ ...p, topic: newTopic, subtopic: '' }));
   };
 
+  const TOPIC_TREE = getTopicTree();
   const subtopics = form.topic && TOPIC_TREE[form.topic] ? TOPIC_TREE[form.topic] : [];
 
   const handleSave = () => {
@@ -176,7 +180,7 @@ function WritingEditor({ model, onSave, onCancel }) {
         <p className="text-xs font-semibold text-foreground mb-1">Exam Question / Prompt</p>
         <textarea className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-24 resize-y mb-3" placeholder="Enter the exam question or writing prompt here..." value={form.question} onChange={e => s('question', e.target.value)} />
         <p className="text-xs font-semibold text-foreground mb-1">Model Essay / Writing</p>
-        <textarea className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-48 resize-y mb-3" placeholder="Paste the model essay or writing here..." value={form.content} onChange={e => s('content', e.target.value)} />
+        <RichTextArea value={form.content} onChange={v => s('content', v)} placeholder="Paste the model essay or writing here..." minHeight="min-h-48" />
         <p className="text-xs text-muted-foreground mb-2"><strong>Batch Annotations (Optional):</strong> <code className="bg-muted px-1 rounded">word: meaning</code> one per line.</p>
         <textarea className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-24 resize-y mb-5" placeholder={"word: definition\nword: definition"} value={form.annotationsText} onChange={e => s('annotationsText', e.target.value)} />
         <div className="flex items-center gap-3 mb-5 p-3 bg-muted/50 rounded-xl border border-border">
@@ -198,6 +202,7 @@ function WritingEditor({ model, onSave, onCancel }) {
 function WritingLibrary({ models, isEditor, onView, onEdit, onDelete, onBulkImport }) {
   const [sel, setSel] = useState('All'); const [selSub, setSelSub] = useState(null);
   const [search, setSearch] = useState(''); const [page, setPage] = useState(1); const PER = 10;
+  const [showPdfExport, setShowPdfExport] = useState(false);
   const topicTree = {};
   models.forEach(p => {
     const t = p.topic || 'Uncategorized', st = p.subtopic || 'General';
@@ -217,6 +222,7 @@ function WritingLibrary({ models, isEditor, onView, onEdit, onDelete, onBulkImpo
         <div><h1 className="text-2xl font-bold text-foreground">Writing Models Library</h1><p className="text-sm text-muted-foreground mt-1">Sample essays and writing models for HKDSE</p></div>
         <div className="flex gap-2">
           {isEditor && onBulkImport && <button onClick={onBulkImport} className="px-3 py-2 bg-muted border border-border text-foreground rounded-xl text-sm font-semibold hover:bg-border select-none">📥 Import</button>}
+          {isEditor && <button onClick={() => setShowPdfExport(true)} className="flex items-center gap-1.5 px-3 py-2 bg-muted border border-border text-foreground rounded-xl text-sm font-semibold hover:bg-border transition-colors select-none"><FileDown className="w-4 h-4" /> PDF</button>}
           {isEditor && <button onClick={() => onEdit(null)} className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors select-none">+ Add Writing Model</button>}
         </div>
       </div>
@@ -265,6 +271,16 @@ function WritingLibrary({ models, isEditor, onView, onEdit, onDelete, onBulkImpo
           )}
         </div>
       </div>
+    {showPdfExport && (
+      <BulkPdfExport
+        items={models}
+        moduleLabel="Writing Models"
+        getTitle={m => m.title}
+        getMeta={m => [m.topic, m.subtopic && m.subtopic !== 'General' ? m.subtopic : ''].filter(Boolean).join(' › ')}
+        getBody={m => (m.question ? `Question:\n${m.question}\n\nModel Answer:\n${m.content}` : m.content)}
+        onClose={() => setShowPdfExport(false)}
+      />
+    )}
     </div>
   );
 }

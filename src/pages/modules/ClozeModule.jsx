@@ -3,6 +3,9 @@ import { Routes, Route, useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { base44 } from '@/api/base44Client';
 import { contentApi } from '@/lib/contentApi';
+import BulkPdfExport from '@/components/shared/BulkPdfExport';
+import RichTextArea from '@/components/shared/RichTextArea';
+import { FileDown } from 'lucide-react';
 
 function useClozeExercises(isEditor) {
   const [exercises, setExercises] = useState([]);
@@ -173,7 +176,7 @@ function ClozeEditor({ exercise, onSave, onCancel }) {
           </Select>
         </div>
         <p className="text-xs text-muted-foreground mb-2">Enclose target words in brackets. Use pipe for explanation: <code className="bg-muted px-1 rounded">[word|explanation]</code>. For MCQ add wrong answers: <code className="bg-muted px-1 rounded">[fox/dog/cat|A wild animal]</code></p>
-        <textarea className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-48 resize-y mb-3" placeholder="Paste exercise content here..." value={form.content} onChange={e => set('content', e.target.value)} />
+        <RichTextArea value={form.content} onChange={v => set('content', v)} placeholder="Paste exercise content here..." minHeight="min-h-48" />
         <p className="text-xs text-muted-foreground mb-2"><strong>Batch Annotations (Optional):</strong> <code className="bg-muted px-1 rounded">word: meaning</code> one per line.</p>
         <textarea className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-24 resize-y mb-5" placeholder={"word: definition\nword: definition"} value={form.annotationsText} onChange={e => set('annotationsText', e.target.value)} />
         <div className="flex items-center gap-3 mb-5 p-3 bg-muted/50 rounded-xl border border-border">
@@ -194,6 +197,7 @@ function ClozeEditor({ exercise, onSave, onCancel }) {
 function ClozeLibrary({ exercises, isEditor, onView, onEdit, onDelete, onBulkImport, refreshing }) {
   const [selected, setSelected] = useState('All'); const [selSub, setSelSub] = useState(null);
   const [search, setSearch] = useState(''); const [page, setPage] = useState(1); const PER = 10;
+  const [showPdfExport, setShowPdfExport] = useState(false);
   const topicTree = {};
   exercises.forEach(p => { const t = p.topic || 'Uncategorized', st = p.subtopic || 'General'; if (!topicTree[t]) topicTree[t] = new Set(); if (st !== 'General') topicTree[t].add(st); });
   const filtered = exercises.filter(p => { const tm = selected === 'All' || (selSub ? p.topic === selected && p.subtopic === selSub : p.topic === selected); return tm && (!search || p.title.toLowerCase().includes(search.toLowerCase())); });
@@ -205,9 +209,20 @@ function ClozeLibrary({ exercises, isEditor, onView, onEdit, onDelete, onBulkImp
         <div><h1 className="text-2xl font-bold text-foreground">Cloze Exercises</h1><p className="text-sm text-muted-foreground mt-1">Fill-in-the-blank vocabulary exercises</p></div>
         <div className="flex gap-2">
           {isEditor && onBulkImport && <button onClick={onBulkImport} className="px-3 py-2 bg-muted border border-border text-foreground rounded-xl text-sm font-semibold hover:bg-border select-none">📥 Import</button>}
+          {isEditor && <button onClick={() => setShowPdfExport(true)} className="flex items-center gap-1.5 px-3 py-2 bg-muted border border-border text-foreground rounded-xl text-sm font-semibold hover:bg-border transition-colors select-none"><FileDown className="w-4 h-4" /> PDF</button>}
           {isEditor && <button onClick={() => onEdit(null)} className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 select-none">+ Add Exercise</button>}
         </div>
       </div>
+      {showPdfExport && (
+        <BulkPdfExport
+          items={exercises}
+          moduleLabel="Cloze Exercises"
+          getTitle={e => e.title}
+          getMeta={e => [e.topic, e.subtopic && e.subtopic !== 'General' ? e.subtopic : ''].filter(Boolean).join(' › ')}
+          getBody={e => (e.content || '').replace(/\[([^\]|/]+)(?:[/][^\]|]*)?(?:\|[^\]]+)?\]/g, '___')}
+          onClose={() => setShowPdfExport(false)}
+        />
+      )}
       <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search exercises..." className="w-full rounded-xl border border-input px-3 py-2 text-sm mb-5" />
       <div className="flex gap-5 items-start">
         <aside className="w-52 shrink-0 bg-card rounded-2xl border border-border p-4 hidden sm:block">

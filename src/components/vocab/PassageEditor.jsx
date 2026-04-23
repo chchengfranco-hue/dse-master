@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { TOPIC_TREE } from '@/lib/topicTree';
+import { getTopicTree } from '@/pages/modules/TopicEditor';
+import RichTextArea from '@/components/shared/RichTextArea';
 
 export default function PassageEditor({ passage, onSave, onCancel }) {
   const [form, setForm] = useState({
@@ -23,6 +24,7 @@ export default function PassageEditor({ passage, onSave, onCancel }) {
     setForm(p => ({ ...p, topic: e.target.value, subtopic: '' }));
   };
 
+  const TOPIC_TREE = getTopicTree();
   const subtopics = form.topic && TOPIC_TREE[form.topic] ? TOPIC_TREE[form.topic] : [];
 
   const handleSave = () => {
@@ -71,11 +73,11 @@ export default function PassageEditor({ passage, onSave, onCancel }) {
         <Input className="mb-3" placeholder="Passage Title" value={form.title} onChange={e => set('title', e.target.value)} />
         <Input className="mb-3" placeholder="Image URL (optional)" value={form.imageUrl} onChange={e => set('imageUrl', e.target.value)} />
 
-        <textarea
-          className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-48 resize-y mb-3 font-inherit"
-          placeholder="Paste passage content here..."
+        <RichTextArea
           value={form.content}
-          onChange={e => set('content', e.target.value)}
+          onChange={v => set('content', v)}
+          placeholder="Paste passage content here..."
+          minHeight="min-h-48"
         />
 
         <p className="text-xs text-muted-foreground mb-2">

@@ -7,6 +7,7 @@ import PullRefreshIndicator from '@/components/shared/PullRefreshIndicator';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { base44 } from '@/api/base44Client';
 import { contentApi } from '@/lib/contentApi';
+import TopicEditor from '@/pages/modules/TopicEditor';
 
 function usePassages(isEditor) {
   const [passages, setPassages] = useState([]);
@@ -68,6 +69,7 @@ function LibraryWrapper({ isEditor }) {
       onEdit={(p) => navigate(p ? `/vocab/edit/${p.id}` : '/vocab/edit/new')}
       onDelete={handleDelete}
       onBulkImport={null}
+      onManageTopics={isEditor ? () => navigate('/vocab/topics') : null}
     />
   );
 }
@@ -104,6 +106,7 @@ export default function VocabModule({ isEditor }) {
         };
         return <ReadWrapper />;
       })()} />
+      <Route path="/vocab/topics" element={<TopicEditor onClose={() => navigate('/vocab')} />} />
       <Route path="/vocab/edit/:id" element={(() => {
         const EditWrapper = () => {
           const navigate = useNavigate();

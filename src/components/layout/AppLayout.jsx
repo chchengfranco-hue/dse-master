@@ -62,6 +62,7 @@ export default function AppLayout() {
     if (p.includes('/read/') || p.includes('/practice/')) return 'Reading';
     if (p.includes('/edit/')) return 'Edit';
     if (p.includes('/bulk')) return 'Import';
+    if (p.includes('/topics')) return 'Manage Topics';
     return '';
   })();
 
