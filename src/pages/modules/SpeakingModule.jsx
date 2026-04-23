@@ -3,13 +3,14 @@ import { Routes, Route, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { contentApi } from '@/lib/contentApi';
 
-function useSpeakingExams() {
+function useSpeakingExams(isEditor) {
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
   const load = async () => {
     setLoading(true);
     const data = await base44.entities.SpeakingExam.list('-created_date', 200);
-    setExams(data.map(e => ({
+    const filtered = isEditor ? data : data.filter(e => e.status === 'published' || (e.status == null && e.is_published !== false));
+    setExams(filtered.map(e => ({
       ...e,
       annotations: e.annotations || {},
       partA: e.part_a ? { ...e.part_a, focusIdeas: e.part_a.focus_ideas || e.part_a.focusIdeas || [] } : {},
@@ -103,6 +104,7 @@ function SpeakingEditor({ exam, onSave, onCancel }) {
     topic: exam?.topic || '',
     subtopic: exam?.subtopic || '',
     customCode: exam?.customCode || '',
+    status: exam?.status || 'published',
     intro: exam?.partA?.intro || '',
     passageTitle: exam?.partA?.passageTitle || '',
     passage: exam?.partA?.passage || '',
@@ -121,7 +123,7 @@ function SpeakingEditor({ exam, onSave, onCancel }) {
     const partB = qLines.map(line => { const parts = line.split('|'); return { q: parts[0].trim(), g: parts[1] ? parts[1].trim() : '' }; });
     const annotations = {};
     form.annotationsText.split('\n').forEach(line => { const idx = line.indexOf(':'); if (idx > 0) { const w = line.slice(0, idx).trim(), m = line.slice(idx + 1).trim(); if (w && m) annotations[w] = m; } });
-    onSave({ id: form.id, title: form.title.trim(), topic: form.topic.trim() || 'Uncategorized', subtopic: form.subtopic.trim() || 'General', customCode: form.customCode.trim(), partA: { intro: form.intro.trim(), passageTitle: form.passageTitle.trim(), passage: form.passage.trim(), situation: form.situation.trim(), focus: fArr, focusIdeas: gfArr }, partB, annotations });
+    onSave({ id: form.id, title: form.title.trim(), topic: form.topic.trim() || 'Uncategorized', subtopic: form.subtopic.trim() || 'General', customCode: form.customCode.trim(), partA: { intro: form.intro.trim(), passageTitle: form.passageTitle.trim(), passage: form.passage.trim(), situation: form.situation.trim(), focus: fArr, focusIdeas: gfArr }, partB, annotations, status: form.status });
   };
   return (
     <div className="px-4 lg:px-8 py-6 max-w-3xl mx-auto">
@@ -149,6 +151,12 @@ function SpeakingEditor({ exam, onSave, onCancel }) {
         <h3 className="text-sm font-bold text-primary mb-2 border-b border-border pb-1">Annotations & Vocabulary</h3>
         <p className="text-xs text-muted-foreground mb-2">Format: <code className="bg-muted px-1 rounded">word: meaning</code> (one per line)</p>
         <textarea className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-20 resize-y mb-5" placeholder={"word: definition\nword: definition"} value={form.annotationsText} onChange={e => s('annotationsText', e.target.value)} />
+        <div className="flex items-center gap-3 mb-5 p-3 bg-muted/50 rounded-xl border border-border">
+          <span className="text-sm font-medium text-foreground">Status:</span>
+          <button onClick={() => s('status', 'draft')} className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${form.status === 'draft' ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground hover:bg-border'}`}>🔒 Draft</button>
+          <button onClick={() => s('status', 'published')} className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${form.status === 'published' ? 'bg-green-600 text-white' : 'bg-muted text-muted-foreground hover:bg-border'}`}>✅ Published</button>
+          <span className="text-xs text-muted-foreground ml-1">{form.status === 'draft' ? 'Only visible to editors' : 'Visible to all students'}</span>
+        </div>
         <div className="flex gap-2">
           <button onClick={handleSave} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors">Save Practice</button>
           <button onClick={onCancel} className="px-4 py-2 bg-muted text-foreground rounded-lg text-sm font-semibold hover:bg-border transition-colors border border-border">Cancel</button>
@@ -211,6 +219,7 @@ function SpeakingLibrary({ exams, isEditor, onView, onEdit, onDelete, onBulkImpo
                   {p.topic && <span className="text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-medium">{p.topic}</span>}
                   {p.subtopic && p.subtopic !== 'General' && <span className="text-xs bg-secondary text-secondary-foreground px-2.5 py-0.5 rounded-full font-medium">{p.subtopic}</span>}
                   {p.partB?.length > 0 && <span className="text-xs bg-muted text-muted-foreground px-2.5 py-0.5 rounded-full">{p.partB.length} Part B Qs</span>}
+                  {isEditor && p.status === 'draft' && <span className="text-xs bg-amber-100 text-amber-700 px-2.5 py-0.5 rounded-full font-semibold border border-amber-300">🔒 Draft</span>}
                 </div>
               </div>
               <div className="flex gap-2 shrink-0">
@@ -410,10 +419,10 @@ function SpeakingBulkImport({ onImport, onCancel }) {
 // --- Main Module ---
 export default function SpeakingModule({ isEditor }) {
   const navigate = useNavigate();
-  const { exams, loading, reload } = useSpeakingExams();
+  const { exams, loading, reload } = useSpeakingExams(isEditor);
 
   const saveExam = async (data) => {
-    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, custom_code: data.customCode || '', annotations: data.annotations || {}, part_a: { ...data.partA, focus_ideas: data.partA?.focusIdeas || [] }, part_b: data.partB || [], is_published: true };
+    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, custom_code: data.customCode || '', annotations: data.annotations || {}, part_a: { ...data.partA, focus_ideas: data.partA?.focusIdeas || [] }, part_b: data.partB || [], status: data.status || 'published', is_published: data.status !== 'draft' };
     if (data.id) await contentApi.update('SpeakingExam', data.id, payload);
     else await contentApi.create('SpeakingExam', payload);
     navigate('/speaking');

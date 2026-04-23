@@ -4,13 +4,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { base44 } from '@/api/base44Client';
 import { contentApi } from '@/lib/contentApi';
 
-function useClozeExercises() {
+function useClozeExercises(isEditor) {
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(true);
   const load = async () => {
     setLoading(true);
     const data = await base44.entities.ClozeExercise.list('-created_date', 200);
-    setExercises(data.map(e => ({ ...e, hasOptions: e.has_options || 'bank', annotations: e.annotations || {} })));
+    const filtered = isEditor ? data : data.filter(e => e.status === 'published' || (e.status == null && e.is_published !== false));
+    setExercises(filtered.map(e => ({ ...e, hasOptions: e.has_options || 'bank', annotations: e.annotations || {} })));
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
@@ -142,6 +143,7 @@ function ClozeEditor({ exercise, onSave, onCancel }) {
     id: exercise?.id || null, title: exercise?.title || '', topic: exercise?.topic || '',
     subtopic: exercise?.subtopic || '', hasOptions: exercise?.hasOptions || 'bank',
     content: exercise?.content || '',
+    status: exercise?.status || 'published',
     annotationsText: exercise?.annotations ? Object.entries(exercise.annotations).map(([k, v]) => `${k}: ${v}`).join('\n') : '',
   });
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
@@ -149,7 +151,7 @@ function ClozeEditor({ exercise, onSave, onCancel }) {
     if (!form.title.trim() || !form.content.trim()) return alert('Title and Content are required.');
     const annotations = {};
     form.annotationsText.split('\n').forEach(line => { const idx = line.indexOf(':'); if (idx > 0) { const w = line.slice(0, idx).trim(), m = line.slice(idx + 1).trim(); if (w && m) annotations[w] = m; } });
-    onSave({ id: form.id, title: form.title.trim(), topic: form.topic.trim() || 'Uncategorized', subtopic: form.subtopic.trim() || 'General', hasOptions: form.hasOptions, content: form.content.trim(), annotations });
+    onSave({ id: form.id, title: form.title.trim(), topic: form.topic.trim() || 'Uncategorized', subtopic: form.subtopic.trim() || 'General', hasOptions: form.hasOptions, content: form.content.trim(), annotations, status: form.status });
   };
   return (
     <div className="px-4 lg:px-8 py-6 max-w-3xl mx-auto">
@@ -174,6 +176,12 @@ function ClozeEditor({ exercise, onSave, onCancel }) {
         <textarea className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-48 resize-y mb-3" placeholder="Paste exercise content here..." value={form.content} onChange={e => set('content', e.target.value)} />
         <p className="text-xs text-muted-foreground mb-2"><strong>Batch Annotations (Optional):</strong> <code className="bg-muted px-1 rounded">word: meaning</code> one per line.</p>
         <textarea className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-24 resize-y mb-5" placeholder={"word: definition\nword: definition"} value={form.annotationsText} onChange={e => set('annotationsText', e.target.value)} />
+        <div className="flex items-center gap-3 mb-5 p-3 bg-muted/50 rounded-xl border border-border">
+          <span className="text-sm font-medium text-foreground">Status:</span>
+          <button onClick={() => set('status', 'draft')} className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${form.status === 'draft' ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground hover:bg-border'}`}>🔒 Draft</button>
+          <button onClick={() => set('status', 'published')} className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${form.status === 'published' ? 'bg-green-600 text-white' : 'bg-muted text-muted-foreground hover:bg-border'}`}>✅ Published</button>
+          <span className="text-xs text-muted-foreground ml-1">{form.status === 'draft' ? 'Only visible to editors' : 'Visible to all students'}</span>
+        </div>
         <div className="flex gap-2">
           <button onClick={handleSave} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:bg-primary/90 select-none">Save</button>
           <button onClick={onCancel} className="px-4 py-2 bg-muted text-foreground rounded-lg text-sm font-semibold hover:bg-border border border-border select-none">Cancel</button>
@@ -224,6 +232,7 @@ function ClozeLibrary({ exercises, isEditor, onView, onEdit, onDelete, onBulkImp
                   {p.topic && <span className="text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-medium">{p.topic}</span>}
                   {p.subtopic && p.subtopic !== 'General' && <span className="text-xs bg-secondary text-secondary-foreground px-2.5 py-0.5 rounded-full font-medium">{p.subtopic}</span>}
                   <span className="text-xs bg-muted text-muted-foreground px-2.5 py-0.5 rounded-full">{p.hasOptions === 'bank' ? 'Word Bank' : p.hasOptions === 'mcq' ? 'MCQ Dropdown' : 'Text Input'}</span>
+                  {isEditor && p.status === 'draft' && <span className="text-xs bg-amber-100 text-amber-700 px-2.5 py-0.5 rounded-full font-semibold border border-amber-300">🔒 Draft</span>}
                 </div>
               </div>
               <div className="flex gap-2 shrink-0">
@@ -344,10 +353,10 @@ function BulkImport({ onImport, onCancel }) {
 
 export default function ClozeModule({ isEditor }) {
   const navigate = useNavigate();
-  const { exercises, loading, reload } = useClozeExercises();
+  const { exercises, loading, reload } = useClozeExercises(isEditor);
 
   const saveExercise = async (data) => {
-    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, has_options: data.hasOptions || 'bank', content: data.content, annotations: data.annotations || {}, is_published: true };
+    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, has_options: data.hasOptions || 'bank', content: data.content, annotations: data.annotations || {}, status: data.status || 'published', is_published: data.status !== 'draft' };
     if (data.id) await contentApi.update('ClozeExercise', data.id, payload);
     else await contentApi.create('ClozeExercise', payload);
     navigate('/cloze');

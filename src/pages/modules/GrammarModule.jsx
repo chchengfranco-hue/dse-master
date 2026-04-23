@@ -5,14 +5,14 @@ import PullRefreshIndicator from '@/components/shared/PullRefreshIndicator';
 import { base44 } from '@/api/base44Client';
 import { contentApi } from '@/lib/contentApi';
 
-function useGrammarExercises() {
+function useGrammarExercises(isEditor) {
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(true);
   const load = async () => {
     setLoading(true);
     const data = await base44.entities.GrammarExercise.list('-created_date', 200);
-    // Normalize field names: ans_letter -> ansLetter
-    setExercises(data.map(e => ({
+    const filtered = isEditor ? data : data.filter(e => e.status === 'published' || (e.status == null && e.is_published !== false));
+    setExercises(filtered.map(e => ({
       ...e,
       mcqData: (e.mcq_data || []).map(q => ({ ...q, ansLetter: q.ans_letter || q.ansLetter, opts: q.opts || [] }))
     })));
@@ -29,6 +29,7 @@ function GrammarEditor({ exercise, onSave, onCancel }) {
     title: exercise?.title || '',
     topic: exercise?.topic || '',
     subtopic: exercise?.subtopic || '',
+    status: exercise?.status || 'published',
     batchData: exercise?.mcqData ? exercise.mcqData.map(q => `${q.q} | ${q.opts[0]} | ${q.opts[1]} | ${q.opts[2]} | ${q.opts[3]} | ${q.ansLetter} | ${q.exp}`).join('\n') : '',
   });
   const s = (k, v) => setForm(p => ({ ...p, [k]: v }));
@@ -41,7 +42,7 @@ function GrammarEditor({ exercise, onSave, onCancel }) {
       if (parts.length < 6) { alert(`Error on line ${i + 1}: Not enough parts`); return; }
       mcqData.push({ q: parts[0], opts: [parts[1], parts[2], parts[3], parts[4]], ansLetter: (parts[5] || 'A').toUpperCase(), exp: parts[6] || '' });
     }
-    onSave({ id: form.id, title: form.title.trim(), topic: form.topic.trim() || 'Uncategorized', subtopic: form.subtopic.trim() || 'General', mcqData });
+    onSave({ id: form.id, title: form.title.trim(), topic: form.topic.trim() || 'Uncategorized', subtopic: form.subtopic.trim() || 'General', mcqData, status: form.status });
   };
   return (
     <div className="px-4 lg:px-8 py-6 max-w-3xl mx-auto">
@@ -56,6 +57,12 @@ function GrammarEditor({ exercise, onSave, onCancel }) {
         <p className="text-xs text-muted-foreground mb-1">Format: <code className="bg-muted px-1 rounded">Question | A | B | C | D | Answer | Explanation</code></p>
         <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 mb-3">Example: <code>She ___ yesterday. | goes | went | has gone | going | B | "Yesterday" = Past Simple.</code></p>
         <textarea className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-48 resize-y mb-5" placeholder={"I ___ an apple every day. | eat | ate | eaten | eating | A | Habitual action = Present Simple."} value={form.batchData} onChange={e => s('batchData', e.target.value)} />
+        <div className="flex items-center gap-3 mb-5 p-3 bg-muted/50 rounded-xl border border-border">
+          <span className="text-sm font-medium text-foreground">Status:</span>
+          <button onClick={() => s('status', 'draft')} className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${form.status === 'draft' ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground hover:bg-border'}`}>🔒 Draft</button>
+          <button onClick={() => s('status', 'published')} className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${form.status === 'published' ? 'bg-green-600 text-white' : 'bg-muted text-muted-foreground hover:bg-border'}`}>✅ Published</button>
+          <span className="text-xs text-muted-foreground ml-1">{form.status === 'draft' ? 'Only visible to editors' : 'Visible to all students'}</span>
+        </div>
         <div className="flex gap-2">
           <button onClick={handleSave} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors select-none">Save Exercise</button>
           <button onClick={onCancel} className="px-4 py-2 bg-muted text-foreground rounded-lg text-sm font-semibold hover:bg-border transition-colors border border-border select-none">Cancel</button>
@@ -107,6 +114,7 @@ function GrammarLibrary({ exercises, isEditor, onView, onEdit, onDelete, onBulkI
                 <div className="flex flex-wrap gap-2 mt-2">
                   {p.topic && <span className="text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-medium">{p.topic}</span>}
                   {p.subtopic && p.subtopic !== 'General' && <span className="text-xs bg-secondary text-secondary-foreground px-2.5 py-0.5 rounded-full font-medium">{p.subtopic}</span>}
+                  {isEditor && p.status === 'draft' && <span className="text-xs bg-amber-100 text-amber-700 px-2.5 py-0.5 rounded-full font-semibold border border-amber-300">🔒 Draft</span>}
                 </div>
               </div>
               <div className="flex gap-2 shrink-0">
@@ -241,10 +249,10 @@ function BulkImport({ onImport, onCancel }) {
 // --- Main ---
 export default function GrammarModule({ isEditor }) {
   const navigate = useNavigate();
-  const { exercises, loading, reload } = useGrammarExercises();
+  const { exercises, loading, reload } = useGrammarExercises(isEditor);
 
   const saveEx = async (data) => {
-    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, mcq_data: data.mcqData.map(q => ({ ...q, ans_letter: q.ansLetter })), is_published: true };
+    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, mcq_data: data.mcqData.map(q => ({ ...q, ans_letter: q.ansLetter })), status: data.status || 'published', is_published: data.status !== 'draft' };
     if (data.id) await contentApi.update('GrammarExercise', data.id, payload);
     else await contentApi.create('GrammarExercise', payload);
     navigate('/grammar');

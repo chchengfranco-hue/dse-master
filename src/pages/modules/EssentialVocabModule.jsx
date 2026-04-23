@@ -3,13 +3,14 @@ import { Routes, Route, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { contentApi } from '@/lib/contentApi';
 
-function useVocabSets() {
+function useVocabSets(isEditor) {
   const [sets, setSets] = useState([]);
   const [loading, setLoading] = useState(true);
   const load = async () => {
     setLoading(true);
     const data = await base44.entities.VocabSet.list('-created_date', 200);
-    setSets(data.map(s => ({ ...s, vocabData: s.vocab_data || [], customCode: s.custom_code || '' })));
+    const filtered = isEditor ? data : data.filter(s => s.status === 'published' || (s.status == null && s.is_published !== false));
+    setSets(filtered.map(s => ({ ...s, vocabData: s.vocab_data || [], customCode: s.custom_code || '' })));
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
@@ -108,6 +109,7 @@ function EVEditor({ set, onSave, onCancel }) {
     subtopic: set?.subtopic || '',
     customCode: set?.customCode || '',
     passage: set?.passage || '',
+    status: set?.status || 'published',
     batchVocab: set?.vocabData ? set.vocabData.map(v => `${v.word} | ${v.pos} | ${v.meaning} | ${v.example}`).join('\n') : '',
   });
   const s = (k, v) => setForm(p => ({ ...p, [k]: v }));
@@ -117,7 +119,7 @@ function EVEditor({ set, onSave, onCancel }) {
       const parts = line.split('|');
       return { word: (parts[0] || '').trim(), pos: (parts[1] || '').trim(), meaning: (parts[2] || '').trim(), example: (parts[3] || '').trim() };
     }).filter(v => v.word);
-    onSave({ id: form.id, title: form.title.trim(), topic: form.topic.trim() || 'Uncategorized', subtopic: form.subtopic.trim() || 'General', customCode: form.customCode.trim(), passage: form.passage.trim(), vocabData });
+    onSave({ id: form.id, title: form.title.trim(), topic: form.topic.trim() || 'Uncategorized', subtopic: form.subtopic.trim() || 'General', customCode: form.customCode.trim(), passage: form.passage.trim(), vocabData, status: form.status });
   };
   return (
     <div className="px-4 lg:px-8 py-6 max-w-3xl mx-auto">
@@ -138,6 +140,12 @@ function EVEditor({ set, onSave, onCancel }) {
         <p className="text-xs text-muted-foreground mb-1">Format: <code className="bg-muted px-1 rounded">Word | PoS | Meaning | Example Sentence</code> (one per line)</p>
         <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 mb-3">PoS: n. (Noun), v. (Verb), adj. (Adjective), adv. (Adverb)</p>
         <textarea className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-48 resize-y mb-5" placeholder={"abandon | v. | to leave behind | They abandoned the car.\nrapidly | adv. | very quickly | The disease spread rapidly."} value={form.batchVocab} onChange={e => s('batchVocab', e.target.value)} />
+        <div className="flex items-center gap-3 mb-5 p-3 bg-muted/50 rounded-xl border border-border">
+          <span className="text-sm font-medium text-foreground">Status:</span>
+          <button onClick={() => s('status', 'draft')} className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${form.status === 'draft' ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground hover:bg-border'}`}>🔒 Draft</button>
+          <button onClick={() => s('status', 'published')} className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${form.status === 'published' ? 'bg-green-600 text-white' : 'bg-muted text-muted-foreground hover:bg-border'}`}>✅ Published</button>
+          <span className="text-xs text-muted-foreground ml-1">{form.status === 'draft' ? 'Only visible to editors' : 'Visible to all students'}</span>
+        </div>
         <div className="flex gap-2">
           <button onClick={handleSave} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors">Save Vocab Set</button>
           <button onClick={onCancel} className="px-4 py-2 bg-muted text-foreground rounded-lg text-sm font-semibold hover:bg-border transition-colors border border-border">Cancel</button>
@@ -200,6 +208,7 @@ function EVLibrary({ sets, isEditor, onView, onEdit, onDelete, onBulkImport }) {
                   {p.topic && <span className="text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-medium">{p.topic}</span>}
                   {p.subtopic && p.subtopic !== 'General' && <span className="text-xs bg-secondary text-secondary-foreground px-2.5 py-0.5 rounded-full font-medium">{p.subtopic}</span>}
                   {p.vocabData?.length > 0 && <span className="text-xs bg-muted text-muted-foreground px-2.5 py-0.5 rounded-full">{p.vocabData.length} words</span>}
+                  {isEditor && p.status === 'draft' && <span className="text-xs bg-amber-100 text-amber-700 px-2.5 py-0.5 rounded-full font-semibold border border-amber-300">🔒 Draft</span>}
                 </div>
               </div>
               <div className="flex gap-2 shrink-0">
@@ -369,10 +378,10 @@ function EVBulkImport({ onImport, onCancel }) {
 // --- Main Module ---
 export default function EssentialVocabModule({ isEditor }) {
   const navigate = useNavigate();
-  const { sets, loading, reload } = useVocabSets();
+  const { sets, loading, reload } = useVocabSets(isEditor);
 
   const saveSet = async (data) => {
-    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, custom_code: data.customCode || '', passage: data.passage || '', vocab_data: data.vocabData || [], is_published: true };
+    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, custom_code: data.customCode || '', passage: data.passage || '', vocab_data: data.vocabData || [], status: data.status || 'published', is_published: data.status !== 'draft' };
     if (data.id) await contentApi.update('VocabSet', data.id, payload);
     else await contentApi.create('VocabSet', payload);
     navigate('/essential');

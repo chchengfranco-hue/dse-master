@@ -4,13 +4,14 @@ import { TOPIC_TREE } from '@/lib/topicTree';
 import { base44 } from '@/api/base44Client';
 import { contentApi } from '@/lib/contentApi';
 
-function useWritingModels() {
+function useWritingModels(isEditor) {
   const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(true);
   const load = async () => {
     setLoading(true);
     const data = await base44.entities.WritingModel.list('-created_date', 200);
-    setModels(data.map(m => ({ ...m, imageUrl: m.image_url || '', annotations: m.annotations || {} })));
+    const filtered = isEditor ? data : data.filter(m => m.status === 'published' || (m.status == null && m.is_published !== false));
+    setModels(filtered.map(m => ({ ...m, imageUrl: m.image_url || '', annotations: m.annotations || {} })));
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
@@ -124,6 +125,7 @@ function WritingEditor({ model, onSave, onCancel }) {
     imageUrl: model?.imageUrl || '',
     question: model?.question || '',
     content: model?.content || '',
+    status: model?.status || 'published',
     annotationsText: model?.annotations ? Object.entries(model.annotations).map(([k, v]) => `${k}: ${v}`).join('\n') : '',
   });
   const s = (k, v) => setForm(p => ({ ...p, [k]: v }));
@@ -140,7 +142,7 @@ function WritingEditor({ model, onSave, onCancel }) {
     if (!form.title.trim() || !form.content.trim()) return alert('Title and Content are required.');
     const annotations = {};
     form.annotationsText.split('\n').forEach(line => { const idx = line.indexOf(':'); if (idx > 0) { const w = line.slice(0, idx).trim(), m = line.slice(idx + 1).trim(); if (w && m) annotations[w] = m; } });
-    onSave({ id: form.id, title: form.title.trim(), topic: form.topic || 'Uncategorized', subtopic: form.subtopic || 'General', imageUrl: form.imageUrl.trim(), question: form.question.trim(), content: form.content.trim(), annotations });
+    onSave({ id: form.id, title: form.title.trim(), topic: form.topic || 'Uncategorized', subtopic: form.subtopic || 'General', imageUrl: form.imageUrl.trim(), question: form.question.trim(), content: form.content.trim(), annotations, status: form.status });
   };
   return (
     <div className="px-4 lg:px-8 py-6 max-w-3xl mx-auto">
@@ -177,6 +179,12 @@ function WritingEditor({ model, onSave, onCancel }) {
         <textarea className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-48 resize-y mb-3" placeholder="Paste the model essay or writing here..." value={form.content} onChange={e => s('content', e.target.value)} />
         <p className="text-xs text-muted-foreground mb-2"><strong>Batch Annotations (Optional):</strong> <code className="bg-muted px-1 rounded">word: meaning</code> one per line.</p>
         <textarea className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-24 resize-y mb-5" placeholder={"word: definition\nword: definition"} value={form.annotationsText} onChange={e => s('annotationsText', e.target.value)} />
+        <div className="flex items-center gap-3 mb-5 p-3 bg-muted/50 rounded-xl border border-border">
+          <span className="text-sm font-medium text-foreground">Status:</span>
+          <button onClick={() => s('status', 'draft')} className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${form.status === 'draft' ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground hover:bg-border'}`}>🔒 Draft</button>
+          <button onClick={() => s('status', 'published')} className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${form.status === 'published' ? 'bg-green-600 text-white' : 'bg-muted text-muted-foreground hover:bg-border'}`}>✅ Published</button>
+          <span className="text-xs text-muted-foreground ml-1">{form.status === 'draft' ? 'Only visible to editors' : 'Visible to all students'}</span>
+        </div>
         <div className="flex gap-2">
           <button onClick={handleSave} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors">Save</button>
           <button onClick={onCancel} className="px-4 py-2 bg-muted text-foreground rounded-lg text-sm font-semibold hover:bg-border transition-colors border border-border">Cancel</button>
@@ -236,6 +244,7 @@ function WritingLibrary({ models, isEditor, onView, onEdit, onDelete, onBulkImpo
                 <div className="flex flex-wrap gap-2 mt-2">
                   {p.topic && <span className="text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-medium">{p.topic}</span>}
                   {p.subtopic && p.subtopic !== 'General' && <span className="text-xs bg-secondary text-secondary-foreground px-2.5 py-0.5 rounded-full font-medium">{p.subtopic}</span>}
+                  {isEditor && p.status === 'draft' && <span className="text-xs bg-amber-100 text-amber-700 px-2.5 py-0.5 rounded-full font-semibold border border-amber-300">🔒 Draft</span>}
                 </div>
               </div>
               <div className="flex gap-2 shrink-0">
@@ -375,10 +384,10 @@ function WritingBulkImport({ onImport, onCancel }) {
 // --- Main Module ---
 export default function WritingModule({ isEditor }) {
   const navigate = useNavigate();
-  const { models, loading, reload } = useWritingModels();
+  const { models, loading, reload } = useWritingModels(isEditor);
 
   const saveModel = async (data) => {
-    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, content: data.content, annotations: data.annotations || {}, image_url: data.imageUrl || '', question: data.question || '', is_published: true };
+    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, content: data.content, annotations: data.annotations || {}, image_url: data.imageUrl || '', question: data.question || '', status: data.status || 'published', is_published: data.status !== 'draft' };
     if (data.id) await contentApi.update('WritingModel', data.id, payload);
     else await contentApi.create('WritingModel', payload);
     navigate('/writing');

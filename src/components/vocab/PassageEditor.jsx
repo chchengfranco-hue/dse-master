@@ -11,6 +11,7 @@ export default function PassageEditor({ passage, onSave, onCancel }) {
     subtopic: passage?.subtopic || '',
     imageUrl: passage?.imageUrl || '',
     content: passage?.content || '',
+    status: passage?.status || 'published',
     annotationsText: passage?.annotations
       ? Object.entries(passage.annotations).map(([k, v]) => `${k}: ${v}`).join('\n')
       : '',
@@ -35,7 +36,7 @@ export default function PassageEditor({ passage, onSave, onCancel }) {
         if (word && meaning) annotations[word] = meaning;
       }
     });
-    onSave({ id: form.id, title: form.title.trim(), topic: form.topic || 'Uncategorized', subtopic: form.subtopic || 'General', imageUrl: form.imageUrl.trim(), content: form.content.trim(), annotations });
+    onSave({ id: form.id, title: form.title.trim(), topic: form.topic || 'Uncategorized', subtopic: form.subtopic || 'General', imageUrl: form.imageUrl.trim(), content: form.content.trim(), annotations, status: form.status });
   };
 
   return (
@@ -87,6 +88,14 @@ export default function PassageEditor({ passage, onSave, onCancel }) {
           value={form.annotationsText}
           onChange={e => set('annotationsText', e.target.value)}
         />
+
+        {/* Status toggle */}
+        <div className="flex items-center gap-3 mb-5 p-3 bg-muted/50 rounded-xl border border-border">
+          <span className="text-sm font-medium text-foreground">Status:</span>
+          <button onClick={() => set('status', 'draft')} className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${form.status === 'draft' ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground hover:bg-border'}`}>🔒 Draft</button>
+          <button onClick={() => set('status', 'published')} className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${form.status === 'published' ? 'bg-green-600 text-white' : 'bg-muted text-muted-foreground hover:bg-border'}`}>✅ Published</button>
+          <span className="text-xs text-muted-foreground ml-1">{form.status === 'draft' ? 'Only visible to editors' : 'Visible to all students'}</span>
+        </div>
 
         <div className="flex gap-2">
           <Button onClick={handleSave}>Save Passage</Button>

@@ -8,13 +8,14 @@ import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { base44 } from '@/api/base44Client';
 import { contentApi } from '@/lib/contentApi';
 
-function usePassages() {
+function usePassages(isEditor) {
   const [passages, setPassages] = useState([]);
   const [loading, setLoading] = useState(true);
   const load = async () => {
     setLoading(true);
     const data = await base44.entities.ReadingPassage.list('-created_date', 200);
-    setPassages(data.map(p => ({ ...p, imageUrl: p.image_url || '' })));
+    const filtered = isEditor ? data : data.filter(p => p.status === 'published' || (p.status == null && p.is_published !== false));
+    setPassages(filtered.map(p => ({ ...p, imageUrl: p.image_url || '' })));
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
@@ -49,7 +50,7 @@ function BulkImport({ onImport, onCancel }) {
 
 function LibraryWrapper({ isEditor }) {
   const navigate = useNavigate();
-  const { passages, reload, loading } = usePassages();
+  const { passages, reload, loading } = usePassages(isEditor);
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this passage?')) return;
@@ -75,7 +76,7 @@ export default function VocabModule({ isEditor }) {
   const navigate = useNavigate();
 
   const savePassage = async (data) => {
-    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, content: data.content, annotations: data.annotations, image_url: data.imageUrl || '', is_published: true };
+    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, content: data.content, annotations: data.annotations, image_url: data.imageUrl || '', status: data.status || 'published', is_published: data.status !== 'draft' };
     if (data.id && data.id !== 'new') await contentApi.update('ReadingPassage', data.id, payload);
     else await contentApi.create('ReadingPassage', payload);
     navigate('/vocab');
