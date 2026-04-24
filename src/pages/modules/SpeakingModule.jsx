@@ -307,23 +307,28 @@ function SpeakingReadView({ exam, isEditor, onBack, onSaveAnnotation }) {
   const annotationCount = Object.keys(annotations).length;
 
   return (
-    <div className="px-4 lg:px-8 py-6 max-w-5xl mx-auto">
-      <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
-        <button onClick={onBack} className="px-3 py-1.5 bg-card border border-border rounded-lg text-sm hover:bg-muted transition-colors">← Back to Library</button>
-        <div className="flex flex-wrap gap-2">
-          <button onClick={playFull} className="text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg font-medium transition-colors">🔊 Read Paper</button>
-          <button onClick={() => {const s = window.getSelection()?.toString().trim();if (s) speak(s);else alert('Please highlight text first.');}} className="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg font-medium transition-colors">🔊 Read Selection</button>
-          <button onClick={() => window.speechSynthesis?.cancel()} className="text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg font-medium transition-colors">⏹ Stop</button>
+    <div className="px-4 lg:px-8 py-6 max-w-4xl mx-auto">
+
+      {/* Top bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <button onClick={onBack} className="flex items-center gap-1.5 px-3 py-1.5 bg-card border border-border rounded-lg text-sm hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
+          ← Back
+        </button>
+        <div className="flex flex-wrap gap-1.5">
+          <button onClick={playFull} className="text-xs bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg font-medium transition-colors">🔊 Read</button>
+          <button onClick={() => {const s = window.getSelection()?.toString().trim();if (s) speak(s);else alert('Please highlight text first.');}} className="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg font-medium transition-colors">🔊 Selection</button>
+          <button onClick={() => window.speechSynthesis?.cancel()} className="text-xs bg-rose-500 hover:bg-rose-600 text-white px-3 py-1.5 rounded-lg font-medium transition-colors">⏹ Stop</button>
           {annotationCount > 0 && <>
-            <button onClick={() => setShowRuby((v) => !v)} className={`text-xs px-3 py-1.5 rounded-lg font-medium border transition-colors ${showRuby ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-muted text-muted-foreground border-border hover:bg-accent'}`}>📖 {showRuby ? 'Hide' : 'Show'} Annotations</button>
-            <button onClick={() => setShowMargin((v) => !v)} className={`text-xs px-3 py-1.5 rounded-lg font-medium border transition-colors ${showMargin ? 'bg-primary/10 text-primary border-primary/30' : 'bg-muted text-muted-foreground border-border hover:bg-accent'}`}>💬 {showMargin ? 'Hide' : 'Show'} Margin</button>
+            <button onClick={() => setShowRuby((v) => !v)} className={`text-xs px-3 py-1.5 rounded-lg font-medium border transition-colors ${showRuby ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-muted text-muted-foreground border-border hover:bg-accent'}`}>📖 {showRuby ? 'Hide' : 'Ruby'}</button>
+            <button onClick={() => setShowMargin((v) => !v)} className={`text-xs px-3 py-1.5 rounded-lg font-medium border transition-colors ${showMargin ? 'bg-primary/10 text-primary border-primary/30' : 'bg-muted text-muted-foreground border-border hover:bg-accent'}`}>💬 {showMargin ? 'Hide' : 'Margin'}</button>
           </>}
           <button onClick={() => handlePrint(true)} className="text-xs bg-card border border-border text-foreground hover:bg-muted px-3 py-1.5 rounded-lg font-medium transition-colors select-none">🖨️ Print</button>
-          <button onClick={() => handlePrint(false)} className="text-xs bg-card border border-border text-foreground hover:bg-muted px-3 py-1.5 rounded-lg font-medium transition-colors select-none">🖨️ Print (No Hints)</button>
+          <button onClick={() => handlePrint(false)} className="text-xs bg-card border border-border text-foreground hover:bg-muted px-3 py-1.5 rounded-lg font-medium transition-colors select-none">🖨️ No Hints</button>
         </div>
       </div>
 
-      <div className="mb-4">
+      {/* Title & meta */}
+      <div className="mb-6">
         <h2 className="text-2xl font-bold text-foreground mb-2">{exam.title}</h2>
         <div className="flex flex-wrap gap-2 items-center">
           {exam.topic && <span className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">{exam.topic}{exam.subtopic && exam.subtopic !== 'General' ? ` › ${exam.subtopic}` : ''}</span>}
@@ -334,74 +339,117 @@ function SpeakingReadView({ exam, isEditor, onBack, onSaveAnnotation }) {
       {isEditor && <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 mb-5 text-sm"><strong>Editor Mode:</strong> Highlight any word to add/remove annotations.</div>}
 
       <div className="flex gap-5 items-start">
-        <div className="flex-1 min-w-0 bg-card rounded-2xl border border-border p-6 text-base leading-relaxed space-y-5" onMouseUp={handleTextSelect}>
-          {/* Part A */}
-          <div>
-            <h3 className="text-lg font-bold text-primary border-b-2 border-sky-200 pb-2 mb-4">Part A: Group Discussion</h3>
-            {pA.intro && <p className="italic text-muted-foreground mb-3"><AnnotatedContent text={pA.intro} annotations={annotations} showRuby={showRuby} activeWord={activeWord} onWordClick={handleWordClick} /></p>}
-            {(pA.passageTitle || pA.passage) &&
-            <div className="border-l-4 border-primary bg-sky-50 rounded-r-xl p-4 mb-4 whitespace-pre-wrap">
-                {pA.passageTitle && <strong className="block text-foreground mb-2">{pA.passageTitle}</strong>}
-                {pA.passage && <AnnotatedContent text={pA.passage} annotations={annotations} showRuby={showRuby} activeWord={activeWord} onWordClick={handleWordClick} />}
-              </div>
-            }
-            {pA.situation && <p className="mb-4"><strong>Your Task:</strong><br /><AnnotatedContent text={pA.situation} annotations={annotations} showRuby={showRuby} activeWord={activeWord} onWordClick={handleWordClick} /></p>}
-            {pA.focus?.some((f) => f) &&
-            <div>
-                <p className="font-semibold mb-2">You may want to talk about:</p>
-                <ul className="space-y-3 pl-4">
-                  {pA.focus.map((f, i) => f ?
-                <li key={i} className="list-disc">
-                      <AnnotatedContent text={f} annotations={annotations} showRuby={showRuby} activeWord={activeWord} onWordClick={handleWordClick} />
-                      {pA.focusIdeas?.[i] &&
-                  <div className="brainstorm-hint mt-2 bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-3 py-2 text-sm whitespace-pre-wrap">
-                          💡 <strong>Brainstorming Ideas:</strong><br />{pA.focusIdeas[i]}
+        <div className="flex-1 min-w-0 space-y-4" onMouseUp={handleTextSelect}>
+
+          {/* Part A card */}
+          <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
+            <div className="bg-primary/5 border-b border-border px-5 py-3">
+              <h3 className="text-sm font-bold text-primary tracking-wide uppercase">Part A — Group Discussion</h3>
+            </div>
+            <div className="p-5 space-y-4 text-base leading-relaxed">
+              {pA.intro && <p className="italic text-muted-foreground"><AnnotatedContent text={pA.intro} annotations={annotations} showRuby={showRuby} activeWord={activeWord} onWordClick={handleWordClick} /></p>}
+              {(pA.passageTitle || pA.passage) &&
+                <div className="bg-sky-50 border border-sky-200 rounded-xl p-4">
+                  {pA.passageTitle && <p className="font-bold text-foreground mb-2 text-base">{pA.passageTitle}</p>}
+                  {pA.passage && <span className="whitespace-pre-wrap text-foreground"><AnnotatedContent text={pA.passage} annotations={annotations} showRuby={showRuby} activeWord={activeWord} onWordClick={handleWordClick} /></span>}
+                </div>
+              }
+              {pA.situation &&
+                <div className="bg-muted/60 rounded-xl px-4 py-3 border border-border">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1">Your Task</p>
+                  <AnnotatedContent text={pA.situation} annotations={annotations} showRuby={showRuby} activeWord={activeWord} onWordClick={handleWordClick} />
+                </div>
+              }
+              {pA.focus?.some((f) => f) &&
+                <div>
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">You may want to talk about:</p>
+                  <ul className="space-y-3">
+                    {pA.focus.map((f, i) => f ?
+                      <li key={i} className="flex gap-3">
+                        <span className="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center">{i + 1}</span>
+                        <div className="flex-1 min-w-0">
+                          <AnnotatedContent text={f} annotations={annotations} showRuby={showRuby} activeWord={activeWord} onWordClick={handleWordClick} />
+                          {pA.focusIdeas?.[i] &&
+                            <div className="brainstorm-hint mt-2 bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-3 py-2 text-sm whitespace-pre-wrap">
+                              💡 <strong>Brainstorming Ideas:</strong><br />{pA.focusIdeas[i]}
+                            </div>
+                          }
                         </div>
-                  }
-                    </li> :
-                null)}
-                </ul>
-              </div>
-            }
+                      </li> : null
+                    )}
+                  </ul>
+                </div>
+              }
+            </div>
           </div>
-          {/* Part B */}
+
+          {/* Part B card */}
           {exam.partB?.length > 0 &&
-          <div>
-              <h3 className="text-lg font-bold text-primary border-b-2 border-sky-200 pb-2 mb-4">Part B: Individual Response</h3>
-              <ol className="space-y-4 pl-4">
-                {exam.partB.map((item, i) =>
-              <li key={i} className="list-decimal">
-                    <AnnotatedContent text={item.q} annotations={annotations} showRuby={showRuby} activeWord={activeWord} onWordClick={handleWordClick} />
-                    {item.g &&
-                <div className="brainstorm-hint mt-2 bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-3 py-2 text-sm whitespace-pre-wrap">
-                        💡 <strong>Brainstorming Guidelines:</strong><br />{item.g}
+            <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
+              <div className="bg-primary/5 border-b border-border px-5 py-3">
+                <h3 className="text-sm font-bold text-primary tracking-wide uppercase">Part B — Individual Response</h3>
+              </div>
+              <div className="p-5">
+                <ol className="space-y-4">
+                  {exam.partB.map((item, i) =>
+                    <li key={i} className="flex gap-3">
+                      <span className="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center">{i + 1}</span>
+                      <div className="flex-1 min-w-0 text-base leading-relaxed">
+                        <AnnotatedContent text={item.q} annotations={annotations} showRuby={showRuby} activeWord={activeWord} onWordClick={handleWordClick} />
+                        {item.g &&
+                          <div className="brainstorm-hint mt-2 bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-3 py-2 text-sm whitespace-pre-wrap">
+                            💡 <strong>Brainstorming Guidelines:</strong><br />{item.g}
+                          </div>
+                        }
                       </div>
-                }
-                  </li>
-              )}
-              </ol>
+                    </li>
+                  )}
+                </ol>
+              </div>
+            </div>
+          }
+
+          {/* Annotation list below passage */}
+          {annotationCount > 0 &&
+            <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
+              <div className="bg-muted/50 border-b border-border px-5 py-3">
+                <h3 className="text-sm font-bold text-foreground tracking-wide uppercase">📚 Vocabulary & Annotations</h3>
+              </div>
+              <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {Object.entries(annotations).map(([word, meaning]) =>
+                  <div key={word}
+                    onMouseEnter={() => setActiveWord(word)}
+                    onMouseLeave={() => setActiveWord(null)}
+                    onClick={() => speak(word)}
+                    className={`flex items-start gap-3 rounded-xl px-3 py-2.5 cursor-pointer border transition-all duration-150 ${posColorBorder(meaning)} ${activeWord === word ? 'shadow-md scale-[1.01]' : 'hover:shadow-sm'}`}>
+                    <div className="min-w-0">
+                      <strong className="block text-sm text-primary">{word}</strong>
+                      <span className="text-xs text-foreground/80">{meaning}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           }
         </div>
 
         {showMargin && annotationCount > 0 &&
-        <aside className="w-40 shrink-0 flex flex-col gap-2.5 pt-1">
+          <aside className="w-40 shrink-0 flex flex-col gap-2.5 pt-1">
             {Object.entries(annotations).map(([word, meaning]) =>
-          <div key={word} onMouseEnter={() => setActiveWord(word)} onMouseLeave={() => setActiveWord(null)}
-          className={`rounded-lg px-3 py-2 text-[11px] leading-snug cursor-pointer transition-all duration-150 ${posColorBorder(meaning)} ${activeWord === word ? 'shadow-md -translate-x-0.5' : ''}`}>
+              <div key={word} onMouseEnter={() => setActiveWord(word)} onMouseLeave={() => setActiveWord(null)}
+                className={`rounded-lg px-3 py-2 text-[11px] leading-snug cursor-pointer transition-all duration-150 ${posColorBorder(meaning)} ${activeWord === word ? 'shadow-md -translate-x-0.5' : ''}`}>
                 <strong className="block text-[12px] text-primary mb-0.5">{word}</strong>{meaning}
               </div>
-          )}
+            )}
           </aside>
         }
       </div>
 
       {activeWord && !showMargin && !showRuby &&
-      <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-2.5 rounded-xl text-sm shadow-xl z-50 max-w-xs text-center pointer-events-none">
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-2.5 rounded-xl text-sm shadow-xl z-50 max-w-xs text-center pointer-events-none">
           <strong className="block text-primary">{activeWord}</strong>{annotations[activeWord]}
         </div>
       }
-
 
     </div>);
 
