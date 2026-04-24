@@ -9,16 +9,10 @@ const MODULES = [
   { key: 'vocab',    label: 'Essential Vocabulary', icon: Book,      entity: 'VocabSet',        getTitle: i => i.title, getMeta: i => [i.topic, i.subtopic && i.subtopic !== 'General' ? i.subtopic : ''].filter(Boolean).join(' › '), getBody: i => (i.passage ? `Context:\n${i.passage}\n\n` : '') + (i.vocab_data || []).map(v => `${v.word} (${v.pos || ''}) — ${v.meaning}${v.example ? '. E.g. ' + v.example : ''}`).join('\n'), getAnnotations: i => ({}) },
 ];
 
-function buildPrintHtml(selectedItems, mod) {
+function buildPrintHtml(selectedItems, mod, annotLayout = 'below') {
   const itemsHtml = selectedItems.map((item, idx) => {
     const title = (mod.getTitle(item) || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const meta = (mod.getMeta(item) || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    const rawBody = (mod.getBody(item) || '')
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/_(.*?)_/g, '<em>$1</em>')
-      .replace(/</g, c => c === '<' ? '&lt;' : c)
-      .replace(/\n/g, '<br/>');
-    // Re-apply the bold/italic replacements after escaping
     const body = (mod.getBody(item) || '')
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -27,19 +21,36 @@ function buildPrintHtml(selectedItems, mod) {
 
     const annotations = mod.getAnnotations(item);
     const annotEntries = Object.entries(annotations);
-    const annotHtml = annotEntries.length > 0 ? `
+
+    const annotListHtml = annotEntries.length > 0 ? annotEntries.map(([word, meaning]) => `
+      <div class="annot-item">
+        <span class="annot-word">${word.replace(/</g,'&lt;')}</span>
+        <span class="annot-meaning">${(meaning || '').replace(/</g,'&lt;')}</span>
+      </div>
+    `).join('') : '';
+
+    const annotBelowHtml = annotEntries.length > 0 ? `
       <div class="annot-box">
         <div class="annot-title">📚 Vocabulary &amp; Annotations</div>
-        <div class="annot-grid">
-          ${annotEntries.map(([word, meaning]) => `
-            <div class="annot-item">
-              <span class="annot-word">${word.replace(/</g,'&lt;')}</span>
-              <span class="annot-meaning">${(meaning || '').replace(/</g,'&lt;')}</span>
-            </div>
-          `).join('')}
-        </div>
+        <div class="annot-grid">${annotListHtml}</div>
       </div>
     ` : '';
+
+    const annotSideHtml = annotEntries.length > 0 ? `
+      <div class="annot-side">
+        <div class="annot-title">📚 Vocab</div>
+        ${annotEntries.map(([word, meaning]) => `
+          <div class="annot-side-item">
+            <span class="annot-word">${word.replace(/</g,'&lt;')}</span>
+            <span class="annot-meaning">${(meaning || '').replace(/</g,'&lt;')}</span>
+          </div>
+        `).join('')}
+      </div>
+    ` : '';
+
+    const contentHtml = annotLayout === 'right' && annotEntries.length > 0
+      ? `<div class="two-col"><div class="item-body">${body}</div>${annotSideHtml}</div>`
+      : `<div class="item-body">${body}</div>${annotBelowHtml}`;
 
     return `
       <div class="item ${idx > 0 ? 'page-break' : ''}">
@@ -50,8 +61,7 @@ function buildPrintHtml(selectedItems, mod) {
             ${meta ? `<div class="item-meta">${meta}</div>` : ''}
           </div>
         </div>
-        <div class="item-body">${body}</div>
-        ${annotHtml}
+        ${contentHtml}
       </div>
     `;
   }).join('');
@@ -142,6 +152,21 @@ function buildPrintHtml(selectedItems, mod) {
   .annot-item { display: flex; gap: 6px; align-items: baseline; }
   .annot-word { font-weight: 700; color: #5b21b6; font-size: 10pt; white-space: nowrap; }
   .annot-meaning { font-size: 10pt; color: #444; }
+  /* Side column layout */
+  .two-col { display: flex; gap: 16px; align-items: flex-start; }
+  .two-col .item-body { flex: 1; min-width: 0; }
+  .annot-side {
+    width: 160px;
+    flex-shrink: 0;
+    background: #f5f3ff;
+    border-left: 3px solid #7c3aed;
+    border-radius: 6px;
+    padding: 10px 10px;
+  }
+  .annot-side .annot-title { font-size: 8pt; font-weight: 700; color: #5b21b6; margin-bottom: 8px; letter-spacing: 0.05em; }
+  .annot-side-item { margin-bottom: 7px; }
+  .annot-side-item .annot-word { display: block; font-size: 9.5pt; }
+  .annot-side-item .annot-meaning { display: block; font-size: 9pt; color: #555; }
   @media print {
     body { padding: 0; }
     .cover { min-height: 100vh; }
@@ -171,6 +196,7 @@ export default function GlobalPdfExport({ onClose }) {
   const [generating, setGenerating] = useState(false);
   const [filterTopic, setFilterTopic] = useState('');
   const [filterSubtopic, setFilterSubtopic] = useState('');
+  const [annotLayout, setAnnotLayout] = useState('below'); // 'below' | 'right'
 
   useEffect(() => {
     if (!activeModule) return;
@@ -226,7 +252,7 @@ export default function GlobalPdfExport({ onClose }) {
     const mod = MODULES.find(m => m.key === activeModule);
     const selectedItems = items.filter(i => selected.has(i.id));
 
-    const html = buildPrintHtml(selectedItems, mod);
+    const html = buildPrintHtml(selectedItems, mod, annotLayout);
     const printWin = window.open('', '_blank', 'width=900,height=700');
     printWin.document.write(html);
     printWin.document.close();
@@ -362,13 +388,27 @@ export default function GlobalPdfExport({ onClose }) {
             </div>
 
             {/* Footer */}
-            <div className="px-5 py-4 border-t border-border shrink-0 flex gap-2 justify-end bg-card">
+            <div className="px-5 py-4 border-t border-border shrink-0 bg-card space-y-3">
+              {/* Annotation layout toggle */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground font-medium shrink-0">Annotations:</span>
+                <button onClick={() => setAnnotLayout('below')}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${annotLayout === 'below' ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-foreground border-border hover:bg-border'}`}>
+                  Below passage
+                </button>
+                <button onClick={() => setAnnotLayout('right')}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${annotLayout === 'right' ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-foreground border-border hover:bg-border'}`}>
+                  Right column
+                </button>
+              </div>
+              <div className="flex gap-2 justify-end">
               <button onClick={() => setActiveModule(null)} className="px-4 py-2 bg-muted border border-border text-foreground rounded-xl text-sm font-medium hover:bg-border transition-colors">Back</button>
               <button onClick={exportPdf} disabled={generating || selected.size === 0}
                 className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2">
                 {generating ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <FileDown className="w-4 h-4" />}
                 {generating ? 'Generating…' : `Export${selected.size > 0 ? ` (${selected.size})` : ''} PDF`}
               </button>
+              </div>
             </div>
           </>
         )}
