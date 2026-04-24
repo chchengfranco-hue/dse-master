@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { BookOpen, PenTool, Layers, MessageSquare, Book, Users, MoreHorizontal, ChevronLeft, TrendingUp, FileDown, Grid3X3, CheckSquare } from 'lucide-react';
+import { BookOpen, PenTool, Layers, MessageSquare, Book, Users, MoreHorizontal, ChevronLeft, TrendingUp, FileDown, Grid3X3, CheckSquare, Globe } from 'lucide-react';
+import HotIssuesModule from '@/pages/modules/HotIssuesModule';
 import GlobalPdfExport from '@/components/shared/GlobalPdfExport';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/lib/UserContext';
@@ -22,6 +23,7 @@ const baseModules = [
 { id: 'essential', icon: Book, label: 'Vocab' },
 { id: 'speaking', icon: MessageSquare, label: 'Speaking' },
 { id: 'progress', icon: TrendingUp, label: 'Progress' },
+{ id: 'hotissues', icon: Globe, label: 'Hot Issues' },
 ];
 
 
@@ -43,6 +45,7 @@ export default function AppLayout() {
     if (p.startsWith('/speaking')) return 'speaking';
     if (p.startsWith('/users')) return 'users';
     if (p.startsWith('/progress')) return 'progress';
+    if (p.startsWith('/hotissues')) return 'hotissues';
     if (p.startsWith('/vocab')) return 'vocab';
     return isEditor ? 'vocab' : 'progress'; // students see progress first
   })();
@@ -54,7 +57,7 @@ export default function AppLayout() {
   // Detect if we're on a child/detail route (not the module root)
   const isChildRoute = (() => {
     const p = location.pathname;
-    const roots = ['/vocab', '/writing', '/cloze', '/essential', '/speaking', '/grammar', '/users', '/progress', '/'];
+    const roots = ['/vocab', '/writing', '/cloze', '/essential', '/speaking', '/grammar', '/users', '/progress', '/hotissues', '/'];
     return !roots.includes(p);
   })();
 
@@ -172,6 +175,7 @@ export default function AppLayout() {
             {activeModule === 'grammar' && <GrammarModule isEditor={isEditor} />}
             {activeModule === 'users' && isEditor && <UserManagement />}
             {activeModule === 'progress' && <Progress />}
+            {activeModule === 'hotissues' && <HotIssuesModule isEditor={isEditor} />}
           </motion.div>
         </AnimatePresence>
       </main>
