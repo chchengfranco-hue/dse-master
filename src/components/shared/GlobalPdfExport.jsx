@@ -415,7 +415,7 @@ export default function GlobalPdfExport({ onClose }) {
             {/* Footer */}
             <div className="px-5 py-4 border-t border-border shrink-0 bg-card space-y-3">
               {/* Annotation layout toggle */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs text-muted-foreground font-medium shrink-0">Annotations:</span>
                 <button onClick={() => setAnnotLayout('below')}
                   className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${annotLayout === 'below' ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-foreground border-border hover:bg-border'}`}>
@@ -425,6 +425,14 @@ export default function GlobalPdfExport({ onClose }) {
                   className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${annotLayout === 'right' ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-foreground border-border hover:bg-border'}`}>
                   Right column
                 </button>
+              </div>
+              {/* PoS colour legend */}
+              <div className="flex flex-wrap gap-1.5">
+                <span className="text-xs text-muted-foreground font-medium self-center shrink-0">PoS colours:</span>
+                <span className="text-xs px-2 py-0.5 rounded border-l-4 border-blue-400 bg-blue-50 text-blue-800 font-medium">n. Noun</span>
+                <span className="text-xs px-2 py-0.5 rounded border-l-4 border-red-400 bg-red-50 text-red-800 font-medium">v. Verb</span>
+                <span className="text-xs px-2 py-0.5 rounded border-l-4 border-emerald-400 bg-emerald-50 text-emerald-800 font-medium">adj. Adjective</span>
+                <span className="text-xs px-2 py-0.5 rounded border-l-4 border-amber-400 bg-amber-50 text-amber-800 font-medium">adv. Adverb</span>
               </div>
               <div className="flex gap-2 justify-end">
               <button onClick={() => setActiveModule(null)} className="px-4 py-2 bg-muted border border-border text-foreground rounded-xl text-sm font-medium hover:bg-border transition-colors">Back</button>
