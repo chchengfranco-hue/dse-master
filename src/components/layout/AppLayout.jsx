@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BookOpen, PenTool, Grid3X3, MessageSquare, Book, Users, CheckSquare, MoreHorizontal, ChevronLeft, TrendingUp, FileDown } from 'lucide-react';
+import { BookOpen, PenTool, Layers, MessageSquare, Book, Users, MoreHorizontal, ChevronLeft, TrendingUp, FileDown, Grid3X3, CheckSquare } from 'lucide-react';
 import GlobalPdfExport from '@/components/shared/GlobalPdfExport';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/lib/UserContext';
@@ -18,10 +18,9 @@ import Progress from '@/pages/Progress';
 const baseModules = [
 { id: 'vocab', icon: BookOpen, label: 'Reading' },
 { id: 'writing', icon: PenTool, label: 'Writing' },
-{ id: 'cloze', icon: Grid3X3, label: 'Cloze' },
+{ id: 'exercises', icon: Layers, label: 'Exercises' },
 { id: 'essential', icon: Book, label: 'Vocab' },
 { id: 'speaking', icon: MessageSquare, label: 'Speaking' },
-{ id: 'grammar', icon: CheckSquare, label: 'Grammar' },
 { id: 'progress', icon: TrendingUp, label: 'Progress' },
 ];
 
@@ -30,6 +29,7 @@ export default function AppLayout() {
   const { isAuthenticated, isEditor, currentUser, login, logout, ready } = useUser();
   const [showMore, setShowMore] = useState(false);
   const [showGlobalPdf, setShowGlobalPdf] = useState(false);
+  const [showExercisePicker, setShowExercisePicker] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -37,10 +37,10 @@ export default function AppLayout() {
   const activeModule = (() => {
     const p = location.pathname;
     if (p.startsWith('/writing')) return 'writing';
-    if (p.startsWith('/cloze')) return 'cloze';
+    if (p.startsWith('/cloze')) return 'exercises';
+    if (p.startsWith('/grammar')) return 'exercises';
     if (p.startsWith('/essential')) return 'essential';
     if (p.startsWith('/speaking')) return 'speaking';
-    if (p.startsWith('/grammar')) return 'grammar';
     if (p.startsWith('/users')) return 'users';
     if (p.startsWith('/progress')) return 'progress';
     if (p.startsWith('/vocab')) return 'vocab';
@@ -57,6 +57,12 @@ export default function AppLayout() {
     const roots = ['/vocab', '/writing', '/cloze', '/essential', '/speaking', '/grammar', '/users', '/progress', '/'];
     return !roots.includes(p);
   })();
+
+  // Handle exercises tab click — show picker if not already on cloze/grammar
+  const handleExercisesClick = () => {
+    setShowExercisePicker(true);
+    setShowMore(false);
+  };
 
   // Dynamic header title for child routes
   const childPageTitle = (() => {
@@ -180,7 +186,10 @@ export default function AppLayout() {
                 const Icon = mod.icon;
                 const isActive = activeModule === mod.id;
                 return (
-                  <button key={mod.id} onClick={() => { navigate(getTabPath(mod.id)); setShowMore(false); }}
+                  <button key={mod.id} onClick={() => {
+                    if (mod.id === 'exercises') { handleExercisesClick(); }
+                    else { navigate(getTabPath(mod.id)); setShowMore(false); setShowExercisePicker(false); }
+                  }}
                     className={cn("flex flex-col items-center justify-center py-3 rounded-xl transition-all select-none", isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-muted")}>
                     <Icon className="w-5 h-5" />
                     <span className="text-[10px] mt-1 font-medium">{mod.label}</span>
@@ -191,12 +200,39 @@ export default function AppLayout() {
             <div className="fixed inset-0 z-[-1]" onClick={() => setShowMore(false)} />
           </>
         )}
+        {/* Exercise picker sheet */}
+        {showExercisePicker && (
+          <>
+            <div className="absolute bottom-full left-0 right-0 bg-card border-t border-border shadow-lg rounded-t-2xl p-4">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-3 text-center">Choose Exercise Type</p>
+              <div className="grid grid-cols-2 gap-3">
+                <button onClick={() => { navigate('/cloze'); setShowExercisePicker(false); }}
+                  className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border bg-background hover:bg-primary/5 hover:border-primary/30 transition-all">
+                  <Grid3X3 className="w-6 h-6 text-primary" />
+                  <span className="text-sm font-semibold text-foreground">Cloze</span>
+                  <span className="text-xs text-muted-foreground">Fill-in-the-blank</span>
+                </button>
+                <button onClick={() => { navigate('/grammar'); setShowExercisePicker(false); }}
+                  className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border bg-background hover:bg-primary/5 hover:border-primary/30 transition-all">
+                  <CheckSquare className="w-6 h-6 text-primary" />
+                  <span className="text-sm font-semibold text-foreground">Grammar</span>
+                  <span className="text-xs text-muted-foreground">Multiple choice</span>
+                </button>
+              </div>
+            </div>
+            <div className="fixed inset-0 z-[-1]" onClick={() => setShowExercisePicker(false)} />
+          </>
+        )}
         <div className="flex justify-around items-center h-16 px-2">
           {modules.slice(0, 4).map((mod) => {
             const Icon = mod.icon;
             const isActive = activeModule === mod.id;
             return (
-              <button key={mod.id} onClick={() => { navigate(getTabPath(mod.id)); setShowMore(false); }}
+              <button key={mod.id}
+                onClick={() => {
+                  if (mod.id === 'exercises') { handleExercisesClick(); }
+                  else { navigate(getTabPath(mod.id)); setShowMore(false); setShowExercisePicker(false); }
+                }}
                 className={cn("flex flex-col items-center justify-center flex-1 h-12 rounded-xl mx-0.5 transition-all duration-200 select-none",
                   isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
                 <Icon className="w-5 h-5" />
@@ -204,7 +240,7 @@ export default function AppLayout() {
               </button>
             );
           })}
-          <button onClick={() => setShowMore(v => !v)}
+          <button onClick={() => { setShowMore(v => !v); setShowExercisePicker(false); }}
             className={cn("flex flex-col items-center justify-center flex-1 h-12 rounded-xl mx-0.5 transition-all duration-200 select-none",
               (showMore || modules.slice(4).some(m => m.id === activeModule)) ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
             <MoreHorizontal className="w-5 h-5" />
