@@ -39,9 +39,18 @@ function buildPrintHtml(selectedItems, mod, annotLayout = 'below') {
       </div>`;
     };
 
+    const posLegendHtml = `
+      <div class="pos-legend">
+        <span class="pos-badge pos-noun">n. Noun</span>
+        <span class="pos-badge pos-verb">v. Verb</span>
+        <span class="pos-badge pos-adj">adj. Adjective</span>
+        <span class="pos-badge pos-adv">adv. Adverb</span>
+      </div>`;
+
     const annotBelowHtml = annotEntries.length > 0 ? `
       <div class="annot-box">
         <div class="annot-title">📚 Vocabulary &amp; Annotations</div>
+        ${posLegendHtml}
         <div class="annot-grid">${annotEntries.map(annotCardHtml).join('')}</div>
       </div>
     ` : '';
@@ -192,9 +201,29 @@ function buildPrintHtml(selectedItems, mod, annotLayout = 'below') {
     text-transform: uppercase;
   }
   .annot-side .annot-card { border-radius: 6px; padding: 5px 8px; }
+  /* PoS legend */
+  .pos-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 10px;
+  }
+  .pos-badge {
+    font-size: 8pt;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border-left-width: 3px;
+    border-left-style: solid;
+  }
+  .pos-badge.pos-noun  { border-left-color: #60a5fa; background: #eff6ff; color: #1e40af; }
+  .pos-badge.pos-verb  { border-left-color: #f87171; background: #fef2f2; color: #991b1b; }
+  .pos-badge.pos-adj   { border-left-color: #34d399; background: #f0fdf4; color: #065f46; }
+  .pos-badge.pos-adv   { border-left-color: #fbbf24; background: #fffbeb; color: #92400e; }
   @media print {
     body { padding: 0; }
     .cover { min-height: 100vh; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   }
 </style>
 </head>
