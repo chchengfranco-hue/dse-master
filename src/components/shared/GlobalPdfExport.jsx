@@ -9,6 +9,15 @@ const MODULES = [
   { key: 'vocab',    label: 'Essential Vocabulary', icon: Book,      entity: 'VocabSet',        getTitle: i => i.title, getMeta: i => [i.topic, i.subtopic && i.subtopic !== 'General' ? i.subtopic : ''].filter(Boolean).join(' › '), getBody: i => (i.passage ? `Context:\n${i.passage}\n\n` : '') + (i.vocab_data || []).map(v => `${v.word} (${v.pos || ''}) — ${v.meaning}${v.example ? '. E.g. ' + v.example : ''}`).join('\n'), getAnnotations: i => ({}) },
 ];
 
+function getPosClass(meaning) {
+  const t = (meaning || '').trim().toLowerCase();
+  if (/^n\./.test(t)) return 'pos-noun';
+  if (/^v\./.test(t)) return 'pos-verb';
+  if (/^adj\./.test(t)) return 'pos-adj';
+  if (/^adv\./.test(t)) return 'pos-adv';
+  return 'pos-other';
+}
+
 function buildPrintHtml(selectedItems, mod, annotLayout = 'below') {
   const itemsHtml = selectedItems.map((item, idx) => {
     const title = (mod.getTitle(item) || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -22,29 +31,25 @@ function buildPrintHtml(selectedItems, mod, annotLayout = 'below') {
     const annotations = mod.getAnnotations(item);
     const annotEntries = Object.entries(annotations);
 
-    const annotListHtml = annotEntries.length > 0 ? annotEntries.map(([word, meaning]) => `
-      <div class="annot-item">
-        <span class="annot-word">${word.replace(/</g,'&lt;')}</span>
+    const annotCardHtml = ([word, meaning]) => {
+      const posClass = getPosClass(meaning);
+      return `<div class="annot-card ${posClass}">
+        <strong class="annot-word">${word.replace(/</g,'&lt;')}</strong>
         <span class="annot-meaning">${(meaning || '').replace(/</g,'&lt;')}</span>
-      </div>
-    `).join('') : '';
+      </div>`;
+    };
 
     const annotBelowHtml = annotEntries.length > 0 ? `
       <div class="annot-box">
         <div class="annot-title">📚 Vocabulary &amp; Annotations</div>
-        <div class="annot-grid">${annotListHtml}</div>
+        <div class="annot-grid">${annotEntries.map(annotCardHtml).join('')}</div>
       </div>
     ` : '';
 
     const annotSideHtml = annotEntries.length > 0 ? `
       <div class="annot-side">
         <div class="annot-title">📚 Vocab</div>
-        ${annotEntries.map(([word, meaning]) => `
-          <div class="annot-side-item">
-            <span class="annot-word">${word.replace(/</g,'&lt;')}</span>
-            <span class="annot-meaning">${(meaning || '').replace(/</g,'&lt;')}</span>
-          </div>
-        `).join('')}
+        ${annotEntries.map(annotCardHtml).join('')}
       </div>
     ` : '';
 
@@ -130,43 +135,63 @@ function buildPrintHtml(selectedItems, mod, annotLayout = 'below') {
     color: #333;
     white-space: pre-wrap;
   }
+  /* Annotation section wrapper */
   .annot-box {
     margin-top: 20px;
-    background: #fefce8;
-    border: 1px solid #fde68a;
-    border-radius: 8px;
+    background: #fafafa;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
     padding: 14px 16px;
   }
   .annot-title {
     font-size: 9pt;
     font-weight: 700;
-    color: #92400e;
+    color: #374151;
     letter-spacing: 0.05em;
     margin-bottom: 10px;
+    text-transform: uppercase;
   }
   .annot-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 6px 20px;
+    gap: 7px;
   }
-  .annot-item { display: flex; gap: 6px; align-items: baseline; }
-  .annot-word { font-weight: 700; color: #5b21b6; font-size: 10pt; white-space: nowrap; }
-  .annot-meaning { font-size: 10pt; color: #444; }
+  /* Color-coded annotation cards matching on-screen style */
+  .annot-card {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    border-radius: 8px;
+    padding: 6px 10px;
+    border-left-width: 4px;
+    border-left-style: solid;
+  }
+  .annot-card.pos-noun  { border-left-color: #60a5fa; background: #eff6ff; }
+  .annot-card.pos-verb  { border-left-color: #f87171; background: #fef2f2; }
+  .annot-card.pos-adj   { border-left-color: #34d399; background: #f0fdf4; }
+  .annot-card.pos-adv   { border-left-color: #fbbf24; background: #fffbeb; }
+  .annot-card.pos-other { border-left-color: #d1d5db; background: #f9fafb; }
+  .annot-word { font-weight: 700; font-size: 9.5pt; color: #5b21b6; }
+  .annot-meaning { font-size: 9pt; color: #444; }
   /* Side column layout */
   .two-col { display: flex; gap: 16px; align-items: flex-start; }
   .two-col .item-body { flex: 1; min-width: 0; }
   .annot-side {
-    width: 160px;
+    width: 170px;
     flex-shrink: 0;
-    background: #f5f3ff;
-    border-left: 3px solid #7c3aed;
-    border-radius: 6px;
-    padding: 10px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
   }
-  .annot-side .annot-title { font-size: 8pt; font-weight: 700; color: #5b21b6; margin-bottom: 8px; letter-spacing: 0.05em; }
-  .annot-side-item { margin-bottom: 7px; }
-  .annot-side-item .annot-word { display: block; font-size: 9.5pt; }
-  .annot-side-item .annot-meaning { display: block; font-size: 9pt; color: #555; }
+  .annot-side .annot-title {
+    font-size: 8pt;
+    font-weight: 700;
+    color: #374151;
+    margin-bottom: 2px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .annot-side .annot-card { border-radius: 6px; padding: 5px 8px; }
   @media print {
     body { padding: 0; }
     .cover { min-height: 100vh; }
