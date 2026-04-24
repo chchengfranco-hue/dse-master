@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { FileDown, X, CheckSquare, Square, ChevronRight, BookOpen, PenTool, Grid3X3, Book } from 'lucide-react';
@@ -54,7 +54,7 @@ export default function GlobalPdfExport({ onClose }) {
   const [generating, setGenerating] = useState(false);
   const [filterTopic, setFilterTopic] = useState('');
   const [filterSubtopic, setFilterSubtopic] = useState('');
-  const renderRef = useRef(null);
+
 
   useEffect(() => {
     if (!activeModule) return;
@@ -132,20 +132,19 @@ export default function GlobalPdfExport({ onClose }) {
     doc.setFontSize(8); doc.setTextColor(167, 139, 250);
     doc.text('Ace HKDSE English Learning Platform', 15, PH - 18);
 
-    // ── Hidden render container ──
-    const container = renderRef.current;
-
     // ── Render each item via html2canvas ──
     for (let idx = 0; idx < selectedItems.length; idx++) {
       const item = selectedItems[idx];
       const html = buildItemHtml(item, mod, idx);
 
-      // Inject HTML into hidden container
+      // Create a temporary div appended to body (html2canvas needs it in the DOM)
+      const container = document.createElement('div');
+      container.style.cssText = 'position:fixed;top:0;left:0;width:740px;opacity:0;pointer-events:none;z-index:-1;';
       container.innerHTML = html;
-      container.style.display = 'block';
+      document.body.appendChild(container);
 
       // Wait a tick for fonts/layout
-      await new Promise(r => setTimeout(r, 80));
+      await new Promise(r => setTimeout(r, 100));
 
       const canvas = await html2canvas(container.firstChild, {
         scale: 2,
@@ -154,7 +153,7 @@ export default function GlobalPdfExport({ onClose }) {
         logging: false,
       });
 
-      container.style.display = 'none';
+      document.body.removeChild(container);
 
       const imgData = canvas.toDataURL('image/jpeg', 0.92);
       const imgW = PW; // full page width
@@ -195,9 +194,6 @@ export default function GlobalPdfExport({ onClose }) {
 
   return (
     <>
-      {/* Hidden off-screen render area for html2canvas */}
-      <div ref={renderRef} style={{ position: 'fixed', top: '-9999px', left: '-9999px', display: 'none', zIndex: -1 }} />
-
       <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
         <div className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-lg max-h-[88vh] flex flex-col overflow-hidden">
 
