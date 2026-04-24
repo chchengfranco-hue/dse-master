@@ -31,20 +31,29 @@ function buildPrintHtml(selectedItems, mod, annotLayout = 'below') {
     const annotations = mod.getAnnotations(item);
     const annotEntries = Object.entries(annotations);
 
+    const posStyles = {
+      'pos-noun':  { bg: '#eff6ff', border: '#60a5fa', wordColor: '#1e40af' },
+      'pos-verb':  { bg: '#fef2f2', border: '#f87171', wordColor: '#991b1b' },
+      'pos-adj':   { bg: '#f0fdf4', border: '#34d399', wordColor: '#065f46' },
+      'pos-adv':   { bg: '#fffbeb', border: '#fbbf24', wordColor: '#92400e' },
+      'pos-other': { bg: '#f9fafb', border: '#d1d5db', wordColor: '#5b21b6' },
+    };
+
     const annotCardHtml = ([word, meaning]) => {
       const posClass = getPosClass(meaning);
-      return `<div class="annot-card ${posClass}">
-        <strong class="annot-word">${word.replace(/</g,'&lt;')}</strong>
-        <span class="annot-meaning">${(meaning || '').replace(/</g,'&lt;')}</span>
+      const s = posStyles[posClass];
+      return `<div style="display:flex;flex-direction:column;gap:1px;border-radius:8px;padding:6px 10px;border-left:4px solid ${s.border};background:${s.bg};-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+        <strong style="font-weight:700;font-size:9.5pt;color:${s.wordColor};">${word.replace(/</g,'&lt;')}</strong>
+        <span style="font-size:9pt;color:#444;">${(meaning || '').replace(/</g,'&lt;')}</span>
       </div>`;
     };
 
     const posLegendHtml = `
-      <div class="pos-legend">
-        <span class="pos-badge pos-noun">n. Noun</span>
-        <span class="pos-badge pos-verb">v. Verb</span>
-        <span class="pos-badge pos-adj">adj. Adjective</span>
-        <span class="pos-badge pos-adv">adv. Adverb</span>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;">
+        <span style="font-size:8pt;font-weight:700;padding:2px 8px;border-radius:4px;border-left:3px solid #60a5fa;background:#eff6ff;color:#1e40af;-webkit-print-color-adjust:exact;print-color-adjust:exact;">n. Noun</span>
+        <span style="font-size:8pt;font-weight:700;padding:2px 8px;border-radius:4px;border-left:3px solid #f87171;background:#fef2f2;color:#991b1b;-webkit-print-color-adjust:exact;print-color-adjust:exact;">v. Verb</span>
+        <span style="font-size:8pt;font-weight:700;padding:2px 8px;border-radius:4px;border-left:3px solid #34d399;background:#f0fdf4;color:#065f46;-webkit-print-color-adjust:exact;print-color-adjust:exact;">adj. Adjective</span>
+        <span style="font-size:8pt;font-weight:700;padding:2px 8px;border-radius:4px;border-left:3px solid #fbbf24;background:#fffbeb;color:#92400e;-webkit-print-color-adjust:exact;print-color-adjust:exact;">adv. Adverb</span>
       </div>`;
 
     const annotBelowHtml = annotEntries.length > 0 ? `
