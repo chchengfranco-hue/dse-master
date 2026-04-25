@@ -18,15 +18,56 @@ function getPosClass(meaning) {
   return 'pos-other';
 }
 
+// Speaker badge colours matching PassageReadView SPEAKER_COLORS
+const SPEAKER_BADGE_STYLES = [
+  { bg: '#dbeafe', border: '#93c5fd', color: '#1e40af' }, // blue
+  { bg: '#ffe4e6', border: '#fca5a5', color: '#9f1239' }, // rose
+  { bg: '#d1fae5', border: '#6ee7b7', color: '#065f46' }, // emerald
+  { bg: '#fef3c7', border: '#fcd34d', color: '#92400e' }, // amber
+  { bg: '#ede9fe', border: '#c4b5fd', color: '#5b21b6' }, // purple
+  { bg: '#cffafe', border: '#67e8f9', color: '#164e63' }, // cyan
+];
+
+function renderTapescriptHtml(content) {
+  const speakerMap = {};
+  let colorIdx = 0;
+  const getSpeakerStyle = (name) => {
+    if (!speakerMap[name]) {
+      speakerMap[name] = SPEAKER_BADGE_STYLES[colorIdx % SPEAKER_BADGE_STYLES.length];
+      colorIdx++;
+    }
+    return speakerMap[name];
+  };
+
+  const lines = content.split('\n');
+  return lines.map(line => {
+    const match = line.match(/^\[([^\]]+)\]:\s*(.*)/);
+    if (match) {
+      const speaker = match[1].replace(/</g,'&lt;');
+      const text = match[2].replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const s = getSpeakerStyle(match[1]);
+      return `<div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:10px;">
+        <span style="min-width:100px;max-width:100px;font-size:8.5pt;font-weight:700;padding:4px 8px;border-radius:20px;border:1px solid ${s.border};background:${s.bg};color:${s.color};text-align:center;flex-shrink:0;line-height:1.3;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${speaker}</span>
+        <span style="font-size:11pt;line-height:1.8;color:#333;flex:1;">${text}</span>
+      </div>`;
+    }
+    if (!line.trim()) return '<div style="height:6px;"></div>';
+    return `<p style="font-size:10pt;color:#666;font-style:italic;text-align:center;margin:6px 0;">${line.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>`;
+  }).join('');
+}
+
 function buildPrintHtml(selectedItems, mod, annotLayout = 'below') {
   const itemsHtml = selectedItems.map((item, idx) => {
     const title = (mod.getTitle(item) || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const meta = (mod.getMeta(item) || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    const body = (mod.getBody(item) || '')
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/_(.*?)_/g, '<em>$1</em>')
-      .replace(/\n/g, '<br/>');
+    const isTapescript = item.passage_type === 'tapescript';
+    const body = isTapescript
+      ? renderTapescriptHtml(mod.getBody(item) || '')
+      : (mod.getBody(item) || '')
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/_(.*?)_/g, '<em>$1</em>')
+          .replace(/\n/g, '<br/>');
 
     const annotations = mod.getAnnotations(item);
     const annotEntries = Object.entries(annotations);
@@ -71,9 +112,13 @@ function buildPrintHtml(selectedItems, mod, annotLayout = 'below') {
       </div>
     ` : '';
 
+    const tapescriptHeader = isTapescript
+      ? `<div style="font-size:8pt;font-weight:700;color:#6b7280;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid #e5e7eb;">🎙️ Tapescript</div>`
+      : '';
+    const bodyStyle = isTapescript ? 'class="item-body tapescript-body"' : 'class="item-body"';
     const contentHtml = annotLayout === 'right' && annotEntries.length > 0
-      ? `<div class="two-col"><div class="item-body">${body}</div>${annotSideHtml}</div>`
-      : `<div class="item-body">${body}</div>${annotBelowHtml}`;
+      ? `<div class="two-col"><div ${bodyStyle}>${tapescriptHeader}${body}</div>${annotSideHtml}</div>`
+      : `<div ${bodyStyle}>${tapescriptHeader}${body}</div>${annotBelowHtml}`;
 
     return `
       <div class="item ${idx > 0 ? 'page-break' : ''}">
@@ -152,6 +197,9 @@ function buildPrintHtml(selectedItems, mod, annotLayout = 'below') {
     line-height: 2;
     color: #333;
     white-space: pre-wrap;
+  }
+  .tapescript-body {
+    white-space: normal;
   }
   /* Annotation section wrapper */
   .annot-box {
