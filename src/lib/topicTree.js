@@ -9,7 +9,7 @@ export const TOPIC_TREE = {
   'Culture': ['Cultural Identity', 'Traditions & Customs', 'Multiculturalism', 'Language & Communication'],
   'History': ['Ancient Civilisations', 'Modern History', 'Wars & Conflicts', 'Historical Figures', 'Colonial History'],
   'Timeless Stories': ['Myths & Legends', 'Classic Literature', 'Moral Tales', 'Folk Stories'],
-  'Popular Culture': ['Trends & Fads', 'Influencer Culture', 'Fan Culture', 'Internet Culture'],
+  'Popular Culture': ['World Records & Achievements', 'Unusual Competitions & Events', 'Fashion & Style', 'Social Media & Digital Culture', 'Media & Entertainment Trends', 'Photography & Visual Trends'],
   'Music': ['Music Genres', 'Music & Emotion', 'Music Industry', 'Music & Identity'],
   'Films': ['Film Genres', 'Film Industry', 'Storytelling & Themes', 'Film & Society'],
   'Arts': ['Visual Arts', 'Performing Arts', 'Art & Expression', 'Art & Society'],
