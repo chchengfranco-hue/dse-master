@@ -17,14 +17,13 @@ import UserManagement from '@/pages/modules/UserManagement';
 import Progress from '@/pages/Progress';
 
 const baseModules = [
-{ id: 'vocab', icon: BookOpen, label: 'Reading' },
-{ id: 'writing', icon: PenTool, label: 'Writing' },
+{ id: 'vocab', icon: BookOpen, label: 'Thematic Idea Bank' },
+{ id: 'writing', icon: PenTool, label: 'Sample Writing' },
 { id: 'exercises', icon: Layers, label: 'Exercises' },
-{ id: 'essential', icon: Book, label: 'Vocab' },
-{ id: 'speaking', icon: MessageSquare, label: 'Speaking' },
-{ id: 'progress', icon: TrendingUp, label: 'Progress' },
-{ id: 'hotissues', icon: Globe, label: 'Hot Issues' }];
-
+{ id: 'essential', icon: Book, label: 'Essential Vocabulary' },
+{ id: 'speaking', icon: MessageSquare, label: 'Speaking Practice' },
+{ id: 'hotissues', icon: Globe, label: 'Hot Issues' },
+{ id: 'progress', icon: TrendingUp, label: 'Progress' }];
 
 
 export default function AppLayout() {
