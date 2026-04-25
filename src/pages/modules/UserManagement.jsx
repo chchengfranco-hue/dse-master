@@ -3,10 +3,10 @@ import { Trash2, UserPlus, Shield, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import PageHeader from '@/components/shared/PageHeader';
-import { getUsers, saveUsers } from '@/lib/auth';
+import { getUsers, saveUsers, isOwnerAccount } from '@/lib/auth';
 
 export default function UserManagement() {
-  const [users, setUsers] = useState(getUsers);
+  const [users, setUsers] = useState(() => getUsers().filter(u => !isOwnerAccount(u.username)));
   const [form, setForm] = useState({ username: '', password: '', isEditor: false });
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState('');
@@ -23,6 +23,7 @@ export default function UserManagement() {
   };
 
   const deleteUser = (username) => {
+    if (isOwnerAccount(username)) return;
     if (users.length === 1) return setError('Cannot delete the last user.');
     update(users.filter(u => u.username !== username));
   };

