@@ -175,10 +175,10 @@ export default function AppLayout() {
             
             {activeModule === 'vocab' && <VocabModule isEditor={isEditor} />}
             {activeModule === 'writing' && <WritingModule isEditor={isEditor} />}
-            {activeModule === 'cloze' && <ClozeModule isEditor={isEditor} />}
+            {activeModule === 'exercises' && location.pathname.startsWith('/grammar') && <GrammarModule isEditor={isEditor} />}
+            {activeModule === 'exercises' && !location.pathname.startsWith('/grammar') && <ClozeModule isEditor={isEditor} />}
             {activeModule === 'essential' && <EssentialVocabModule isEditor={isEditor} />}
             {activeModule === 'speaking' && <SpeakingModule isEditor={isEditor} />}
-            {activeModule === 'grammar' && <GrammarModule isEditor={isEditor} />}
             {activeModule === 'users' && isEditor && <UserManagement />}
             {activeModule === 'progress' && <Progress />}
             {activeModule === 'hotissues' && <HotIssuesModule isEditor={isEditor} />}
