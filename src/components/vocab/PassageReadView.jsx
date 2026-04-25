@@ -37,7 +37,7 @@ function TapescriptView({ content, annotations, showRuby, activeWord, onWordClic
           const color = getSpeakerColor(speaker);
           return (
             <div key={i} className="flex gap-3 items-start">
-              <span className={`shrink-0 mt-0.5 text-xs font-bold px-2.5 py-1 rounded-full border whitespace-nowrap ${color}`}>
+              <span className={`text-xs font-bold px-2.5 py-1 rounded-full border text-center w-12 shrink-0 mt-0.5 leading-tight ${color}`}>
                 {speaker}
               </span>
               <p className="flex-1 text-base leading-relaxed text-foreground">
