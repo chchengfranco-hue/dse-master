@@ -5,12 +5,25 @@ import { getTopicTree } from '@/pages/modules/TopicEditor';
 import RichTextArea from '@/components/shared/RichTextArea';
 
 export default function PassageEditor({ passage, onSave, onCancel }) {
+  const TAPESCRIPT_TEMPLATE = `[Interviewer]: Good morning. Thank you for joining us today. Could you start by introducing yourself?
+
+[Guest]: Of course. My name is Sarah Chen, and I work as an environmental scientist at a local NGO.
+
+[Interviewer]: Fascinating. What inspired you to pursue this career?
+
+[Guest]: Growing up near the harbour, I witnessed firsthand how pollution affected marine life. That experience shaped my entire outlook.
+
+[Interviewer]: And what do you think is the most pressing environmental issue facing Hong Kong today?
+
+[Guest]: Without a doubt, plastic waste. We generate an enormous amount every year, and recycling infrastructure simply hasn't kept pace.`;
+
   const [form, setForm] = useState({
     id: passage?.id || null,
     title: passage?.title || '',
     topic: passage?.topic || '',
     subtopic: passage?.subtopic || '',
     imageUrl: passage?.imageUrl || '',
+    passageType: passage?.passage_type || 'passage',
     content: passage?.content || '',
     status: passage?.status || 'published',
     annotationsText: passage?.annotations
@@ -38,7 +51,7 @@ export default function PassageEditor({ passage, onSave, onCancel }) {
         if (word && meaning) annotations[word] = meaning;
       }
     });
-    onSave({ id: form.id, title: form.title.trim(), topic: form.topic || 'Uncategorized', subtopic: form.subtopic || 'General', imageUrl: form.imageUrl.trim(), content: form.content.trim(), annotations, status: form.status });
+    onSave({ id: form.id, title: form.title.trim(), topic: form.topic || 'Uncategorized', subtopic: form.subtopic || 'General', imageUrl: form.imageUrl.trim(), content: form.content.trim(), annotations, status: form.status, passage_type: form.passageType });
   };
 
   return (
@@ -72,6 +85,34 @@ export default function PassageEditor({ passage, onSave, onCancel }) {
 
         <Input className="mb-3" placeholder="Passage Title" value={form.title} onChange={e => set('title', e.target.value)} />
         <Input className="mb-3" placeholder="Image URL (optional)" value={form.imageUrl} onChange={e => set('imageUrl', e.target.value)} />
+
+        {/* Passage type toggle */}
+        <div className="flex items-center gap-3 mb-3 p-3 bg-muted/50 rounded-xl border border-border">
+          <span className="text-sm font-medium text-foreground shrink-0">Type:</span>
+          <button
+            onClick={() => set('passageType', 'passage')}
+            className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${form.passageType === 'passage' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-border'}`}>
+            📄 Passage
+          </button>
+          <button
+            onClick={() => {
+              set('passageType', 'tapescript');
+              if (!form.content.trim()) set('content', TAPESCRIPT_TEMPLATE);
+            }}
+            className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${form.passageType === 'tapescript' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-border'}`}>
+            🎙️ Tapescript
+          </button>
+          {form.passageType === 'tapescript' && !form.content.trim() && (
+            <button
+              onClick={() => set('content', TAPESCRIPT_TEMPLATE)}
+              className="ml-auto text-xs text-primary underline hover:no-underline">
+              Load template
+            </button>
+          )}
+          {form.passageType === 'tapescript' && (
+            <span className="text-xs text-muted-foreground ml-auto">Format: <code className="bg-muted px-1 rounded">[Speaker]: text</code></span>
+          )}
+        </div>
 
         <RichTextArea
           value={form.content}

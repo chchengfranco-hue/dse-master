@@ -22,6 +22,15 @@
       "type": "string",
       "description": "Optional image URL for the passage"
     },
+    "passage_type": {
+      "type": "string",
+      "enum": [
+        "passage",
+        "tapescript"
+      ],
+      "default": "passage",
+      "description": "Display type: regular passage or tapescript (dialogue) format"
+    },
     "content": {
       "type": "string",
       "description": "Full passage text content"

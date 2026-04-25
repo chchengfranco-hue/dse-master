@@ -78,7 +78,7 @@ export default function VocabModule({ isEditor }) {
   const navigate = useNavigate();
 
   const savePassage = async (data) => {
-    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, content: data.content, annotations: data.annotations, image_url: data.imageUrl || '', status: data.status || 'published', is_published: data.status !== 'draft' };
+    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, content: data.content, annotations: data.annotations, image_url: data.imageUrl || '', passage_type: data.passage_type || 'passage', status: data.status || 'published', is_published: data.status !== 'draft' };
     if (data.id && data.id !== 'new') await contentApi.update('ReadingPassage', data.id, payload);
     else await contentApi.create('ReadingPassage', payload);
     navigate('/vocab');

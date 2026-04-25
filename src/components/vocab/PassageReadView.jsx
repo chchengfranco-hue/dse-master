@@ -4,6 +4,60 @@ import { cn } from '@/lib/utils';
 import AnnotatedPassage from '@/components/vocab/AnnotatedPassage';
 import MarginPane from '@/components/vocab/MarginPane';
 
+// Speaker colours cycling
+const SPEAKER_COLORS = [
+  'bg-blue-100 text-blue-800 border-blue-300',
+  'bg-rose-100 text-rose-800 border-rose-300',
+  'bg-emerald-100 text-emerald-800 border-emerald-300',
+  'bg-amber-100 text-amber-800 border-amber-300',
+  'bg-purple-100 text-purple-800 border-purple-300',
+  'bg-cyan-100 text-cyan-800 border-cyan-300',
+];
+
+function TapescriptView({ content, annotations, showRuby, activeWord, onWordClick }) {
+  // Parse lines: "[Speaker]: text" or plain text
+  const speakerMap = {};
+  let colorIdx = 0;
+  const getSpeakerColor = (name) => {
+    if (!speakerMap[name]) {
+      speakerMap[name] = SPEAKER_COLORS[colorIdx % SPEAKER_COLORS.length];
+      colorIdx++;
+    }
+    return speakerMap[name];
+  };
+
+  const lines = content.split('\n');
+  return (
+    <div className="space-y-3">
+      {lines.map((line, i) => {
+        const match = line.match(/^\[([^\]]+)\]:\s*(.*)/);
+        if (match) {
+          const speaker = match[1];
+          const text = match[2];
+          const color = getSpeakerColor(speaker);
+          return (
+            <div key={i} className="flex gap-3 items-start">
+              <span className={`shrink-0 mt-0.5 text-xs font-bold px-2.5 py-1 rounded-full border whitespace-nowrap ${color}`}>
+                {speaker}
+              </span>
+              <p className="flex-1 text-base leading-relaxed text-foreground">
+                <AnnotatedPassage content={text} annotations={annotations} showRuby={showRuby} activeWord={activeWord} onWordClick={onWordClick} />
+              </p>
+            </div>
+          );
+        }
+        // Plain line (stage direction or blank)
+        if (!line.trim()) return <div key={i} className="h-2" />;
+        return (
+          <p key={i} className="text-sm text-muted-foreground italic text-center">
+            <AnnotatedPassage content={line} annotations={annotations} showRuby={showRuby} activeWord={activeWord} onWordClick={onWordClick} />
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function PassageReadView({ passage, isEditor, onBack, onSaveAnnotation }) {
   const [showMargin, setShowMargin] = useState(false);
   const [showRuby, setShowRuby] = useState(false);
@@ -104,14 +158,31 @@ export default function PassageReadView({ passage, isEditor, onBack, onSaveAnnot
 
       {/* Reading layout */}
       <div className={cn("flex gap-5 items-start", showMargin && "flex-row")}>
-        <div className="flex-1 min-w-0 bg-card rounded-2xl border border-border p-6 lg:p-8 text-base leading-loose" ref={contentRef} onMouseUp={handleTextSelect}>
-          <AnnotatedPassage
-            content={passage.content}
-            annotations={annotations}
-            showRuby={showRuby}
-            activeWord={activeWord}
-            onWordClick={handleWordClick}
-          />
+        <div className="flex-1 min-w-0 bg-card rounded-2xl border border-border p-6 lg:p-8" ref={contentRef} onMouseUp={handleTextSelect}>
+          {passage.passage_type === 'tapescript' ? (
+            <>
+              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border">
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">🎙️ Tapescript</span>
+              </div>
+              <TapescriptView
+                content={passage.content}
+                annotations={annotations}
+                showRuby={showRuby}
+                activeWord={activeWord}
+                onWordClick={handleWordClick}
+              />
+            </>
+          ) : (
+            <div className="text-base leading-loose">
+              <AnnotatedPassage
+                content={passage.content}
+                annotations={annotations}
+                showRuby={showRuby}
+                activeWord={activeWord}
+                onWordClick={handleWordClick}
+              />
+            </div>
+          )}
         </div>
         {showMargin && annotationCount > 0 && (
           <MarginPane annotations={annotations} activeWord={activeWord} onHover={setActiveWord} />
