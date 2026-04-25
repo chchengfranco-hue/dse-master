@@ -188,16 +188,16 @@ function GrammarPracticeView({ exercise, onBack }) {
           return (
             <div key={idx} className="bg-card rounded-2xl border border-border p-5 shadow-sm">
               <h3 className="text-base font-bold text-primary mb-4">{idx + 1}. {q.q}</h3>
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
                 {q.opts.map((opt, oi) => {
                   const letter = letters[oi];
                   const isSel = selected[idx] === letter;
                   const isCorr = submitted && letter === q.ansLetter;
                   const isInc = submitted && isSel && letter !== q.ansLetter;
                   return (
-                    <label key={letter} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all text-sm select-none ${isCorr ? 'bg-green-50 border-green-400 text-green-900 font-semibold' : isInc ? 'bg-red-50 border-red-400 text-red-900' : isSel ? 'bg-sky-50 border-primary shadow-sm' : 'bg-background border-border hover:bg-accent'}`}>
-                      <input type="radio" name={`q${idx}`} value={letter} checked={isSel} disabled={submitted} onChange={() => setSelected(s => ({ ...s, [idx]: letter }))} className="w-4 h-4 accent-primary cursor-pointer" />
-                      <strong>{letter}.</strong> {opt}
+                    <label key={letter} className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-all text-sm select-none ${isCorr ? 'bg-green-50 border-green-400 text-green-900 font-semibold' : isInc ? 'bg-red-50 border-red-400 text-red-900' : isSel ? 'bg-sky-50 border-primary shadow-sm' : 'bg-background border-border hover:bg-accent'}`}>
+                      <input type="radio" name={`q${idx}`} value={letter} checked={isSel} disabled={submitted} onChange={() => setSelected(s => ({ ...s, [idx]: letter }))} className="w-4 h-4 accent-primary cursor-pointer shrink-0" />
+                      <span><strong>{letter}.</strong> {opt}</span>
                     </label>
                   );
                 })}
