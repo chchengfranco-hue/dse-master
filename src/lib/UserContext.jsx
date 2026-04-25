@@ -1,9 +1,10 @@
-import { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { getUsers, initializeUsers } from '@/lib/auth';
 
 const UserContext = createContext(null);
 
-const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes of inactivity
+const ACTIVITY_EVENTS = ['mousedown', 'mousemove', 'keydown', 'touchstart', 'scroll', 'click'];
 
 export function UserProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -11,44 +12,42 @@ export function UserProvider({ children }) {
   const [currentUser, setCurrentUser] = useState('');
   const [ready, setReady] = useState(false);
   const logoutTimerRef = useRef(null);
+  const isAuthRef = useRef(false);
 
-  const clearSession = () => {
+  const clearSession = useCallback(() => {
+    isAuthRef.current = false;
     setIsAuthenticated(false);
     setIsEditor(false);
     setCurrentUser('');
     localStorage.removeItem('currentUser');
-    localStorage.removeItem('loginTime');
     if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
-  };
+  }, []);
 
-  const scheduleAutoLogout = (loginTime) => {
+  const resetInactivityTimer = useCallback(() => {
+    if (!isAuthRef.current) return;
     if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
-    const elapsed = Date.now() - loginTime;
-    const remaining = SESSION_TIMEOUT_MS - elapsed;
-    if (remaining <= 0) {
-      clearSession();
-    } else {
-      logoutTimerRef.current = setTimeout(() => { clearSession(); }, remaining);
-    }
-  };
+    logoutTimerRef.current = setTimeout(() => { clearSession(); }, SESSION_TIMEOUT_MS);
+  }, [clearSession]);
+
+  // Attach/detach activity listeners
+  useEffect(() => {
+    const handler = () => resetInactivityTimer();
+    ACTIVITY_EVENTS.forEach(e => window.addEventListener(e, handler, { passive: true }));
+    return () => ACTIVITY_EVENTS.forEach(e => window.removeEventListener(e, handler));
+  }, [resetInactivityTimer]);
 
   useEffect(() => {
     initializeUsers().then(() => {
       const stored = localStorage.getItem('currentUser');
-      const loginTime = parseInt(localStorage.getItem('loginTime') || '0', 10);
-      if (stored && loginTime) {
-        const elapsed = Date.now() - loginTime;
-        if (elapsed >= SESSION_TIMEOUT_MS) {
-          clearSession();
-        } else {
-          const users = getUsers();
-          const user = users.find(u => u.username === stored);
-          if (user) {
-            setIsAuthenticated(true);
-            setCurrentUser(user.username);
-            setIsEditor(user.isEditor);
-            scheduleAutoLogout(loginTime);
-          }
+      if (stored) {
+        const users = getUsers();
+        const user = users.find(u => u.username === stored);
+        if (user) {
+          isAuthRef.current = true;
+          setIsAuthenticated(true);
+          setCurrentUser(user.username);
+          setIsEditor(user.isEditor);
+          resetInactivityTimer();
         }
       }
       setReady(true);
@@ -62,13 +61,12 @@ export function UserProvider({ children }) {
       u => u.username.toLowerCase() === username.toLowerCase() && u.password === password
     );
     if (user) {
-      const now = Date.now();
+      isAuthRef.current = true;
       setIsAuthenticated(true);
       setIsEditor(user.isEditor);
       setCurrentUser(user.username);
       localStorage.setItem('currentUser', user.username);
-      localStorage.setItem('loginTime', String(now));
-      scheduleAutoLogout(now);
+      resetInactivityTimer();
       return true;
     }
     return false;
