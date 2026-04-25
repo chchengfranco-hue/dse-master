@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BookOpen, PenTool, Layers, MessageSquare, Book, Users, MoreHorizontal, ChevronLeft, TrendingUp, FileDown, Grid3X3, CheckSquare, Globe } from 'lucide-react';
 import HotIssuesModule from '@/pages/modules/HotIssuesModule';
 import GlobalPdfExport from '@/components/shared/GlobalPdfExport';
@@ -34,6 +34,13 @@ export default function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Redirect root path to default module
+  useEffect(() => {
+    if (isAuthenticated && location.pathname === '/') {
+      navigate(isEditor ? '/vocab' : '/progress', { replace: true });
+    }
+  }, [isAuthenticated, location.pathname]);
+
   // Derive active tab from current path
   const activeModule = (() => {
     const p = location.pathname;
@@ -46,7 +53,7 @@ export default function AppLayout() {
     if (p.startsWith('/progress')) return 'progress';
     if (p.startsWith('/hotissues')) return 'hotissues';
     if (p.startsWith('/vocab')) return 'vocab';
-    return isEditor ? 'vocab' : 'progress'; // students see progress first
+    return isEditor ? 'vocab' : 'progress';
   })();
 
   const getTabPath = (id) => id === 'vocab' ? '/vocab' : `/${id}`;
