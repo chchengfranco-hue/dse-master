@@ -472,6 +472,53 @@ function ClozeReadView({ exercise, isEditor, onBack, onSaveAnnotation }) {
   }, [isEditor, exercise.id, onSaveAnnotation]);
   const posClass = (m) => { const t = (m || '').toLowerCase(); if (/^n\./.test(t)) return 'border-l-4 border-blue-400 bg-blue-50'; if (/^v\./.test(t)) return 'border-l-4 border-red-400 bg-red-50'; if (/^adj\./.test(t)) return 'border-l-4 border-emerald-400 bg-emerald-50'; if (/^adv\./.test(t)) return 'border-l-4 border-amber-400 bg-amber-50'; return 'border-l-4 border-border bg-muted/40'; };
 
+  const [showPrintOptions, setShowPrintOptions] = useState(false);
+
+  const handlePrint = (withAnswers) => {
+    setShowPrintOptions(false);
+    const correctAnswers = tokens.filter(t => t.type === 'blank').map(t => t.correct);
+    const bank = buildWordBank(tokens);
+    let blankIdx = 0;
+    const passageHtml = tokens.map(token => {
+      if (token.type === 'text') return token.value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g, '<br/>');
+      const idx = blankIdx++;
+      const answer = correctAnswers[idx];
+      if (withAnswers) return `<span style="display:inline-block;min-width:80px;border-bottom:2px solid #7c3aed;text-align:center;font-weight:700;color:#7c3aed;padding:0 4px;">${answer}</span>`;
+      return `<span style="display:inline-block;min-width:80px;border-bottom:2px solid #333;padding:0 8px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>`;
+    }).join('');
+    const wordBankHtml = exercise.hasOptions === 'bank' && bank.length > 0
+      ? `<div style="border:1.5px dashed #93c5fd;border-radius:10px;padding:12px 16px;margin-bottom:18px;background:#eff6ff;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+          <strong style="color:#1e40af;font-size:10pt;display:block;margin-bottom:8px;">Word Bank:</strong>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">${bank.map(w => `<span style="background:#fff;border:1px solid #bfdbfe;padding:3px 12px;border-radius:20px;font-size:10pt;">${w}</span>`).join('')}</div>
+        </div>` : '';
+    const annotHtml = Object.keys(annotations).length > 0 && withAnswers
+      ? `<div style="margin-top:18px;border-top:1px solid #e5e7eb;padding-top:14px;">
+          <strong style="font-size:10pt;color:#374151;display:block;margin-bottom:8px;">Vocabulary Notes:</strong>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">${Object.entries(annotations).map(([w, m]) => `<div style="font-size:9pt;"><strong style="color:#7c3aed;">${w}</strong> — ${m}</div>`).join('')}</div>
+        </div>` : '';
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>${exercise.title}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: 'Inter', sans-serif; font-size: 12pt; color: #111; padding: 20mm 20mm 15mm; }
+      h1 { font-size: 16pt; font-weight: 700; margin-bottom: 4px; }
+      .meta { font-size: 9pt; color: #666; margin-bottom: 14px; }
+      .passage { font-size: 12pt; line-height: 2.4; }
+      @media print { body { padding: 15mm 18mm 12mm; } * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }
+    </style></head><body>
+    <h1>${exercise.title}</h1>
+    <div class="meta">${[exercise.topic, exercise.subtopic && exercise.subtopic !== 'General' ? exercise.subtopic : ''].filter(Boolean).join(' › ')}${withAnswers ? ' — Answer Key' : ''}</div>
+    ${wordBankHtml}
+    <div class="passage">${passageHtml}</div>
+    ${annotHtml}
+    <script>window.onload=()=>{ setTimeout(()=>{ window.print(); }, 600); }<\/script>
+    </body></html>`;
+    const w = window.open('', '_blank', 'width=800,height=600');
+    w.document.write(html);
+    w.document.close();
+  };
+
   return (
     <div className="px-4 lg:px-8 py-6 max-w-5xl mx-auto">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
@@ -481,7 +528,18 @@ function ClozeReadView({ exercise, isEditor, onBack, onSaveAnnotation }) {
             <button onClick={() => setShowRuby(v => !v)} className={`text-xs px-3 py-1.5 rounded-lg font-medium border select-none ${showRuby ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-muted text-muted-foreground border-border hover:bg-accent'}`}>📖 {showRuby ? 'Hide' : 'Show'} Ruby</button>
             <button onClick={() => setShowMargin(v => !v)} className={`text-xs px-3 py-1.5 rounded-lg font-medium border select-none ${showMargin ? 'bg-primary/10 text-primary border-primary/30' : 'bg-muted text-muted-foreground border-border hover:bg-accent'}`}>💬 {showMargin ? 'Hide' : 'Show'} Margin</button>
           </>}
-          <button onClick={() => window.print()} className="text-xs bg-card border border-border text-foreground hover:bg-muted px-3 py-1.5 rounded-lg font-medium select-none no-print">🖨️ Print</button>
+          <div className="relative">
+            <button onClick={() => setShowPrintOptions(v => !v)} className="text-xs bg-card border border-border text-foreground hover:bg-muted px-3 py-1.5 rounded-lg font-medium select-none">🖨️ Print</button>
+            {showPrintOptions && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowPrintOptions(false)} />
+                <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden w-48">
+                  <button onClick={() => handlePrint(false)} className="w-full text-left px-4 py-3 text-sm hover:bg-muted border-b border-border select-none">📄 Without Answers</button>
+                  <button onClick={() => handlePrint(true)} className="w-full text-left px-4 py-3 text-sm hover:bg-muted select-none">✅ With Answers</button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
       <div className="mb-4">
