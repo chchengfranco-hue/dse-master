@@ -12,7 +12,7 @@ function useClozeExercises(isEditor) {
     setLoading(true);
     const data = await base44.entities.ClozeExercise.list('-created_date', 200);
     const filtered = isEditor ? data : data.filter(e => e.status === 'published' || (e.status == null && e.is_published !== false));
-    setExercises(filtered.map(e => ({ ...e, hasOptions: e.has_options || 'bank', annotations: e.annotations || {} })));
+    setExercises(filtered.map(e => ({ ...e, hasOptions: e.has_options || 'bank', annotations: e.annotations || {}, mc_questions: e.mc_questions || [] })));
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
@@ -139,12 +139,70 @@ function ClozeContent({ tokens, hasOptions, answers, setAnswers, submitted, anno
   );
 }
 
+function MCClozeQuestionsEditor({ questions, onChange }) {
+  const addQuestion = () => {
+    const next = questions.length + 1;
+    onChange([...questions, { blank_id: `BLANK_${next}`, options: ['', '', '', ''], correct: '', explanation: '' }]);
+  };
+  const updateQuestion = (i, field, value) => {
+    const updated = questions.map((q, qi) => qi === i ? { ...q, [field]: value } : q);
+    onChange(updated);
+  };
+  const updateOption = (qi, oi, value) => {
+    const updated = questions.map((q, i) => i === qi ? { ...q, options: q.options.map((o, j) => j === oi ? value : o) } : q);
+    onChange(updated);
+  };
+  const removeQuestion = (i) => onChange(questions.filter((_, qi) => qi !== i));
+
+  return (
+    <div className="space-y-4 mb-5">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold text-foreground">Questions & Options</p>
+        <button type="button" onClick={addQuestion} className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-xs font-semibold hover:bg-primary/90">+ Add Question</button>
+      </div>
+      {questions.length === 0 && (
+        <p className="text-xs text-muted-foreground italic">No questions yet. Add a question for each [BLANK_N] in your passage.</p>
+      )}
+      {questions.map((q, qi) => (
+        <div key={qi} className="bg-muted/40 rounded-xl border border-border p-4 space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 flex-1">
+              <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded-lg">{q.blank_id || `BLANK_${qi+1}`}</span>
+              <input className="rounded-lg border border-input px-2 py-1 text-xs flex-1" placeholder="Blank ID (e.g. BLANK_1)" value={q.blank_id} onChange={e => updateQuestion(qi, 'blank_id', e.target.value)} />
+            </div>
+            <button type="button" onClick={() => removeQuestion(qi)} className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded-lg hover:bg-red-50">Remove</button>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {['A', 'B', 'C', 'D'].map((letter, oi) => (
+              <div key={oi} className="flex items-center gap-1.5">
+                <span className="text-xs font-bold text-muted-foreground w-4 shrink-0">{letter}.</span>
+                <input className="rounded-lg border border-input px-2 py-1.5 text-sm flex-1" placeholder={`Option ${letter}`} value={q.options[oi] || ''} onChange={e => updateOption(qi, oi, e.target.value)} />
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-foreground shrink-0">Correct:</span>
+            <Select value={q.correct} onValueChange={v => updateQuestion(qi, 'correct', v)}>
+              <SelectTrigger className="h-8 text-xs rounded-lg flex-1"><SelectValue placeholder="Select correct answer" /></SelectTrigger>
+              <SelectContent>
+                {q.options.filter(o => o.trim()).map((o, oi) => <SelectItem key={oi} value={o}>{['A','B','C','D'][oi]}. {o}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <input className="w-full rounded-lg border border-input px-2 py-1.5 text-xs" placeholder="Explanation (optional, shown after submission)" value={q.explanation || ''} onChange={e => updateQuestion(qi, 'explanation', e.target.value)} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function ClozeEditor({ exercise, onSave, onCancel }) {
   const [form, setForm] = useState({
     id: exercise?.id || null, title: exercise?.title || '', topic: exercise?.topic || '',
     subtopic: exercise?.subtopic || '', hasOptions: exercise?.hasOptions || 'bank',
     content: exercise?.content || '',
     status: exercise?.status || 'published',
+    mc_questions: exercise?.mc_questions || [],
     annotationsText: exercise?.annotations ? Object.entries(exercise.annotations).map(([k, v]) => `${k}: ${v}`).join('\n') : '',
   });
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
@@ -152,7 +210,7 @@ function ClozeEditor({ exercise, onSave, onCancel }) {
     if (!form.title.trim() || !form.content.trim()) return alert('Title and Content are required.');
     const annotations = {};
     form.annotationsText.split('\n').forEach(line => { const idx = line.indexOf(':'); if (idx > 0) { const w = line.slice(0, idx).trim(), m = line.slice(idx + 1).trim(); if (w && m) annotations[w] = m; } });
-    onSave({ id: form.id, title: form.title.trim(), topic: form.topic.trim() || 'Uncategorized', subtopic: form.subtopic.trim() || 'General', hasOptions: form.hasOptions, content: form.content.trim(), annotations, status: form.status });
+    onSave({ id: form.id, title: form.title.trim(), topic: form.topic.trim() || 'Uncategorized', subtopic: form.subtopic.trim() || 'General', hasOptions: form.hasOptions, content: form.content.trim(), annotations, status: form.status, mc_questions: form.hasOptions === 'mccloze' ? form.mc_questions : [] });
   };
   return (
     <div className="px-4 lg:px-8 py-6 max-w-3xl mx-auto">
@@ -170,11 +228,24 @@ function ClozeEditor({ exercise, onSave, onCancel }) {
               <SelectItem value="bank">Text Input (With Word Bank)</SelectItem>
               <SelectItem value="nobank">Text Input (Without Word Bank)</SelectItem>
               <SelectItem value="mcq">Multiple Choice Dropdown</SelectItem>
+              <SelectItem value="mccloze">MC Cloze (4 Options per Blank)</SelectItem>
             </SelectContent>
           </Select>
         </div>
-        <p className="text-xs text-muted-foreground mb-2">Enclose target words in brackets. Use pipe for explanation: <code className="bg-muted px-1 rounded">[word|explanation]</code>. For MCQ add wrong answers: <code className="bg-muted px-1 rounded">[fox/dog/cat|A wild animal]</code></p>
-        <RichTextArea value={form.content} onChange={v => set('content', v)} placeholder="Paste exercise content here..." minHeight="min-h-48" />
+
+        {form.hasOptions === 'mccloze' ? (
+          <>
+            <p className="text-xs text-muted-foreground mb-2">Write your passage using <code className="bg-muted px-1 rounded">[BLANK_1]</code>, <code className="bg-muted px-1 rounded">[BLANK_2]</code>, etc. as placeholders for each blank.</p>
+            <RichTextArea value={form.content} onChange={v => set('content', v)} placeholder="e.g. The sky is [BLANK_1] and the grass is [BLANK_2]." minHeight="min-h-36" />
+            <MCClozeQuestionsEditor questions={form.mc_questions} onChange={v => set('mc_questions', v)} />
+          </>
+        ) : (
+          <>
+            <p className="text-xs text-muted-foreground mb-2">Enclose target words in brackets. Use pipe for explanation: <code className="bg-muted px-1 rounded">[word|explanation]</code>. For MCQ add wrong answers: <code className="bg-muted px-1 rounded">[fox/dog/cat|A wild animal]</code></p>
+            <RichTextArea value={form.content} onChange={v => set('content', v)} placeholder="Paste exercise content here..." minHeight="min-h-48" />
+          </>
+        )}
+
         <p className="text-xs text-muted-foreground mb-2"><strong>Batch Annotations (Optional):</strong> <code className="bg-muted px-1 rounded">word: meaning</code> one per line.</p>
         <textarea className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-24 resize-y mb-5" placeholder={"word: definition\nword: definition"} value={form.annotationsText} onChange={e => set('annotationsText', e.target.value)} />
         <div className="flex items-center gap-3 mb-5 p-3 bg-muted/50 rounded-xl border border-border">
@@ -232,7 +303,7 @@ function ClozeLibrary({ exercises, isEditor, onView, onEdit, onDelete, onBulkImp
                 <div className="flex flex-wrap gap-2 mt-2">
                   {p.topic && <span className="text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-medium">{p.topic}</span>}
                   {p.subtopic && p.subtopic !== 'General' && <span className="text-xs bg-secondary text-secondary-foreground px-2.5 py-0.5 rounded-full font-medium">{p.subtopic}</span>}
-                  <span className="text-xs bg-muted text-muted-foreground px-2.5 py-0.5 rounded-full">{p.hasOptions === 'bank' ? 'Word Bank' : p.hasOptions === 'mcq' ? 'MCQ Dropdown' : 'Text Input'}</span>
+                  <span className="text-xs bg-muted text-muted-foreground px-2.5 py-0.5 rounded-full">{p.hasOptions === 'bank' ? 'Word Bank' : p.hasOptions === 'mcq' ? 'MCQ Dropdown' : p.hasOptions === 'mccloze' ? 'MC Cloze' : 'Text Input'}</span>
                   {isEditor && p.status === 'draft' && <span className="text-xs bg-amber-100 text-amber-700 px-2.5 py-0.5 rounded-full font-semibold border border-amber-300">🔒 Draft</span>}
                 </div>
               </div>
@@ -254,6 +325,115 @@ function ClozeLibrary({ exercises, isEditor, onView, onEdit, onDelete, onBulkImp
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function MCClozeReadView({ exercise, onBack }) {
+  const questions = exercise.mc_questions || [];
+  const [answers, setAnswers] = useState({});
+  const [submitted, setSubmitted] = useState(false);
+
+  // Shuffle options once on mount
+  const [shuffledOptions] = useState(() =>
+    questions.map(q => [...(q.options || [])].sort(() => 0.5 - Math.random()))
+  );
+
+  const score = submitted ? questions.filter(q => answers[q.blank_id] === q.correct).length : 0;
+
+  // Render passage with inline answer boxes replacing [BLANK_N]
+  const renderPassage = () => {
+    const parts = (exercise.content || '').split(/(\[BLANK_\d+\])/g);
+    return parts.map((part, i) => {
+      const match = part.match(/^\[([^\]]+)\]$/);
+      if (!match) return <span key={i} className="whitespace-pre-wrap">{part}</span>;
+      const blankId = match[1];
+      const qIdx = questions.findIndex(q => q.blank_id === blankId);
+      const userAns = answers[blankId];
+      const isCorrect = submitted && userAns === questions[qIdx]?.correct;
+      const isWrong = submitted && userAns && !isCorrect;
+      return (
+        <span key={i} className={`inline-flex items-center mx-1 px-2 py-0.5 rounded-lg border font-semibold text-base align-baseline ${submitted ? (isCorrect ? 'bg-green-100 text-green-700 border-green-300' : isWrong ? 'bg-red-100 text-red-600 border-red-300 line-through' : 'bg-muted text-muted-foreground border-border') : 'bg-primary/10 text-primary border-primary/30'}`}>
+          {userAns || <span className="text-muted-foreground text-sm">{blankId}</span>}
+        </span>
+      );
+    });
+  };
+
+  return (
+    <div className="px-4 lg:px-8 py-6 max-w-4xl mx-auto">
+      <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
+        <button onClick={onBack} className="px-3 py-1.5 bg-card border border-border rounded-lg text-sm hover:bg-muted select-none">← Back to Library</button>
+        {submitted && (
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-semibold text-foreground">Score: <span className="text-primary">{score} / {questions.length}</span></span>
+            <button onClick={() => { setAnswers({}); setSubmitted(false); }} className="px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:bg-primary/90 select-none">🔄 Try Again</button>
+          </div>
+        )}
+      </div>
+      <h2 className="text-2xl font-bold text-foreground mb-2">{exercise.title}</h2>
+      {exercise.topic && <span className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">{exercise.topic}{exercise.subtopic && exercise.subtopic !== 'General' ? ` › ${exercise.subtopic}` : ''}</span>}
+
+      {/* Passage */}
+      <div className="mt-5 bg-card rounded-2xl border border-border p-6 text-lg leading-loose mb-6">
+        {renderPassage()}
+      </div>
+
+      {/* Question list */}
+      <div className="space-y-4 mb-6">
+        {questions.map((q, qi) => {
+          const opts = shuffledOptions[qi] || q.options;
+          const userAns = answers[q.blank_id];
+          const isCorrect = submitted && userAns === q.correct;
+          return (
+            <div key={qi} className={`bg-card rounded-2xl border p-5 ${submitted ? (isCorrect ? 'border-green-300' : 'border-red-300') : 'border-border'}`}>
+              <p className="text-sm font-semibold text-foreground mb-3">
+                <span className="bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-lg mr-2">{q.blank_id}</span>
+                Choose the best answer:
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {opts.map((opt, oi) => {
+                  const letter = ['A', 'B', 'C', 'D'][oi];
+                  const selected = userAns === opt;
+                  const isThisCorrect = submitted && opt === q.correct;
+                  const isThisWrong = submitted && selected && !isThisCorrect;
+                  return (
+                    <button key={oi} disabled={submitted}
+                      onClick={() => setAnswers(a => ({ ...a, [q.blank_id]: opt }))}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium text-left transition-all select-none
+                        ${isThisCorrect ? 'bg-green-100 border-green-400 text-green-800' :
+                          isThisWrong ? 'bg-red-100 border-red-400 text-red-700' :
+                          selected ? 'bg-primary/10 border-primary text-primary' :
+                          'bg-background border-border text-foreground hover:bg-muted'}`}>
+                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0
+                        ${isThisCorrect ? 'bg-green-500 text-white' :
+                          isThisWrong ? 'bg-red-500 text-white' :
+                          selected ? 'bg-primary text-primary-foreground' :
+                          'bg-muted text-muted-foreground'}`}>{letter}</span>
+                      {opt}
+                    </button>
+                  );
+                })}
+              </div>
+              {submitted && !isCorrect && (
+                <p className="mt-3 text-xs text-green-700 font-medium">✅ Correct answer: <strong>{q.correct}</strong>{q.explanation ? ` — ${q.explanation}` : ''}</p>
+              )}
+              {submitted && isCorrect && q.explanation && (
+                <p className="mt-3 text-xs text-green-700">{q.explanation}</p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {!submitted && (
+        <div className="text-center">
+          <button onClick={() => { if (Object.keys(answers).length < questions.length && !confirm("Haven't answered all. Submit anyway?")) return; setSubmitted(true); }}
+            className="px-6 py-2.5 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 text-sm select-none">
+            ✅ Submit Answers
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -357,7 +537,7 @@ export default function ClozeModule({ isEditor }) {
   const { exercises, loading, reload } = useClozeExercises(isEditor);
 
   const saveExercise = async (data) => {
-    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, has_options: data.hasOptions || 'bank', content: data.content, annotations: data.annotations || {}, status: data.status || 'published', is_published: data.status !== 'draft' };
+    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, has_options: data.hasOptions || 'bank', content: data.content, annotations: data.annotations || {}, status: data.status || 'published', is_published: data.status !== 'draft', mc_questions: data.mc_questions || [] };
     if (data.id) await contentApi.update('ClozeExercise', data.id, payload);
     else await contentApi.create('ClozeExercise', payload);
     navigate('/cloze');
@@ -389,6 +569,7 @@ export default function ClozeModule({ isEditor }) {
           const id = window.location.pathname.split('/').pop();
           useEffect(() => { base44.entities.ClozeExercise.get(id).then(e => setEx({ ...e, hasOptions: e.has_options || 'bank', annotations: e.annotations || {} })); }, [id]);
           if (!ex) return <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>;
+          if (ex.hasOptions === 'mccloze') return <MCClozeReadView exercise={ex} onBack={() => navigate('/cloze')} />;
           return <ClozeReadView exercise={ex} isEditor={isEditor} onBack={() => navigate('/cloze')} onSaveAnnotation={handleSaveAnnotation} />;
         };
         return <W />;
@@ -399,7 +580,7 @@ export default function ClozeModule({ isEditor }) {
           const idStr = window.location.pathname.split('/').pop();
           useEffect(() => {
             if (idStr === 'new') { setEx(null); return; }
-            base44.entities.ClozeExercise.get(idStr).then(e => setEx({ ...e, hasOptions: e.has_options || 'bank', annotations: e.annotations || {} }));
+            base44.entities.ClozeExercise.get(idStr).then(e => setEx({ ...e, hasOptions: e.has_options || 'bank', annotations: e.annotations || {}, mc_questions: e.mc_questions || [] }));
           }, [idStr]);
           if (ex === undefined) return <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>;
           return <ClozeEditor exercise={ex} onSave={saveExercise} onCancel={() => navigate('/cloze')} />;

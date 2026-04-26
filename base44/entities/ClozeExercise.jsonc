@@ -19,14 +19,43 @@
       "enum": [
         "bank",
         "nobank",
-        "mcq"
+        "mcq",
+        "mccloze"
       ],
       "default": "bank",
-      "description": "Exercise type: word bank, no bank, or MCQ dropdown"
+      "description": "Exercise type: word bank, no bank, MCQ dropdown, or MC Cloze (passage with BLANK placeholders + separate question list)"
     },
     "content": {
       "type": "string",
-      "description": "Cloze passage content with [word|explanation] brackets"
+      "description": "Cloze passage content. For mccloze type, use [BLANK_1], [BLANK_2] etc. as placeholders."
+    },
+    "mc_questions": {
+      "type": "array",
+      "description": "For mccloze type: list of questions, each with 4 options and the correct answer",
+      "items": {
+        "type": "object",
+        "properties": {
+          "blank_id": {
+            "type": "string",
+            "description": "e.g. BLANK_1"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Exactly 4 answer options (A, B, C, D)"
+          },
+          "correct": {
+            "type": "string",
+            "description": "The correct option text"
+          },
+          "explanation": {
+            "type": "string",
+            "description": "Optional explanation shown after submission"
+          }
+        }
+      }
     },
     "annotations": {
       "type": "object",
