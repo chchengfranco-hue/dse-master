@@ -18,14 +18,15 @@
     "level": {
       "type": "string",
       "enum": [
-        "Beginner",
-        "Elementary",
-        "Intermediate",
-        "Upper-Intermediate",
-        "Advanced"
+        "S1",
+        "S2",
+        "S3",
+        "S4",
+        "S5",
+        "S6"
       ],
-      "default": "Beginner",
-      "description": "Student proficiency level"
+      "default": "S1",
+      "description": "Student school year level"
     },
     "expiry_date": {
       "type": "string",

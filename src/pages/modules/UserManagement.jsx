@@ -5,14 +5,15 @@ import { Input } from '@/components/ui/input';
 import PageHeader from '@/components/shared/PageHeader';
 import { getUsers, saveUsers, isOwnerAccount } from '@/lib/auth';
 
-const LEVELS = ['Beginner', 'Elementary', 'Intermediate', 'Upper-Intermediate', 'Advanced'];
+const LEVELS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6'];
 
 const LEVEL_COLORS = {
-  'Beginner':          'bg-slate-100 text-slate-700',
-  'Elementary':        'bg-blue-100 text-blue-700',
-  'Intermediate':      'bg-amber-100 text-amber-700',
-  'Upper-Intermediate':'bg-orange-100 text-orange-700',
-  'Advanced':          'bg-green-100 text-green-700',
+  'S1': 'bg-slate-100 text-slate-700',
+  'S2': 'bg-blue-100 text-blue-700',
+  'S3': 'bg-cyan-100 text-cyan-700',
+  'S4': 'bg-amber-100 text-amber-700',
+  'S5': 'bg-orange-100 text-orange-700',
+  'S6': 'bg-green-100 text-green-700',
 };
 
 function isExpired(expiryDate) {
@@ -21,7 +22,7 @@ function isExpired(expiryDate) {
 }
 
 function EditUserModal({ user, onSave, onClose }) {
-  const [level, setLevel] = useState(user.level || 'Beginner');
+  const [level, setLevel] = useState(user.level || 'S1');
   const [expiryDate, setExpiryDate] = useState(user.expiryDate || '');
 
   return (
@@ -84,7 +85,7 @@ export default function UserManagement() {
   const addUser = () => {
     if (!form.username.trim() || !form.password.trim()) return setError('Username and password required.');
     if (users.find(u => u.username.toLowerCase() === form.username.toLowerCase())) return setError('Username already exists.');
-    update([...users, { username: form.username.trim(), password: form.password, isEditor: form.isEditor, level: 'Beginner', expiryDate: '' }]);
+    update([...users, { username: form.username.trim(), password: form.password, isEditor: form.isEditor, level: 'S1', expiryDate: '' }]);
     setForm({ username: '', password: '', isEditor: false });
     setAdding(false);
     setError('');
