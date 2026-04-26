@@ -14,7 +14,7 @@ export const initializeUsers = async () => {
     const dbUsers = await base44.entities.AppUser.list();
     if (dbUsers && dbUsers.length > 0) {
       // Sync DB data to localStorage, always mark owner
-      const users = dbUsers.map(u => ({ username: u.username, password: u.password, isEditor: u.is_editor, dbId: u.id, isOwner: isOwnerAccount(u.username) }));
+      const users = dbUsers.map(u => ({ username: u.username, password: u.password, isEditor: u.is_editor, dbId: u.id, isOwner: isOwnerAccount(u.username), level: u.level || 'Beginner', expiryDate: u.expiry_date || '' }));
       localStorage.setItem("appUsers", JSON.stringify(users));
       return;
     }
@@ -56,11 +56,11 @@ export const saveUsers = async (users) => {
     for (const u of users) {
       if (dbMap[u.username]) {
         // Update existing
-        await base44.entities.AppUser.update(dbMap[u.username].id, { password: u.password, is_editor: u.isEditor || false });
+        await base44.entities.AppUser.update(dbMap[u.username].id, { password: u.password, is_editor: u.isEditor || false, level: u.level || 'Beginner', expiry_date: u.expiryDate || '' });
         u.dbId = dbMap[u.username].id;
       } else {
         // Create new
-        const created = await base44.entities.AppUser.create({ username: u.username, password: u.password, is_editor: u.isEditor || false });
+        const created = await base44.entities.AppUser.create({ username: u.username, password: u.password, is_editor: u.isEditor || false, level: u.level || 'Beginner', expiry_date: u.expiryDate || '' });
         u.dbId = created.id;
       }
     }

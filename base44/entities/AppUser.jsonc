@@ -14,6 +14,22 @@
       "type": "boolean",
       "default": false,
       "description": "Whether this user has editor privileges"
+    },
+    "level": {
+      "type": "string",
+      "enum": [
+        "Beginner",
+        "Elementary",
+        "Intermediate",
+        "Upper-Intermediate",
+        "Advanced"
+      ],
+      "default": "Beginner",
+      "description": "Student proficiency level"
+    },
+    "expiry_date": {
+      "type": "string",
+      "description": "Account expiry date (YYYY-MM-DD). Empty = no expiry."
     }
   },
   "required": [
