@@ -241,7 +241,17 @@ function ClozeEditor({ exercise, onSave, onCancel }) {
           </>
         ) : (
           <>
-            <p className="text-xs text-muted-foreground mb-2">Enclose target words in brackets. Use pipe for explanation: <code className="bg-muted px-1 rounded">[word|explanation]</code>. For MCQ add wrong answers: <code className="bg-muted px-1 rounded">[fox/dog/cat|A wild animal]</code></p>
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs text-muted-foreground">Enclose target words in brackets. Use pipe for explanation: <code className="bg-muted px-1 rounded">[word|explanation]</code>. For MCQ add wrong answers: <code className="bg-muted px-1 rounded">[fox/dog/cat|A wild animal]</code></p>
+              {form.hasOptions === 'bank' && (
+                <button type="button" onClick={() => {
+                  set('content', `Climate change has [significantly|adv. in an important way] [altered|v. changed] weather patterns around the world. Scientists [warn|v. caution] that rising temperatures could [devastate|v. destroy badly] ecosystems and [displace|v. force to leave] millions of people.\n\nGovernments are now under [pressure|n. strong demand] to [implement|v. put into action] policies that [reduce|v. lower] carbon [emissions|n. gases released into the air] and [promote|v. encourage] the use of [renewable|adj. naturally replenished] energy sources.`);
+                  set('annotationsText', `significantly: adv. in an important way\naltered: v. changed\nwarn: v. caution\ndevastate: v. destroy badly\ndisplace: v. force to leave\npressure: n. strong demand\nimplement: v. put into action\nreduce: v. lower\nemissions: n. gases released into the air\npromote: v. encourage\nrenewable: adj. naturally replenished`);
+                }} className="ml-3 shrink-0 px-3 py-1.5 bg-sky-50 text-sky-700 border border-sky-200 rounded-lg text-xs font-semibold hover:bg-sky-100 transition-colors whitespace-nowrap">
+                  📋 Use Template
+                </button>
+              )}
+            </div>
             <RichTextArea value={form.content} onChange={v => set('content', v)} placeholder="Paste exercise content here..." minHeight="min-h-48" />
           </>
         )}
