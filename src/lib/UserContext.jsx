@@ -55,21 +55,39 @@ export function UserProvider({ children }) {
     return () => { if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current); };
   }, []);
 
+  // Periodically check if current user's account has expired
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!isAuthRef.current) return;
+      const stored = localStorage.getItem('currentUser');
+      if (!stored) return;
+      const users = getUsers();
+      const user = users.find(u => u.username === stored);
+      if (!user) return;
+      if (user.expiryDate && new Date(user.expiryDate) < new Date(new Date().toDateString())) {
+        clearSession();
+      }
+    }, 60 * 1000); // check every minute
+    return () => clearInterval(interval);
+  }, [clearSession]);
+
   const login = (username, password) => {
     const users = getUsers();
     const user = users.find(
       u => u.username.toLowerCase() === username.toLowerCase() && u.password === password
     );
-    if (user) {
-      isAuthRef.current = true;
-      setIsAuthenticated(true);
-      setIsEditor(user.isEditor);
-      setCurrentUser(user.username);
-      localStorage.setItem('currentUser', user.username);
-      resetInactivityTimer();
-      return true;
+    if (!user) return false;
+    // Block login if account is expired (paused)
+    if (user.expiryDate && new Date(user.expiryDate) < new Date(new Date().toDateString())) {
+      return 'expired';
     }
-    return false;
+    isAuthRef.current = true;
+    setIsAuthenticated(true);
+    setIsEditor(user.isEditor);
+    setCurrentUser(user.username);
+    localStorage.setItem('currentUser', user.username);
+    resetInactivityTimer();
+    return true;
   };
 
   const logout = () => {

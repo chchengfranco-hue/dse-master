@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2, UserPlus, Shield, User, Pencil, X, CalendarDays, BarChart2 } from 'lucide-react';
+import { UserPlus, Shield, User, Pencil, X, CalendarDays, BarChart2, PauseCircle, PlayCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import PageHeader from '@/components/shared/PageHeader';
@@ -91,10 +91,22 @@ export default function UserManagement() {
     setError('');
   };
 
-  const deleteUser = (username) => {
+  const togglePause = (username) => {
     if (isOwnerAccount(username)) return;
-    if (users.length === 1) return setError('Cannot delete the last user.');
-    update(users.filter(u => u.username !== username));
+    const user = users.find(u => u.username === username);
+    if (!user) return;
+    const today = new Date().toISOString().split('T')[0];
+    // If currently expired/paused → resume by clearing expiry; if active → pause by setting expiry to yesterday
+    const isCurrentlyPaused = user.expiryDate && new Date(user.expiryDate) < new Date(new Date().toDateString());
+    if (isCurrentlyPaused) {
+      // Resume: clear expiry date
+      update(users.map(u => u.username === username ? { ...u, expiryDate: '' } : u));
+    } else {
+      // Pause: set expiry to yesterday
+      const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+      const yDate = yesterday.toISOString().split('T')[0];
+      update(users.map(u => u.username === username ? { ...u, expiryDate: yDate } : u));
+    }
   };
 
   const toggleEditor = (username) => {
@@ -108,7 +120,7 @@ export default function UserManagement() {
 
   return (
     <div className="px-4 lg:px-8 py-6 max-w-4xl mx-auto">
-      <PageHeader icon="👥" title="User Management" description="Add, remove, and manage user accounts and permissions." />
+      <PageHeader icon="👥" title="User Management" description="Add and manage user accounts. Pause accounts to block access, or resume them to restore it." />
 
       <div className="mb-6">
         {!adding ? (
@@ -164,9 +176,17 @@ export default function UserManagement() {
                 <Button variant="outline" size="sm" onClick={() => setEditingUser(user)}>
                   <Pencil className="w-3.5 h-3.5" />
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => deleteUser(user.username)} className="text-muted-foreground hover:text-destructive">
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                {!isOwnerAccount(user.username) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => togglePause(user.username)}
+                    className={expired ? 'text-green-600 hover:text-green-700 hover:bg-green-50' : 'text-amber-500 hover:text-amber-600 hover:bg-amber-50'}
+                    title={expired ? 'Resume account' : 'Pause account'}
+                  >
+                    {expired ? <PlayCircle className="w-4 h-4" /> : <PauseCircle className="w-4 h-4" />}
+                  </Button>
+                )}
               </div>
             </div>
           );

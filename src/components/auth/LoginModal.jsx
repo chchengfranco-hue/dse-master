@@ -9,8 +9,9 @@ export default function LoginModal({ onLogin }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const success = onLogin(username, password);
-    if (!success) setError('Invalid username or password.');
+    const result = onLogin(username, password);
+    if (result === 'expired') setError('Your account has been paused. Please contact your administrator.');
+    else if (!result) setError('Invalid username or password.');
   };
 
   return (
