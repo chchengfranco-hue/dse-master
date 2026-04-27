@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, PenTool, Layers, MessageSquare, Book, Users, MoreHorizontal, ChevronLeft, TrendingUp, FileDown, Grid3X3, CheckSquare, Globe, ClipboardList } from 'lucide-react';
+import { BookOpen, PenTool, Layers, MessageSquare, Book, Users, ChevronLeft, TrendingUp, FileDown, Grid3X3, CheckSquare, Globe, ClipboardList, Settings2 } from 'lucide-react';
 import HotIssuesModule from '@/pages/modules/HotIssuesModule';
 import GlobalPdfExport from '@/components/shared/GlobalPdfExport';
 import { cn } from '@/lib/utils';
@@ -32,6 +32,7 @@ export default function AppLayout() {
   const [showMore, setShowMore] = useState(false);
   const [showGlobalPdf, setShowGlobalPdf] = useState(false);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
+  const [showManagePicker, setShowManagePicker] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -50,8 +51,8 @@ export default function AppLayout() {
     if (p.startsWith('/grammar')) return 'exercises';
     if (p.startsWith('/essential')) return 'essential';
     if (p.startsWith('/speaking')) return 'speaking';
-    if (p.startsWith('/users')) return 'users';
-    if (p.startsWith('/tasks')) return 'tasks';
+    if (p.startsWith('/users')) return 'manage';
+    if (p.startsWith('/tasks')) return 'manage';
     if (p.startsWith('/progress')) return 'progress';
     if (p.startsWith('/hotissues')) return 'hotissues';
     if (p.startsWith('/vocab')) return 'vocab';
@@ -72,6 +73,13 @@ export default function AppLayout() {
   // Handle exercises tab click — show picker if not already on cloze/grammar
   const handleExercisesClick = () => {
     setShowExercisePicker(true);
+    setShowManagePicker(false);
+    setShowMore(false);
+  };
+
+  const handleManageClick = () => {
+    setShowManagePicker(true);
+    setShowExercisePicker(false);
     setShowMore(false);
   };
 
@@ -98,7 +106,7 @@ export default function AppLayout() {
 
   const modules = (() => {
     let mods = isEditor
-      ? [...baseModules, { id: 'tasks', icon: ClipboardList, label: 'Tasks' }, { id: 'users', icon: Users, label: 'Users' }]
+      ? [...baseModules, { id: 'manage', icon: Settings2, label: 'Manage' }]
       : baseModules;
     // Filter by allowedModules if admin has restricted access (editors always see all)
     if (!isEditor && allowedModules !== null) {
@@ -188,8 +196,8 @@ export default function AppLayout() {
             {activeModule === 'exercises' && !location.pathname.startsWith('/grammar') && <ClozeModule isEditor={isEditor} />}
             {activeModule === 'essential' && <EssentialVocabModule isEditor={isEditor} />}
             {activeModule === 'speaking' && <SpeakingModule isEditor={isEditor} />}
-            {activeModule === 'users' && isEditor && <UserManagement />}
-            {activeModule === 'tasks' && isEditor && <TaskBoard />}
+            {activeModule === 'manage' && location.pathname.startsWith('/users') && isEditor && <UserManagement />}
+            {activeModule === 'manage' && location.pathname.startsWith('/tasks') && isEditor && <TaskBoard />}
             {activeModule === 'progress' && <Progress />}
             {activeModule === 'hotissues' && <HotIssuesModule isEditor={isEditor} />}
           </motion.div>
@@ -222,15 +230,40 @@ export default function AppLayout() {
             <div className="fixed inset-0 z-[-1]" onClick={() => setShowExercisePicker(false)} />
           </>
         }
+
+        {/* Manage picker sheet */}
+        {showManagePicker &&
+        <>
+            <div className="absolute bottom-full left-0 right-0 bg-card border-t border-border shadow-lg rounded-t-2xl p-4">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-3 text-center">Manage</p>
+              <div className="grid grid-cols-2 gap-3">
+                <button onClick={() => {navigate('/tasks');setShowManagePicker(false);}}
+              className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border bg-background hover:bg-primary/5 hover:border-primary/30 transition-all">
+                  <ClipboardList className="w-6 h-6 text-primary" />
+                  <span className="text-sm font-semibold text-foreground">Tasks</span>
+                  <span className="text-xs text-muted-foreground">Editor task board</span>
+                </button>
+                <button onClick={() => {navigate('/users');setShowManagePicker(false);}}
+              className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border bg-background hover:bg-primary/5 hover:border-primary/30 transition-all">
+                  <Users className="w-6 h-6 text-primary" />
+                  <span className="text-sm font-semibold text-foreground">Users</span>
+                  <span className="text-xs text-muted-foreground">Manage accounts</span>
+                </button>
+              </div>
+            </div>
+            <div className="fixed inset-0 z-[-1]" onClick={() => setShowManagePicker(false)} />
+          </>
+        }
         <div className="flex justify-around items-center h-16 px-1 overflow-x-auto">
           {modules.map((mod) => {
             const Icon = mod.icon;
-            const isActive = activeModule === mod.id;
+            const isActive = activeModule === mod.id || (mod.id === 'manage' && (activeModule === 'manage'));
             return (
               <button key={mod.id}
               onClick={() => {
-                if (mod.id === 'exercises') {handleExercisesClick();} else
-                {navigate(getTabPath(mod.id));setShowMore(false);setShowExercisePicker(false);}
+                if (mod.id === 'exercises') { handleExercisesClick(); }
+                else if (mod.id === 'manage') { handleManageClick(); }
+                else { navigate(getTabPath(mod.id)); setShowMore(false); setShowExercisePicker(false); setShowManagePicker(false); }
               }}
               className={cn("flex flex-col items-center justify-center flex-1 h-12 rounded-xl mx-0.5 transition-all duration-200 select-none min-w-[52px]",
               isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
