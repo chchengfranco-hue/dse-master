@@ -198,28 +198,7 @@ export default function AppLayout() {
 
       {/* Bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-40 pb-[env(safe-area-inset-bottom)]">
-        {/* More drawer */}
-        {showMore &&
-        <>
-            <div className="absolute bottom-full left-0 right-0 bg-card border-t border-border shadow-lg rounded-t-2xl p-3 grid grid-cols-4 gap-2">
-              {modules.slice(4).map((mod) => {
-              const Icon = mod.icon;
-              const isActive = activeModule === mod.id;
-              return (
-                <button key={mod.id} onClick={() => {
-                  if (mod.id === 'exercises') {handleExercisesClick();} else
-                  {navigate(getTabPath(mod.id));setShowMore(false);setShowExercisePicker(false);}
-                }}
-                className={cn("flex flex-col items-center justify-center py-3 rounded-xl transition-all select-none", isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-muted")}>
-                    <Icon className="w-5 h-5" />
-                    <span className="text-[10px] mt-1 font-medium">{mod.label}</span>
-                  </button>);
 
-            })}
-            </div>
-            <div className="fixed inset-0 z-[-1]" onClick={() => setShowMore(false)} />
-          </>
-        }
         {/* Exercise picker sheet */}
         {showExercisePicker &&
         <>
@@ -243,8 +222,8 @@ export default function AppLayout() {
             <div className="fixed inset-0 z-[-1]" onClick={() => setShowExercisePicker(false)} />
           </>
         }
-        <div className="flex justify-around items-center h-16 px-2">
-          {modules.slice(0, 4).map((mod) => {
+        <div className="flex justify-around items-center h-16 px-1 overflow-x-auto">
+          {modules.map((mod) => {
             const Icon = mod.icon;
             const isActive = activeModule === mod.id;
             return (
@@ -253,19 +232,12 @@ export default function AppLayout() {
                 if (mod.id === 'exercises') {handleExercisesClick();} else
                 {navigate(getTabPath(mod.id));setShowMore(false);setShowExercisePicker(false);}
               }}
-              className={cn("flex flex-col items-center justify-center flex-1 h-12 rounded-xl mx-0.5 transition-all duration-200 select-none",
+              className={cn("flex flex-col items-center justify-center flex-1 h-12 rounded-xl mx-0.5 transition-all duration-200 select-none min-w-[52px]",
               isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
                 <Icon className="w-5 h-5" />
-                <span className="text-[10px] mt-0.5 font-medium">{mod.label}</span>
+                <span className="text-[9px] mt-0.5 font-medium leading-tight text-center">{mod.label}</span>
               </button>);
-
           })}
-          <button onClick={() => {setShowMore((v) => !v);setShowExercisePicker(false);}}
-          className={cn("flex flex-col items-center justify-center flex-1 h-12 rounded-xl mx-0.5 transition-all duration-200 select-none",
-          showMore || modules.slice(4).some((m) => m.id === activeModule) ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
-            <MoreHorizontal className="w-5 h-5" />
-            <span className="text-[10px] mt-0.5 font-medium">More</span>
-          </button>
         </div>
       </nav>
       {showGlobalPdf && <GlobalPdfExport onClose={() => setShowGlobalPdf(false)} />}
