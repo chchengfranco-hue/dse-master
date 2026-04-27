@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import PageHeader from '@/components/shared/PageHeader';
 import { getUsers, saveUsers, isOwnerAccount } from '@/lib/auth';
+import { useUser } from '@/lib/UserContext';
 
 const LEVELS = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6'];
 
@@ -131,6 +132,8 @@ function EditUserModal({ user, onSave, onClose }) {
 }
 
 export default function UserManagement() {
+  const { currentUser: loggedInUsername } = useUser();
+  const isAdmin = isOwnerAccount(loggedInUsername);
   const [users, setUsers] = useState(() => getUsers().filter(u => !isOwnerAccount(u.username)));
   const [form, setForm] = useState({ username: '', password: '', isEditor: false, isChiefEditor: false });
   const [adding, setAdding] = useState(false);
@@ -170,13 +173,18 @@ export default function UserManagement() {
     const user = users.find(u => u.username === username);
     if (!user) return;
     if (user.isChiefEditor) {
-      // Demote from Chief Editor → Student
+      if (!isAdmin) return; // only admin can demote chief editor
       update(users.map(u => u.username === username ? { ...u, isEditor: false, isChiefEditor: false } : u));
     } else if (user.isEditor) {
-      // Promote from Editor → Chief Editor
-      update(users.map(u => u.username === username ? { ...u, isEditor: true, isChiefEditor: true } : u));
+      if (isAdmin) {
+        // Admin: promote Editor → Chief Editor
+        update(users.map(u => u.username === username ? { ...u, isEditor: true, isChiefEditor: true } : u));
+      } else {
+        // Non-admin: demote Editor → Student
+        update(users.map(u => u.username === username ? { ...u, isEditor: false, isChiefEditor: false } : u));
+      }
     } else {
-      // Promote from Student → Editor
+      // Promote Student → Editor
       update(users.map(u => u.username === username ? { ...u, isEditor: true, isChiefEditor: false } : u));
     }
   };
@@ -208,10 +216,12 @@ export default function UserManagement() {
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-sm font-medium transition-all ${form.isEditor && !form.isChiefEditor ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-background text-foreground hover:bg-muted'}`}>
                   <Shield className="w-3.5 h-3.5" /> Editor
                 </button>
-                <button type="button" onClick={() => setForm(p => ({ ...p, isEditor: true, isChiefEditor: true }))}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-sm font-medium transition-all ${form.isChiefEditor ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-border bg-background text-foreground hover:bg-muted'}`}>
-                  <Crown className="w-3.5 h-3.5" /> Chief Editor
-                </button>
+                {isAdmin && (
+                  <button type="button" onClick={() => setForm(p => ({ ...p, isEditor: true, isChiefEditor: true }))}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-sm font-medium transition-all ${form.isChiefEditor ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-border bg-background text-foreground hover:bg-muted'}`}>
+                    <Crown className="w-3.5 h-3.5" /> Chief Editor
+                  </button>
+                )}
               </div>
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
@@ -251,10 +261,18 @@ export default function UserManagement() {
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <Button variant="outline" size="sm" onClick={() => toggleEditor(user.username)}
-                  className={user.isChiefEditor ? 'border-amber-300 text-amber-700 hover:bg-amber-50' : ''}>
-                  {user.isChiefEditor ? '👑 Demote' : user.isEditor ? '⬆️ Chief Editor' : 'Make Editor'}
-                </Button>
+                {isAdmin ? (
+                  <Button variant="outline" size="sm" onClick={() => toggleEditor(user.username)}
+                    className={user.isChiefEditor ? 'border-amber-300 text-amber-700 hover:bg-amber-50' : ''}>
+                    {user.isChiefEditor ? '👑 Demote' : user.isEditor ? '⬆️ Chief Editor' : 'Make Editor'}
+                  </Button>
+                ) : (
+                  !user.isChiefEditor && (
+                    <Button variant="outline" size="sm" onClick={() => toggleEditor(user.username)}>
+                      {user.isEditor ? 'Remove Editor' : 'Make Editor'}
+                    </Button>
+                  )
+                )}
                 <Button variant="outline" size="sm" onClick={() => setEditingUser(user)}>
                   <Pencil className="w-3.5 h-3.5" />
                 </Button>
