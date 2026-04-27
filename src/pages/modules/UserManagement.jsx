@@ -1,5 +1,15 @@
 import { useState } from 'react';
-import { UserPlus, Shield, User, Pencil, X, CalendarDays, BarChart2, PauseCircle, PlayCircle } from 'lucide-react';
+import { UserPlus, Shield, User, Pencil, X, CalendarDays, BarChart2, PauseCircle, PlayCircle, LayoutGrid } from 'lucide-react';
+
+const ALL_MODULES = [
+  { id: 'vocab',     label: '📖 Thematic Idea Bank' },
+  { id: 'writing',   label: '✍️ Sample Writing' },
+  { id: 'exercises', label: '🧩 Exercises' },
+  { id: 'essential', label: '📘 Essential Vocabulary' },
+  { id: 'speaking',  label: '🎤 Speaking Practice' },
+  { id: 'hotissues', label: '🌐 Hot Issues' },
+  { id: 'progress',  label: '📈 Progress' },
+];
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import PageHeader from '@/components/shared/PageHeader';
@@ -24,10 +34,26 @@ function isExpired(expiryDate) {
 function EditUserModal({ user, onSave, onClose }) {
   const [level, setLevel] = useState(user.level || 'S1');
   const [expiryDate, setExpiryDate] = useState(user.expiryDate || '');
+  // null = all modules allowed; array = restricted list
+  const [allowedModules, setAllowedModules] = useState(user.allowedModules || null);
+
+  const isRestricted = allowedModules !== null;
+
+  const toggleRestricted = () => {
+    if (isRestricted) setAllowedModules(null);
+    else setAllowedModules(ALL_MODULES.map(m => m.id)); // start with all checked
+  };
+
+  const toggleModule = (id) => {
+    if (!allowedModules) return;
+    setAllowedModules(prev =>
+      prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]
+    );
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-sm p-6 space-y-5">
+      <div className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-sm p-6 space-y-5 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h3 className="font-bold text-foreground text-base">Edit — {user.username}</h3>
           <button onClick={onClose} className="p-1.5 hover:bg-muted rounded-lg transition-colors">
@@ -40,10 +66,10 @@ function EditUserModal({ user, onSave, onClose }) {
           <label className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
             <BarChart2 className="w-4 h-4 text-primary" /> Proficiency Level
           </label>
-          <div className="grid grid-cols-1 gap-1.5">
+          <div className="grid grid-cols-3 gap-1.5">
             {LEVELS.map(l => (
               <button key={l} onClick={() => setLevel(l)}
-                className={`px-3 py-2 rounded-xl border text-sm font-medium text-left transition-all ${level === l ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-background hover:bg-muted text-foreground'}`}>
+                className={`px-3 py-2 rounded-xl border text-sm font-medium text-center transition-all ${level === l ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-background hover:bg-muted text-foreground'}`}>
                 {l}
               </button>
             ))}
@@ -64,9 +90,40 @@ function EditUserModal({ user, onSave, onClose }) {
           {!expiryDate && <p className="text-xs text-muted-foreground">No expiry set — account never expires.</p>}
         </div>
 
+        {/* Module Access */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+              <LayoutGrid className="w-4 h-4 text-primary" /> Page Access
+            </label>
+            <button
+              onClick={toggleRestricted}
+              className={`text-xs font-semibold px-2.5 py-1 rounded-full border transition-colors ${isRestricted ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-green-100 text-green-700 border-green-300'}`}
+            >
+              {isRestricted ? 'Custom' : 'All pages'}
+            </button>
+          </div>
+          {isRestricted && (
+            <div className="space-y-1.5">
+              {ALL_MODULES.map(mod => (
+                <label key={mod.id} className="flex items-center gap-2.5 px-3 py-2 rounded-xl border border-border bg-background hover:bg-muted cursor-pointer transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={allowedModules.includes(mod.id)}
+                    onChange={() => toggleModule(mod.id)}
+                    className="rounded"
+                  />
+                  <span className="text-sm text-foreground">{mod.label}</span>
+                </label>
+              ))}
+            </div>
+          )}
+          {!isRestricted && <p className="text-xs text-muted-foreground">User can access all pages. Click "All pages" to restrict.</p>}
+        </div>
+
         <div className="flex gap-2 justify-end pt-1">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => onSave({ level, expiryDate })}>Save</Button>
+          <Button onClick={() => onSave({ level, expiryDate, allowedModules })}>Save</Button>
         </div>
       </div>
     </div>
@@ -113,8 +170,8 @@ export default function UserManagement() {
     update(users.map(u => u.username === username ? { ...u, isEditor: !u.isEditor } : u));
   };
 
-  const saveUserEdit = ({ level, expiryDate }) => {
-    update(users.map(u => u.username === editingUser.username ? { ...u, level, expiryDate } : u));
+  const saveUserEdit = ({ level, expiryDate, allowedModules }) => {
+    update(users.map(u => u.username === editingUser.username ? { ...u, level, expiryDate, allowedModules } : u));
     setEditingUser(null);
   };
 

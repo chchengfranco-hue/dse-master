@@ -27,7 +27,7 @@ const baseModules = [
 
 
 export default function AppLayout() {
-  const { isAuthenticated, isEditor, currentUser, login, logout, ready } = useUser();
+  const { isAuthenticated, isEditor, currentUser, allowedModules, login, logout, ready } = useUser();
   const [showMore, setShowMore] = useState(false);
   const [showGlobalPdf, setShowGlobalPdf] = useState(false);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
@@ -94,9 +94,16 @@ export default function AppLayout() {
 
   }
 
-  const modules = isEditor ?
-  [...baseModules, { id: 'users', icon: Users, label: 'Users' }] :
-  baseModules;
+  const modules = (() => {
+    let mods = isEditor
+      ? [...baseModules, { id: 'users', icon: Users, label: 'Users' }]
+      : baseModules;
+    // Filter by allowedModules if admin has restricted access (editors always see all)
+    if (!isEditor && allowedModules !== null) {
+      mods = mods.filter(m => allowedModules.includes(m.id));
+    }
+    return mods;
+  })();
 
 
   if (!isAuthenticated) {

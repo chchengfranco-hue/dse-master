@@ -10,6 +10,7 @@ export function UserProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isEditor, setIsEditor] = useState(false);
   const [currentUser, setCurrentUser] = useState('');
+  const [allowedModules, setAllowedModules] = useState(null); // null = all allowed
   const [ready, setReady] = useState(false);
   const logoutTimerRef = useRef(null);
   const isAuthRef = useRef(false);
@@ -19,6 +20,7 @@ export function UserProvider({ children }) {
     setIsAuthenticated(false);
     setIsEditor(false);
     setCurrentUser('');
+    setAllowedModules(null);
     localStorage.removeItem('currentUser');
     if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
   }, []);
@@ -47,6 +49,7 @@ export function UserProvider({ children }) {
           setIsAuthenticated(true);
           setCurrentUser(user.username);
           setIsEditor(user.isEditor);
+          setAllowedModules(user.allowedModules || null);
           resetInactivityTimer();
         }
       }
@@ -85,6 +88,7 @@ export function UserProvider({ children }) {
     setIsAuthenticated(true);
     setIsEditor(user.isEditor);
     setCurrentUser(user.username);
+    setAllowedModules(user.allowedModules || null);
     localStorage.setItem('currentUser', user.username);
     resetInactivityTimer();
     return true;
@@ -95,7 +99,7 @@ export function UserProvider({ children }) {
   };
 
   return (
-    <UserContext.Provider value={{ isAuthenticated, isEditor, currentUser, login, logout, ready }}>
+    <UserContext.Provider value={{ isAuthenticated, isEditor, currentUser, allowedModules, login, logout, ready }}>
       {children}
     </UserContext.Provider>
   );
