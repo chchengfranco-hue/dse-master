@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, PenTool, Layers, MessageSquare, Book, Users, MoreHorizontal, ChevronLeft, TrendingUp, FileDown, Grid3X3, CheckSquare, Globe } from 'lucide-react';
+import { BookOpen, PenTool, Layers, MessageSquare, Book, Users, MoreHorizontal, ChevronLeft, TrendingUp, FileDown, Grid3X3, CheckSquare, Globe, ClipboardList } from 'lucide-react';
 import HotIssuesModule from '@/pages/modules/HotIssuesModule';
 import GlobalPdfExport from '@/components/shared/GlobalPdfExport';
 import { cn } from '@/lib/utils';
@@ -14,6 +14,7 @@ import EssentialVocabModule from '@/pages/modules/EssentialVocabModule';
 import SpeakingModule from '@/pages/modules/SpeakingModule';
 import GrammarModule from '@/pages/modules/GrammarModule';
 import UserManagement from '@/pages/modules/UserManagement';
+import TaskBoard from '@/pages/modules/TaskBoard';
 import Progress from '@/pages/Progress';
 
 const baseModules = [
@@ -50,6 +51,7 @@ export default function AppLayout() {
     if (p.startsWith('/essential')) return 'essential';
     if (p.startsWith('/speaking')) return 'speaking';
     if (p.startsWith('/users')) return 'users';
+    if (p.startsWith('/tasks')) return 'tasks';
     if (p.startsWith('/progress')) return 'progress';
     if (p.startsWith('/hotissues')) return 'hotissues';
     if (p.startsWith('/vocab')) return 'vocab';
@@ -63,7 +65,7 @@ export default function AppLayout() {
   // Detect if we're on a child/detail route (not the module root)
   const isChildRoute = (() => {
     const p = location.pathname;
-    const roots = ['/vocab', '/writing', '/cloze', '/essential', '/speaking', '/grammar', '/users', '/progress', '/hotissues', '/'];
+    const roots = ['/vocab', '/writing', '/cloze', '/essential', '/speaking', '/grammar', '/users', '/tasks', '/progress', '/hotissues', '/'];
     return !roots.includes(p);
   })();
 
@@ -96,7 +98,7 @@ export default function AppLayout() {
 
   const modules = (() => {
     let mods = isEditor
-      ? [...baseModules, { id: 'users', icon: Users, label: 'Users' }]
+      ? [...baseModules, { id: 'tasks', icon: ClipboardList, label: 'Tasks' }, { id: 'users', icon: Users, label: 'Users' }]
       : baseModules;
     // Filter by allowedModules if admin has restricted access (editors always see all)
     if (!isEditor && allowedModules !== null) {
@@ -187,6 +189,7 @@ export default function AppLayout() {
             {activeModule === 'essential' && <EssentialVocabModule isEditor={isEditor} />}
             {activeModule === 'speaking' && <SpeakingModule isEditor={isEditor} />}
             {activeModule === 'users' && isEditor && <UserManagement />}
+            {activeModule === 'tasks' && isEditor && <TaskBoard />}
             {activeModule === 'progress' && <Progress />}
             {activeModule === 'hotissues' && <HotIssuesModule isEditor={isEditor} />}
           </motion.div>

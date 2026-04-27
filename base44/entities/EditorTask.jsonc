@@ -1,0 +1,53 @@
+{
+  "name": "EditorTask",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Short title of the task"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description of what needs to be done"
+    },
+    "assigned_to": {
+      "type": "string",
+      "description": "Username of the editor this task is assigned to"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "default": "medium",
+      "description": "Priority level"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "todo",
+        "in_progress",
+        "done"
+      ],
+      "default": "todo",
+      "description": "Current status of the task"
+    },
+    "due_date": {
+      "type": "string",
+      "description": "Optional due date (YYYY-MM-DD)"
+    },
+    "module": {
+      "type": "string",
+      "description": "Which module this task relates to (e.g. Writing, Cloze, Vocab)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes or comments"
+    }
+  },
+  "required": [
+    "title"
+  ]
+}
