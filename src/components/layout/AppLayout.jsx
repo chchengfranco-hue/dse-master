@@ -28,7 +28,7 @@ const baseModules = [
 
 
 export default function AppLayout() {
-  const { isAuthenticated, isEditor, currentUser, allowedModules, login, logout, ready } = useUser();
+  const { isAuthenticated, isEditor, isChiefEditor, currentUser, allowedModules, login, logout, ready } = useUser();
   const [showMore, setShowMore] = useState(false);
   const [showGlobalPdf, setShowGlobalPdf] = useState(false);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
@@ -169,7 +169,8 @@ export default function AppLayout() {
           }
           <div className="hidden sm:flex items-center gap-1 bg-muted px-3 py-1.5 rounded-lg border border-border">
             <span className="text-sm font-medium text-foreground">{currentUser}</span>
-            {isEditor && <span className="text-xs text-muted-foreground ml-1">(Editor)</span>}
+            {isChiefEditor && <span className="text-xs text-muted-foreground ml-1">(Chief Editor)</span>}
+            {isEditor && !isChiefEditor && <span className="text-xs text-muted-foreground ml-1">(Editor)</span>}
           </div>
           <button
             onClick={logout}

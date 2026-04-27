@@ -9,6 +9,7 @@ const ACTIVITY_EVENTS = ['mousedown', 'mousemove', 'keydown', 'touchstart', 'scr
 export function UserProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isEditor, setIsEditor] = useState(false);
+  const [isChiefEditor, setIsChiefEditor] = useState(false);
   const [currentUser, setCurrentUser] = useState('');
   const [allowedModules, setAllowedModules] = useState(null); // null = all allowed
   const [ready, setReady] = useState(false);
@@ -19,6 +20,7 @@ export function UserProvider({ children }) {
     isAuthRef.current = false;
     setIsAuthenticated(false);
     setIsEditor(false);
+    setIsChiefEditor(false);
     setCurrentUser('');
     setAllowedModules(null);
     localStorage.removeItem('currentUser');
@@ -49,6 +51,7 @@ export function UserProvider({ children }) {
           setIsAuthenticated(true);
           setCurrentUser(user.username);
           setIsEditor(user.isEditor);
+          setIsChiefEditor(user.isChiefEditor || false);
           setAllowedModules(user.allowedModules || null);
           resetInactivityTimer();
         }
@@ -87,6 +90,7 @@ export function UserProvider({ children }) {
     isAuthRef.current = true;
     setIsAuthenticated(true);
     setIsEditor(user.isEditor);
+    setIsChiefEditor(user.isChiefEditor || false);
     setCurrentUser(user.username);
     setAllowedModules(user.allowedModules || null);
     localStorage.setItem('currentUser', user.username);
@@ -99,7 +103,7 @@ export function UserProvider({ children }) {
   };
 
   return (
-    <UserContext.Provider value={{ isAuthenticated, isEditor, currentUser, allowedModules, login, logout, ready }}>
+    <UserContext.Provider value={{ isAuthenticated, isEditor, isChiefEditor, currentUser, allowedModules, login, logout, ready }}>
       {children}
     </UserContext.Provider>
   );
