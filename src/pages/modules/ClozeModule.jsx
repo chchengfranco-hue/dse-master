@@ -363,7 +363,7 @@ function MCClozeReadView({ exercise, onBack }) {
       const isCorrect = submitted && userAns === questions[qIdx]?.correct;
       const isWrong = submitted && userAns && !isCorrect;
       return (
-        <span key={i} className={`inline-flex items-center mx-1 px-2 py-0.5 rounded-lg border font-semibold text-base align-baseline ${submitted ? (isCorrect ? 'bg-green-100 text-green-700 border-green-300' : isWrong ? 'bg-red-100 text-red-600 border-red-300 line-through' : 'bg-muted text-muted-foreground border-border') : 'bg-primary/10 text-primary border-primary/30'}`}>
+        <span key={i} style={{width:'2.5cm'}} className={`inline-flex items-center justify-center mx-1 py-0.5 rounded-lg border font-semibold text-base align-baseline ${submitted ? (isCorrect ? 'bg-green-100 text-green-700 border-green-300' : isWrong ? 'bg-red-100 text-red-600 border-red-300 line-through' : 'bg-muted text-muted-foreground border-border') : 'bg-primary/10 text-primary border-primary/30'}`}>
           {userAns || <span className="text-muted-foreground text-sm">{(blankId.match(/\d+/) || [blankId])[0]}</span>}
         </span>
       );
