@@ -4,6 +4,23 @@ import { getTopicTree } from '@/pages/modules/TopicEditor';
 import { base44 } from '@/api/base44Client';
 import { contentApi } from '@/lib/contentApi';
 import RichTextArea from '@/components/shared/RichTextArea';
+import GenreTemplateLibrary from '@/components/writing/GenreTemplateLibrary';
+import GenreTemplateView from '@/components/writing/GenreTemplateView';
+import GenreTemplateEditor from '@/components/writing/GenreTemplateEditor';
+
+function useWritingTemplates(isEditor) {
+  const [templates, setTemplates] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const load = async () => {
+    setLoading(true);
+    const data = await base44.entities.WritingTemplate.list('-created_date', 200);
+    const filtered = isEditor ? data : data.filter(t => t.status === 'published' || t.status == null);
+    setTemplates(filtered);
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+  return { templates, loading, reload: load };
+}
 
 
 function useWritingModels(isEditor) {
@@ -402,6 +419,7 @@ function WritingBulkImport({ onImport, onCancel }) {
 export default function WritingModule({ isEditor }) {
   const navigate = useNavigate();
   const { models, loading, reload } = useWritingModels(isEditor);
+  const { templates, loading: tLoading, reload: reloadTemplates } = useWritingTemplates(isEditor);
 
   const saveModel = async (data) => {
     const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, content: data.content, annotations: data.annotations || {}, image_url: data.imageUrl || '', exam_ref: data.examRef || '', question: data.question || '', status: data.status || 'published', is_published: data.status !== 'draft' };
@@ -418,17 +436,34 @@ export default function WritingModule({ isEditor }) {
     reload();
   };
 
+  const saveTemplate = async (data) => {
+    const { id, ...payload } = data;
+    if (id) await contentApi.update('WritingTemplate', id, payload);
+    else await contentApi.create('WritingTemplate', payload);
+    navigate('/writing/templates');
+    reloadTemplates();
+  };
+
   return (
     <Routes>
       <Route path="/writing" element={
         loading
           ? <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>
-          : <WritingLibrary models={models} isEditor={isEditor}
-              onView={p => navigate(`/writing/read/${p.id}`)}
-              onEdit={p => navigate(p ? `/writing/edit/${p.id}` : '/writing/edit/new')}
-              onDelete={async id => { await contentApi.delete('WritingModel', id); reload(); }}
-              onBulkImport={undefined}
-            />
+          : (
+            <div>
+              {/* Tab bar */}
+              <div className="flex gap-1 px-4 lg:px-8 pt-6 max-w-5xl mx-auto">
+                <button className="px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground select-none">📝 Writing Models</button>
+                <button onClick={() => navigate('/writing/templates')} className="px-4 py-2 rounded-xl text-sm font-semibold bg-muted text-foreground hover:bg-border select-none">📋 Genre Templates</button>
+              </div>
+              <WritingLibrary models={models} isEditor={isEditor}
+                onView={p => navigate(`/writing/read/${p.id}`)}
+                onEdit={p => navigate(p ? `/writing/edit/${p.id}` : '/writing/edit/new')}
+                onDelete={async id => { await contentApi.delete('WritingModel', id); reload(); }}
+                onBulkImport={undefined}
+              />
+            </div>
+          )
       } />
       <Route path="/writing/read/:id" element={(() => {
         const W = () => {
@@ -440,6 +475,51 @@ export default function WritingModule({ isEditor }) {
         };
         return <W />;
       })()} />
+      {/* Genre Template routes */}
+      <Route path="/writing/templates" element={
+        tLoading
+          ? <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>
+          : (
+            <div>
+              <div className="flex gap-1 px-4 lg:px-8 pt-6 max-w-5xl mx-auto">
+                <button onClick={() => navigate('/writing')} className="px-4 py-2 rounded-xl text-sm font-semibold bg-muted text-foreground hover:bg-border select-none">📝 Writing Models</button>
+                <button className="px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground select-none">📋 Genre Templates</button>
+              </div>
+              <GenreTemplateLibrary
+                templates={templates}
+                isEditor={isEditor}
+                onView={t => navigate(`/writing/templates/view/${t.id}`)}
+                onAdd={() => navigate('/writing/templates/edit/new')}
+                onEdit={t => navigate(`/writing/templates/edit/${t.id}`)}
+                onDelete={async id => { await contentApi.delete('WritingTemplate', id); reloadTemplates(); navigate('/writing/templates'); }}
+              />
+            </div>
+          )
+      } />
+      <Route path="/writing/templates/view/:id" element={(() => {
+        const W = () => {
+          const [tpl, setTpl] = useState(null);
+          const id = window.location.pathname.split('/').pop();
+          useEffect(() => { base44.entities.WritingTemplate.get(id).then(setTpl); }, [id]);
+          if (!tpl) return <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>;
+          return <GenreTemplateView template={tpl} onBack={() => navigate('/writing/templates')} />;
+        };
+        return <W />;
+      })()} />
+      <Route path="/writing/templates/edit/:id" element={(() => {
+        const W = () => {
+          const [tpl, setTpl] = useState(undefined);
+          const idStr = window.location.pathname.split('/').pop();
+          useEffect(() => {
+            if (idStr === 'new') { setTpl(null); return; }
+            base44.entities.WritingTemplate.get(idStr).then(setTpl);
+          }, [idStr]);
+          if (tpl === undefined) return <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>;
+          return <GenreTemplateEditor template={tpl} onSave={saveTemplate} onCancel={() => navigate('/writing/templates')} />;
+        };
+        return <W />;
+      })()} />
+
       <Route path="/writing/edit/:id" element={(() => {
         const W = () => {
           const [model, setModel] = useState(undefined);

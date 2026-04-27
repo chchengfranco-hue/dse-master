@@ -1,0 +1,86 @@
+{
+  "name": "WritingTemplate",
+  "type": "object",
+  "properties": {
+    "genre": {
+      "type": "string",
+      "description": "Writing genre name (e.g. Blog Entry, Formal Letter)"
+    },
+    "purpose": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of purposes of writing"
+    },
+    "intended_reader": {
+      "type": "string",
+      "description": "Who the intended reader is"
+    },
+    "formality": {
+      "type": "string",
+      "description": "Level of formality (e.g. informal, formal, semi-formal)"
+    },
+    "tone": {
+      "type": "string",
+      "description": "Tone(s) of writing (e.g. descriptive, persuasive)"
+    },
+    "structure": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "section": {
+            "type": "string",
+            "description": "Section/paragraph name (e.g. Opening paragraph, Body paragraphs)"
+          },
+          "description": {
+            "type": "string",
+            "description": "What to include in this section"
+          },
+          "is_narrow": {
+            "type": "boolean",
+            "description": "Whether this is a narrow/side element (e.g. Date, Greeting)"
+          }
+        }
+      },
+      "description": "Ordered list of structural sections, mirroring the diagram in the PDF"
+    },
+    "language_resources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "phrases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "description": "Useful language phrases grouped by category"
+    },
+    "key_features": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Key writing features/techniques to use for this genre"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "published"
+      ],
+      "default": "published"
+    }
+  },
+  "required": [
+    "genre"
+  ]
+}
