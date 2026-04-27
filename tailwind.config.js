@@ -14,6 +14,14 @@ module.exports = {
       'bg-green-100', 'text-green-700',
       'bg-amber-100', 'text-amber-700',
       'bg-red-100', 'text-red-700',
+      'bg-purple-100', 'text-purple-700', 'border-purple-200', 'border-l-purple-400', 'bg-purple-50/60',
+      'bg-blue-100', 'text-blue-700', 'border-blue-200', 'border-l-blue-400', 'bg-blue-50/60',
+      'bg-emerald-100', 'text-emerald-700', 'border-emerald-200', 'border-l-emerald-400', 'bg-emerald-50/60',
+      'border-l-amber-400', 'bg-amber-50/60', 'border-amber-200',
+      'bg-rose-100', 'text-rose-700', 'border-rose-200', 'border-l-rose-400', 'bg-rose-50/60',
+      'bg-cyan-100', 'text-cyan-700', 'border-cyan-200', 'border-l-cyan-400', 'bg-cyan-50/60',
+      'bg-indigo-100', 'text-indigo-700', 'border-indigo-200', 'border-l-indigo-400', 'bg-indigo-50/60',
+      'bg-orange-100', 'text-orange-700', 'border-orange-200', 'border-l-orange-400', 'bg-orange-50/60',
     ],
   theme: {
   	extend: {

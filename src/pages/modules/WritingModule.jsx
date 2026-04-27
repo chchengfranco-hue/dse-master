@@ -134,6 +134,71 @@ function AnnotatedContent({ text, annotations, showRuby, activeWord, onWordClick
   );
 }
 
+// Colour palette for paragraph badges (cycles through)
+const PARA_COLORS = [
+  { badge: 'bg-purple-100 text-purple-700 border-purple-200', border: 'border-l-purple-400', bg: 'bg-purple-50/60' },
+  { badge: 'bg-blue-100 text-blue-700 border-blue-200',       border: 'border-l-blue-400',   bg: 'bg-blue-50/60' },
+  { badge: 'bg-emerald-100 text-emerald-700 border-emerald-200', border: 'border-l-emerald-400', bg: 'bg-emerald-50/60' },
+  { badge: 'bg-amber-100 text-amber-700 border-amber-200',    border: 'border-l-amber-400',  bg: 'bg-amber-50/60' },
+  { badge: 'bg-rose-100 text-rose-700 border-rose-200',       border: 'border-l-rose-400',   bg: 'bg-rose-50/60' },
+  { badge: 'bg-cyan-100 text-cyan-700 border-cyan-200',       border: 'border-l-cyan-400',   bg: 'bg-cyan-50/60' },
+  { badge: 'bg-indigo-100 text-indigo-700 border-indigo-200', border: 'border-l-indigo-400', bg: 'bg-indigo-50/60' },
+  { badge: 'bg-orange-100 text-orange-700 border-orange-200', border: 'border-l-orange-400', bg: 'bg-orange-50/60' },
+];
+
+// Splits a flat string by double-newlines into paragraphs (one per section)
+function splitIntoParagraphs(text, count) {
+  const parts = text.split(/\n\n+/);
+  // Pad or trim to match section count
+  const result = [];
+  for (let i = 0; i < count; i++) result.push(parts[i] || '');
+  return result;
+}
+
+function joinParagraphs(paras) {
+  return paras.join('\n\n');
+}
+
+function StructuredEssayEditor({ structure, value, onChange }) {
+  // Derive per-section paragraphs from the flat content string
+  const [paragraphs, setParagraphs] = useState(() => splitIntoParagraphs(value || '', structure.length));
+
+  // When structure length changes (genre switched), re-split
+  const prevLen = useState(structure.length)[0];
+
+  const handleChange = (i, v) => {
+    const updated = paragraphs.map((p, j) => j === i ? v : p);
+    setParagraphs(updated);
+    onChange(joinParagraphs(updated));
+  };
+
+  return (
+    <div className="mb-3 space-y-3 rounded-xl border border-border overflow-hidden">
+      {structure.map((sec, i) => {
+        const color = PARA_COLORS[i % PARA_COLORS.length];
+        return (
+          <div key={i} className={`border-l-4 ${color.border} ${color.bg} p-3`}>
+            <div className="flex items-center gap-2 mb-2">
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${color.badge}`}>
+                {i + 1}. {sec.section}
+              </span>
+              {sec.description && (
+                <span className="text-[10px] text-muted-foreground italic">{sec.description}</span>
+              )}
+            </div>
+            <textarea
+              className="w-full rounded-lg border border-input bg-white/80 px-3 py-2 text-sm min-h-20 resize-y focus:outline-none focus:ring-1 focus:ring-ring"
+              placeholder={`Write ${sec.section.toLowerCase()} here...`}
+              value={paragraphs[i] || ''}
+              onChange={e => handleChange(i, e.target.value)}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // --- Genre Template Reference Panel ---
 function TemplateReferencePanel({ template, onClose }) {
   const [openSections, setOpenSections] = useState({ structure: true, features: false, language: false });
@@ -305,7 +370,10 @@ function WritingEditor({ model, onSave, onCancel, allTemplates }) {
         <p className="text-xs font-semibold text-foreground mb-1">Exam Question / Prompt</p>
         <textarea className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-24 resize-y mb-3" placeholder="Enter the exam question or writing prompt here..." value={form.question} onChange={e => s('question', e.target.value)} />
         <p className="text-xs font-semibold text-foreground mb-1">Model Essay / Writing</p>
-        <RichTextArea value={form.content} onChange={v => s('content', v)} placeholder="Paste the model essay or writing here..." minHeight="min-h-48" />
+        {activeTemplate?.structure?.length > 0
+          ? <StructuredEssayEditor structure={activeTemplate.structure} value={form.content} onChange={v => s('content', v)} />
+          : <RichTextArea value={form.content} onChange={v => s('content', v)} placeholder="Paste the model essay or writing here..." minHeight="min-h-48" />
+        }
         <p className="text-xs text-muted-foreground mb-2"><strong>Batch Annotations (Optional):</strong> <code className="bg-muted px-1 rounded">word: meaning</code> one per line.</p>
         <textarea className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-24 resize-y mb-5" placeholder={"word: definition\nword: definition"} value={form.annotationsText} onChange={e => s('annotationsText', e.target.value)} />
         <div className="flex items-center gap-3 mb-5 p-3 bg-muted/50 rounded-xl border border-border">
