@@ -134,8 +134,88 @@ function AnnotatedContent({ text, annotations, showRuby, activeWord, onWordClick
   );
 }
 
+// --- Genre Template Reference Panel ---
+function TemplateReferencePanel({ template, onClose }) {
+  const [openSections, setOpenSections] = useState({ structure: true, features: false, language: false });
+  const toggle = (k) => setOpenSections(p => ({ ...p, [k]: !p[k] }));
+  return (
+    <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 mb-5">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <span className="text-xs font-bold text-primary uppercase tracking-wide">📋 Genre Template</span>
+          <h3 className="font-bold text-foreground text-base">{template.genre}</h3>
+          <div className="flex flex-wrap gap-2 mt-1 text-xs text-muted-foreground">
+            {template.formality && <span>Formality: <strong>{template.formality}</strong></span>}
+            {template.tone && <span>· Tone: <strong>{template.tone}</strong></span>}
+          </div>
+        </div>
+        <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-lg px-2">✕</button>
+      </div>
+
+      {/* Structure */}
+      {template.structure?.length > 0 && (
+        <div className="mb-2 border border-border rounded-xl overflow-hidden">
+          <button onClick={() => toggle('structure')} className="w-full flex items-center justify-between px-3 py-2 bg-card text-sm font-semibold text-foreground hover:bg-muted">
+            <span>📐 Paragraph Structure</span><span>{openSections.structure ? '▲' : '▼'}</span>
+          </button>
+          {openSections.structure && (
+            <div className="divide-y divide-border">
+              {template.structure.map((sec, i) => (
+                <div key={i} className={`flex items-start gap-2 px-3 py-2 text-sm ${sec.is_narrow ? 'bg-primary/10' : 'bg-card'}`}>
+                  <span className="w-5 h-5 rounded-full bg-primary/20 text-primary text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                  <div>
+                    <span className="font-semibold text-foreground">{sec.section}</span>
+                    {sec.description && <p className="text-xs text-muted-foreground mt-0.5">{sec.description}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Key Features */}
+      {template.key_features?.length > 0 && (
+        <div className="mb-2 border border-border rounded-xl overflow-hidden">
+          <button onClick={() => toggle('features')} className="w-full flex items-center justify-between px-3 py-2 bg-card text-sm font-semibold text-foreground hover:bg-muted">
+            <span>⭐ Key Features</span><span>{openSections.features ? '▲' : '▼'}</span>
+          </button>
+          {openSections.features && (
+            <div className="px-3 py-2 bg-card space-y-1">
+              {template.key_features.map((f, i) => (
+                <div key={i} className="flex items-start gap-1.5 text-xs text-foreground">
+                  <span className="text-primary shrink-0 mt-0.5">›</span>{f}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Language Resources */}
+      {template.language_resources?.length > 0 && (
+        <div className="border border-border rounded-xl overflow-hidden">
+          <button onClick={() => toggle('language')} className="w-full flex items-center justify-between px-3 py-2 bg-card text-sm font-semibold text-foreground hover:bg-muted">
+            <span>💬 Useful Phrases</span><span>{openSections.language ? '▲' : '▼'}</span>
+          </button>
+          {openSections.language && (
+            <div className="bg-card divide-y divide-border">
+              {template.language_resources.map((cat, i) => (
+                <div key={i} className="px-3 py-2">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-primary mb-1">{cat.category}</p>
+                  {cat.phrases.map((ph, j) => <p key={j} className="text-xs text-foreground mb-0.5">› {ph}</p>)}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // --- Editor ---
-function WritingEditor({ model, onSave, onCancel }) {
+function WritingEditor({ model, onSave, onCancel, allTemplates }) {
   const [form, setForm] = useState({
     id: model?.id || null,
     title: model?.title || '',
@@ -148,11 +228,13 @@ function WritingEditor({ model, onSave, onCancel }) {
     status: model?.status || 'published',
     annotationsText: model?.annotations ? Object.entries(model.annotations).map(([k, v]) => `${k}: ${v}`).join('\n') : '',
   });
+  const [selectedGenre, setSelectedGenre] = useState('');
+  const activeTemplate = allTemplates?.find(t => t.genre === selectedGenre) || null;
+
   const s = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
   const handleTopicChange = (e) => {
     const newTopic = e.target.value;
-    // Reset subtopic when topic changes
     setForm(p => ({ ...p, topic: newTopic, subtopic: '' }));
   };
 
@@ -169,6 +251,23 @@ function WritingEditor({ model, onSave, onCancel }) {
     <div className="px-4 lg:px-8 py-6 max-w-3xl mx-auto">
       <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
         <h2 className="text-xl font-bold text-foreground mb-5">{form.id ? 'Edit Writing Model' : 'Add Writing Model'}</h2>
+
+        {/* Genre Template Selector */}
+        <div className="mb-4">
+          <label className="text-xs font-semibold text-foreground mb-1 block">📋 Genre Template Reference <span className="text-muted-foreground font-normal">(optional — shows writing guide below)</span></label>
+          <select
+            className="w-full rounded-xl border border-input px-3 py-2 text-sm bg-background"
+            value={selectedGenre}
+            onChange={e => setSelectedGenre(e.target.value)}
+          >
+            <option value="">— Select a genre to show its template —</option>
+            {(allTemplates || []).map(t => <option key={t.id} value={t.genre}>{t.genre}</option>)}
+          </select>
+        </div>
+
+        {/* Template Reference Panel */}
+        {activeTemplate && <TemplateReferencePanel template={activeTemplate} onClose={() => setSelectedGenre('')} />}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <select
             className="rounded-xl border border-input px-3 py-2 text-sm bg-background"
@@ -529,7 +628,7 @@ export default function WritingModule({ isEditor }) {
             base44.entities.WritingModel.get(idStr).then(m => setModel({ ...m, imageUrl: m.image_url || '', exam_ref: m.exam_ref || '', annotations: m.annotations || {} }));
           }, [idStr]);
           if (model === undefined) return <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>;
-          return <WritingEditor model={model} onSave={saveModel} onCancel={() => navigate('/writing')} />;
+          return <WritingEditor model={model} onSave={saveModel} onCancel={() => navigate('/writing')} allTemplates={templates} />;
         };
         return <W />;
       })()} />
