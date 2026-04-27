@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { UserPlus, Shield, User, Pencil, X, CalendarDays, BarChart2, PauseCircle, PlayCircle, LayoutGrid } from 'lucide-react';
+import { UserPlus, Shield, User, Pencil, X, CalendarDays, BarChart2, PauseCircle, PlayCircle, LayoutGrid, Crown } from 'lucide-react';
 
 const ALL_MODULES = [
   { id: 'vocab',     label: '📖 Thematic Idea Bank' },
@@ -132,7 +132,7 @@ function EditUserModal({ user, onSave, onClose }) {
 
 export default function UserManagement() {
   const [users, setUsers] = useState(() => getUsers().filter(u => !isOwnerAccount(u.username)));
-  const [form, setForm] = useState({ username: '', password: '', isEditor: false });
+  const [form, setForm] = useState({ username: '', password: '', isEditor: false, isChiefEditor: false });
   const [adding, setAdding] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [error, setError] = useState('');
@@ -142,8 +142,8 @@ export default function UserManagement() {
   const addUser = () => {
     if (!form.username.trim() || !form.password.trim()) return setError('Username and password required.');
     if (users.find(u => u.username.toLowerCase() === form.username.toLowerCase())) return setError('Username already exists.');
-    update([...users, { username: form.username.trim(), password: form.password, isEditor: form.isEditor, level: 'S1', expiryDate: '' }]);
-    setForm({ username: '', password: '', isEditor: false });
+    update([...users, { username: form.username.trim(), password: form.password, isEditor: form.isEditor || form.isChiefEditor, isChiefEditor: form.isChiefEditor, level: 'S1', expiryDate: '' }]);
+    setForm({ username: '', password: '', isEditor: false, isChiefEditor: false });
     setAdding(false);
     setError('');
   };
@@ -167,7 +167,18 @@ export default function UserManagement() {
   };
 
   const toggleEditor = (username) => {
-    update(users.map(u => u.username === username ? { ...u, isEditor: !u.isEditor } : u));
+    const user = users.find(u => u.username === username);
+    if (!user) return;
+    if (user.isChiefEditor) {
+      // Demote from Chief Editor → Student
+      update(users.map(u => u.username === username ? { ...u, isEditor: false, isChiefEditor: false } : u));
+    } else if (user.isEditor) {
+      // Promote from Editor → Chief Editor
+      update(users.map(u => u.username === username ? { ...u, isEditor: true, isChiefEditor: true } : u));
+    } else {
+      // Promote from Student → Editor
+      update(users.map(u => u.username === username ? { ...u, isEditor: true, isChiefEditor: false } : u));
+    }
   };
 
   const saveUserEdit = ({ level, expiryDate, allowedModules }) => {
@@ -186,10 +197,23 @@ export default function UserManagement() {
           <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
             <Input placeholder="Username..." value={form.username} onChange={e => setForm(p => ({ ...p, username: e.target.value }))} />
             <Input type="password" placeholder="Password..." value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} />
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input type="checkbox" checked={form.isEditor} onChange={e => setForm(p => ({ ...p, isEditor: e.target.checked }))} className="rounded" />
-              <span className="text-foreground font-medium">Editor privileges</span>
-            </label>
+            <div className="space-y-1.5">
+              <p className="text-xs font-semibold text-muted-foreground">Role</p>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setForm(p => ({ ...p, isEditor: false, isChiefEditor: false }))}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-sm font-medium transition-all ${!form.isEditor && !form.isChiefEditor ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-background text-foreground hover:bg-muted'}`}>
+                  <User className="w-3.5 h-3.5" /> Student
+                </button>
+                <button type="button" onClick={() => setForm(p => ({ ...p, isEditor: true, isChiefEditor: false }))}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-sm font-medium transition-all ${form.isEditor && !form.isChiefEditor ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-background text-foreground hover:bg-muted'}`}>
+                  <Shield className="w-3.5 h-3.5" /> Editor
+                </button>
+                <button type="button" onClick={() => setForm(p => ({ ...p, isEditor: true, isChiefEditor: true }))}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-sm font-medium transition-all ${form.isChiefEditor ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-border bg-background text-foreground hover:bg-muted'}`}>
+                  <Crown className="w-3.5 h-3.5" /> Chief Editor
+                </button>
+              </div>
+            </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <div className="flex gap-2">
               <Button onClick={addUser}>Add</Button>
@@ -206,7 +230,7 @@ export default function UserManagement() {
             <div key={user.username} className={`bg-card rounded-2xl border shadow-sm px-5 py-4 flex items-center justify-between gap-4 ${expired ? 'border-red-300 bg-red-50/30' : 'border-border'}`}>
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center shrink-0">
-                  {user.isEditor ? <Shield className="w-5 h-5 text-primary" /> : <User className="w-5 h-5 text-muted-foreground" />}
+                  {user.isChiefEditor ? <Crown className="w-5 h-5 text-amber-500" /> : user.isEditor ? <Shield className="w-5 h-5 text-primary" /> : <User className="w-5 h-5 text-muted-foreground" />}
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -219,7 +243,7 @@ export default function UserManagement() {
                     {expired && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700">Expired</span>}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {user.isEditor ? 'Editor' : 'Student'}
+                    {user.isChiefEditor ? 'Chief Editor' : user.isEditor ? 'Editor' : 'Student'}
                     {user.expiryDate && !expired && ` · Expires ${new Date(user.expiryDate).toLocaleDateString('en-HK', { day: 'numeric', month: 'short', year: 'numeric' })}`}
                     {expired && ` · Expired ${new Date(user.expiryDate).toLocaleDateString('en-HK', { day: 'numeric', month: 'short', year: 'numeric' })}`}
                     {!user.expiryDate && ' · No expiry'}
@@ -227,8 +251,9 @@ export default function UserManagement() {
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <Button variant="outline" size="sm" onClick={() => toggleEditor(user.username)}>
-                  {user.isEditor ? 'Remove Editor' : 'Make Editor'}
+                <Button variant="outline" size="sm" onClick={() => toggleEditor(user.username)}
+                  className={user.isChiefEditor ? 'border-amber-300 text-amber-700 hover:bg-amber-50' : ''}>
+                  {user.isChiefEditor ? '👑 Demote' : user.isEditor ? '⬆️ Chief Editor' : 'Make Editor'}
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => setEditingUser(user)}>
                   <Pencil className="w-3.5 h-3.5" />
