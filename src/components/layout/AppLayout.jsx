@@ -254,7 +254,7 @@ export default function AppLayout() {
             <div className="fixed inset-0 z-[-1]" onClick={() => setShowManagePicker(false)} />
           </>
         }
-        <div className="flex justify-around items-center h-16 px-1 overflow-x-auto">
+        <div className="flex justify-around items-center h-16 px-0.5">
           {modules.map((mod) => {
             const Icon = mod.icon;
             const isActive = activeModule === mod.id || (mod.id === 'manage' && (activeModule === 'manage'));
@@ -265,10 +265,10 @@ export default function AppLayout() {
                 else if (mod.id === 'manage') { handleManageClick(); }
                 else { navigate(getTabPath(mod.id)); setShowMore(false); setShowExercisePicker(false); setShowManagePicker(false); }
               }}
-              className={cn("flex flex-col items-center justify-center flex-1 h-12 rounded-xl mx-0.5 transition-all duration-200 select-none min-w-[52px]",
+              className={cn("flex flex-col items-center justify-center flex-1 h-12 rounded-xl mx-0 transition-all duration-200 select-none",
               isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
-                <Icon className="w-5 h-5" />
-                <span className="text-[9px] mt-0.5 font-medium leading-tight text-center">{mod.label}</span>
+                <Icon className="w-4 h-4" />
+                <span className="text-[8px] mt-0.5 font-medium leading-tight text-center px-0.5">{mod.label}</span>
               </button>);
           })}
         </div>
