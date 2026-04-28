@@ -222,7 +222,9 @@ function HotIssuesLibrary({ issues, loading, isEditor, onEdit, onDelete, onReloa
 
       {/* Issues list */}
       {loading ? (
-        <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>
+        <div className="space-y-4">
+          {[...Array(5)].map((_, i) => <div key={i} className="skeleton h-32 w-full" />)}
+        </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-20 text-muted-foreground">
           <Globe className="w-10 h-10 mx-auto mb-3 opacity-30" />
@@ -230,7 +232,7 @@ function HotIssuesLibrary({ issues, loading, isEditor, onEdit, onDelete, onReloa
           {isEditor && <p className="text-sm mt-1">Try generating AI issues or adding one manually.</p>}
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 stagger-children">
           {filtered.map(issue => (
             <IssueCard key={issue.id} issue={issue} isEditor={isEditor}
               onEdit={() => setEditingIssue(issue)}

@@ -59,7 +59,13 @@ function LibraryWrapper({ isEditor }) {
     reload();
   };
 
-  if (loading) return <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>;
+  if (loading) return (
+    <div className="px-4 lg:px-8 py-6 max-w-5xl mx-auto space-y-3">
+      {[...Array(6)].map((_, i) => (
+        <div key={i} className="skeleton h-20 w-full" />
+      ))}
+    </div>
+  );
 
   return (
     <PassageLibrary

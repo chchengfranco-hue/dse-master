@@ -196,7 +196,7 @@ function EVLibrary({ sets, isEditor, onView, onEdit, onDelete, onBulkImport }) {
             </div>
           ))}
         </aside>
-        <div className="flex-1 min-w-0 space-y-3">
+        <div className="flex-1 min-w-0 space-y-3 stagger-children">
           {paged.length === 0 && <div className="text-center py-16 text-muted-foreground">No vocab sets found.</div>}
           {paged.map(p => (
             <div key={p.id} className="bg-card rounded-2xl border border-border p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:shadow-md active:scale-[0.98] active:bg-muted transition-all card-item">
@@ -313,7 +313,7 @@ function EVReadView({ set, onBack }) {
       </div>
 
       {vocabView === 'list' && (
-        <div className="space-y-3">
+        <div className="space-y-3 stagger-children">
           {vocab.filter(v => v.word).map(v => (
             <div key={v.word} className="bg-card rounded-xl border border-border p-4">
               <div className="flex items-center gap-3 flex-wrap mb-1">
@@ -392,7 +392,7 @@ export default function EssentialVocabModule({ isEditor }) {
     <Routes>
       <Route path="/essential" element={
         loading
-          ? <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>
+          ? <div className="px-4 lg:px-8 py-6 max-w-5xl mx-auto space-y-3">{[...Array(6)].map((_, i) => <div key={i} className="skeleton h-20 w-full" />)}</div>
           : <EVLibrary sets={sets} isEditor={isEditor}
               onView={p => navigate(`/essential/read/${p.id}`)}
               onEdit={p => navigate(p ? `/essential/edit/${p.id}` : '/essential/edit/new')}

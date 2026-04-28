@@ -110,7 +110,56 @@
   }
 }
 
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
 @layer utilities {
+  /* List item entrance animation */
+  .animate-fade-slide-in {
+    animation: fadeSlideIn 0.3s ease-out both;
+  }
+
+  /* Staggered children */
+  .stagger-children > * {
+    animation: fadeSlideIn 0.3s ease-out both;
+  }
+  .stagger-children > *:nth-child(1)  { animation-delay: 0.03s; }
+  .stagger-children > *:nth-child(2)  { animation-delay: 0.06s; }
+  .stagger-children > *:nth-child(3)  { animation-delay: 0.09s; }
+  .stagger-children > *:nth-child(4)  { animation-delay: 0.12s; }
+  .stagger-children > *:nth-child(5)  { animation-delay: 0.15s; }
+  .stagger-children > *:nth-child(6)  { animation-delay: 0.18s; }
+  .stagger-children > *:nth-child(7)  { animation-delay: 0.21s; }
+  .stagger-children > *:nth-child(8)  { animation-delay: 0.24s; }
+  .stagger-children > *:nth-child(9)  { animation-delay: 0.27s; }
+  .stagger-children > *:nth-child(10) { animation-delay: 0.30s; }
+
+  /* Skeleton shimmer */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 25%,
+      hsl(var(--border)) 50%,
+      hsl(var(--muted)) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite linear;
+    border-radius: var(--radius);
+  }
+
   /* Disable selection on nav/header/interactive chrome */
   header,
   nav,

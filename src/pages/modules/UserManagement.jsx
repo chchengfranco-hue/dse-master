@@ -233,7 +233,7 @@ export default function UserManagement() {
         )}
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-3 stagger-children">
         {users.map(user => {
           const expired = isExpired(user.expiryDate);
           return (
