@@ -548,9 +548,19 @@ function WritingReadView({ model, isEditor, onBack, onSaveAnnotation, allTemplat
                       </span>
                       {sec.description && <span className="text-[10px] text-muted-foreground italic">{sec.description}</span>}
                     </div>
-                    <div className="text-base leading-loose bg-white/70 rounded-xl px-4 py-3">
-                      <AnnotatedContent text={para} annotations={annotations} showRuby={showRuby} activeWord={activeWord} onWordClick={handleWordClick} />
-                    </div>
+                    {para.split(/\n\n+/).filter(p => p.trim()).length > 1 ? (
+                      <div className="space-y-2">
+                        {para.split(/\n\n+/).filter(p => p.trim()).map((subPara, j) => (
+                          <div key={j} className="text-base leading-loose bg-white/70 rounded-xl px-4 py-3">
+                            <AnnotatedContent text={subPara} annotations={annotations} showRuby={showRuby} activeWord={activeWord} onWordClick={handleWordClick} />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-base leading-loose bg-white/70 rounded-xl px-4 py-3">
+                        <AnnotatedContent text={para} annotations={annotations} showRuby={showRuby} activeWord={activeWord} onWordClick={handleWordClick} />
+                      </div>
+                    )}
                   </div>
                 );
               })}
