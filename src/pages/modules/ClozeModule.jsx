@@ -212,25 +212,75 @@ function MCClozeQuestionsEditor({ questions, onChange }) {
   );
 }
 
+// Parse existing bracketed content into plain passage + answers list
+function deconstructPassage(raw) {
+  const regex = /\[([^\]\|]+)(?:\|([^\]]+))?\]/g;
+  let plainText = '';
+  const answers = [];
+  let last = 0; let match; let blankNum = 1;
+  while ((match = regex.exec(raw)) !== null) {
+    plainText += raw.slice(last, match.index);
+    const wordParts = match[1].split('/');
+    answers.push(wordParts[0].trim());
+    plainText += `[${blankNum++}]`;
+    last = match.index + match[0].length;
+  }
+  plainText += raw.slice(last);
+  return { plainText, answers };
+}
+
+// Reconstruct bracketed content from plain passage + answers list
+function reconstructPassage(plainText, answersText) {
+  const answers = answersText.split('\n').map(a => a.trim()).filter(Boolean);
+  let blankIdx = 0;
+  return plainText.replace(/\[(\d+)\]/g, () => {
+    const ans = answers[blankIdx++] || '';
+    return ans ? `[${ans}]` : `[?]`;
+  });
+}
+
 function ClozeEditor({ exercise, onSave, onCancel }) {
   const { passageContent: initPassage, bankText: initBank } = splitContentAndBank(exercise?.content || '');
+
+  // Deconstruct existing passage into split-box format
+  const { plainText: initPlainText, answers: initAnswers } = deconstructPassage(initPassage);
+
   const [form, setForm] = useState({
     id: exercise?.id || null, title: exercise?.title || '', topic: exercise?.topic || '',
     subtopic: exercise?.subtopic || '', hasOptions: exercise?.hasOptions || 'bank',
-    passageContent: initPassage,
+    // Split-box fields (for bank/nobank/mcq modes)
+    plainText: initPlainText,
+    answersText: initAnswers.join('\n'),
     bankText: initBank,
+    // Raw passage (for mccloze)
+    passageContent: initPassage,
     status: exercise?.status || 'published',
     mc_questions: exercise?.mc_questions || [],
     annotationsText: exercise?.annotations ? Object.entries(exercise.annotations).map(([k, v]) => `${k}: ${v}`).join('\n') : '',
   });
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
   const handleSave = () => {
-    if (!form.title.trim() || !form.passageContent.trim()) return alert('Title and Content are required.');
+    if (!form.title.trim()) return alert('Title is required.');
     const annotations = {};
     form.annotationsText.split('\n').forEach(line => { const idx = line.indexOf(':'); if (idx > 0) { const w = line.slice(0, idx).trim(), m = line.slice(idx + 1).trim(); if (w && m) annotations[w] = m; } });
-    const content = form.hasOptions === 'bank' ? joinContentAndBank(form.passageContent.trim(), form.bankText) : form.passageContent.trim();
+
+    let builtPassage;
+    if (form.hasOptions === 'mccloze') {
+      builtPassage = form.passageContent.trim();
+    } else {
+      if (!form.plainText.trim()) return alert('Passage text is required.');
+      builtPassage = reconstructPassage(form.plainText.trim(), form.answersText);
+    }
+
+    const content = form.hasOptions === 'bank' ? joinContentAndBank(builtPassage, form.bankText) : builtPassage;
     onSave({ id: form.id, title: form.title.trim(), topic: form.topic.trim() || 'Uncategorized', subtopic: form.subtopic.trim() || 'General', hasOptions: form.hasOptions, content, annotations, status: form.status, mc_questions: form.hasOptions === 'mccloze' ? form.mc_questions : [] });
   };
+
+  // Count blanks in plain text for answer box hint
+  const blankCount = (form.plainText.match(/\[\d+\]/g) || []).length;
+  const answerLines = form.answersText.split('\n').filter(a => a.trim()).length;
+
   return (
     <div className="px-4 lg:px-8 py-6 max-w-3xl mx-auto">
       <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
@@ -258,32 +308,50 @@ function ClozeEditor({ exercise, onSave, onCancel }) {
             <RichTextArea value={form.passageContent} onChange={v => set('passageContent', v)} placeholder="e.g. The sky is [BLANK_1] and the grass is [BLANK_2]." minHeight="min-h-36" />
             <MCClozeQuestionsEditor questions={form.mc_questions} onChange={v => set('mc_questions', v)} />
           </>
-        ) : form.hasOptions === 'bank' ? (
-          <>
-            <p className="text-xs text-muted-foreground mb-2">Mark correct answers with brackets: <code className="bg-muted px-1 rounded">[word]</code> or <code className="bg-muted px-1 rounded">[word|explanation]</code>.</p>
-            <RichTextArea value={form.passageContent} onChange={v => set('passageContent', v)} placeholder="Paste cloze passage here. Mark answers: The sky is [blue|adj. colour of clear sky]." minHeight="min-h-48" />
-            <p className="text-xs font-semibold text-foreground mb-1 mt-1">Word Bank <span className="font-normal text-muted-foreground">(one word per line, or comma-separated — leave blank to auto-generate from passage)</span></p>
-            <textarea
-              className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-20 resize-y mb-3"
-              placeholder={"blue\ngreen\nred\nor: blue, green, red"}
-              value={form.bankText}
-              onChange={e => set('bankText', e.target.value)}
-            />
-          </>
         ) : (
           <>
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-xs text-muted-foreground">Enclose target words in brackets. Use pipe for explanation: <code className="bg-muted px-1 rounded">[word|explanation]</code>. For MCQ add wrong answers: <code className="bg-muted px-1 rounded">[fox/dog/cat|A wild animal]</code></p>
-              {form.hasOptions === 'mcq' && (
-                <button type="button" onClick={() => {
-                  set('passageContent', `Climate change has [significantly/dramatically/slightly/rarely|adv. in an important way] [altered/improved/ignored/avoided|v. changed] weather patterns around the world. Scientists [warn/doubt/deny/forget|v. caution] that rising temperatures could [devastate/benefit/stabilise/celebrate|v. destroy badly] ecosystems and [displace/unite/protect/inspire|v. force to leave] millions of people.\n\nGovernments are now under [pressure/pleasure/leisure/treasure|n. strong demand] to [implement/ignore/debate/delay|v. put into action] policies that [reduce/increase/celebrate/maintain|v. lower] carbon [emissions/omissions/permissions/admissions|n. gases released] and [promote/prevent/replace/remove|v. encourage] the use of [renewable/reliable/remarkable/reversible|adj. naturally replenished] energy sources.`);
-                  set('annotationsText', `significantly: adv. in an important way\naltered: v. changed\nwarn: v. caution\ndevastate: v. destroy badly\ndisplace: v. force to leave\npressure: n. strong demand\nimplement: v. put into action\nreduce: v. lower\nemissions: n. gases released into the air\npromote: v. encourage\nrenewable: adj. naturally replenished`);
-                }} className="ml-3 shrink-0 px-3 py-1.5 bg-sky-50 text-sky-700 border border-sky-200 rounded-lg text-xs font-semibold hover:bg-sky-100 transition-colors whitespace-nowrap">
-                  📋 Use Template
-                </button>
-              )}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
+              {/* Box 1: Passage */}
+              <div>
+                <p className="text-xs font-semibold text-foreground mb-1">
+                  Passage <span className="font-normal text-muted-foreground">— use <code className="bg-muted px-1 rounded">[1]</code> <code className="bg-muted px-1 rounded">[2]</code> … for blanks</span>
+                </p>
+                <textarea
+                  className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-52 resize-y"
+                  placeholder={"The sky is [1] and the grass is [2].\n\nUse [1], [2], [3]... to mark each blank."}
+                  value={form.plainText}
+                  onChange={e => set('plainText', e.target.value)}
+                />
+              </div>
+              {/* Box 2: Correct Answers */}
+              <div>
+                <p className="text-xs font-semibold text-foreground mb-1">
+                  Correct Answers <span className="font-normal text-muted-foreground">— one per line, in order</span>
+                  {blankCount > 0 && (
+                    <span className={`ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${answerLines === blankCount ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {answerLines}/{blankCount}
+                    </span>
+                  )}
+                </p>
+                <textarea
+                  className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-52 resize-y font-mono"
+                  placeholder={"blue\ngreen\nrunning\n..."}
+                  value={form.answersText}
+                  onChange={e => set('answersText', e.target.value)}
+                />
+              </div>
             </div>
-            <RichTextArea value={form.passageContent} onChange={v => set('passageContent', v)} placeholder="Paste exercise content here..." minHeight="min-h-48" />
+            {form.hasOptions === 'bank' && (
+              <>
+                <p className="text-xs font-semibold text-foreground mb-1 mt-1">Word Bank <span className="font-normal text-muted-foreground">(one word per line, or comma-separated — leave blank to auto-generate from answers)</span></p>
+                <textarea
+                  className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-20 resize-y mb-3"
+                  placeholder={"blue\ngreen\nred\nor: blue, green, red"}
+                  value={form.bankText}
+                  onChange={e => set('bankText', e.target.value)}
+                />
+              </>
+            )}
           </>
         )}
 
