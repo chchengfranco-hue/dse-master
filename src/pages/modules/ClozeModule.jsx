@@ -44,7 +44,23 @@ function parseClozeTokens(raw) {
   return parts;
 }
 
-function buildWordBank(tokens) {
+const WORDBANK_SEP = '\n---WORDBANK---\n';
+
+function splitContentAndBank(raw) {
+  const idx = raw.indexOf(WORDBANK_SEP);
+  if (idx === -1) return { passageContent: raw, bankText: '' };
+  return { passageContent: raw.slice(0, idx), bankText: raw.slice(idx + WORDBANK_SEP.length) };
+}
+
+function joinContentAndBank(passage, bankText) {
+  if (!bankText.trim()) return passage;
+  return passage + WORDBANK_SEP + bankText.trim();
+}
+
+function buildWordBank(tokens, explicitBankText) {
+  if (explicitBankText && explicitBankText.trim()) {
+    return explicitBankText.split(/[\n,]+/).map(w => w.trim()).filter(Boolean);
+  }
   return [...new Set(tokens.filter(t => t.type === 'blank').map(t => t.correct))].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
 }
 
@@ -83,8 +99,8 @@ function AnnotatedText({ text, annotations, showRuby, activeWord, onWordClick })
   );
 }
 
-function ClozeContent({ tokens, hasOptions, answers, setAnswers, submitted, annotations, showRuby, activeWord, onWordClick }) {
-  const bank = buildWordBank(tokens);
+function ClozeContent({ tokens, hasOptions, answers, setAnswers, submitted, annotations, showRuby, activeWord, onWordClick, explicitBankText }) {
+  const bank = buildWordBank(tokens, explicitBankText);
   let blankIndex = 0;
   return (
     <span>
@@ -197,20 +213,23 @@ function MCClozeQuestionsEditor({ questions, onChange }) {
 }
 
 function ClozeEditor({ exercise, onSave, onCancel }) {
+  const { passageContent: initPassage, bankText: initBank } = splitContentAndBank(exercise?.content || '');
   const [form, setForm] = useState({
     id: exercise?.id || null, title: exercise?.title || '', topic: exercise?.topic || '',
     subtopic: exercise?.subtopic || '', hasOptions: exercise?.hasOptions || 'bank',
-    content: exercise?.content || '',
+    passageContent: initPassage,
+    bankText: initBank,
     status: exercise?.status || 'published',
     mc_questions: exercise?.mc_questions || [],
     annotationsText: exercise?.annotations ? Object.entries(exercise.annotations).map(([k, v]) => `${k}: ${v}`).join('\n') : '',
   });
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
   const handleSave = () => {
-    if (!form.title.trim() || !form.content.trim()) return alert('Title and Content are required.');
+    if (!form.title.trim() || !form.passageContent.trim()) return alert('Title and Content are required.');
     const annotations = {};
     form.annotationsText.split('\n').forEach(line => { const idx = line.indexOf(':'); if (idx > 0) { const w = line.slice(0, idx).trim(), m = line.slice(idx + 1).trim(); if (w && m) annotations[w] = m; } });
-    onSave({ id: form.id, title: form.title.trim(), topic: form.topic.trim() || 'Uncategorized', subtopic: form.subtopic.trim() || 'General', hasOptions: form.hasOptions, content: form.content.trim(), annotations, status: form.status, mc_questions: form.hasOptions === 'mccloze' ? form.mc_questions : [] });
+    const content = form.hasOptions === 'bank' ? joinContentAndBank(form.passageContent.trim(), form.bankText) : form.passageContent.trim();
+    onSave({ id: form.id, title: form.title.trim(), topic: form.topic.trim() || 'Uncategorized', subtopic: form.subtopic.trim() || 'General', hasOptions: form.hasOptions, content, annotations, status: form.status, mc_questions: form.hasOptions === 'mccloze' ? form.mc_questions : [] });
   };
   return (
     <div className="px-4 lg:px-8 py-6 max-w-3xl mx-auto">
@@ -236,8 +255,20 @@ function ClozeEditor({ exercise, onSave, onCancel }) {
         {form.hasOptions === 'mccloze' ? (
           <>
             <p className="text-xs text-muted-foreground mb-2">Write your passage using <code className="bg-muted px-1 rounded">[BLANK_1]</code>, <code className="bg-muted px-1 rounded">[BLANK_2]</code>, etc. as placeholders for each blank.</p>
-            <RichTextArea value={form.content} onChange={v => set('content', v)} placeholder="e.g. The sky is [BLANK_1] and the grass is [BLANK_2]." minHeight="min-h-36" />
+            <RichTextArea value={form.passageContent} onChange={v => set('passageContent', v)} placeholder="e.g. The sky is [BLANK_1] and the grass is [BLANK_2]." minHeight="min-h-36" />
             <MCClozeQuestionsEditor questions={form.mc_questions} onChange={v => set('mc_questions', v)} />
+          </>
+        ) : form.hasOptions === 'bank' ? (
+          <>
+            <p className="text-xs text-muted-foreground mb-2">Mark correct answers with brackets: <code className="bg-muted px-1 rounded">[word]</code> or <code className="bg-muted px-1 rounded">[word|explanation]</code>.</p>
+            <RichTextArea value={form.passageContent} onChange={v => set('passageContent', v)} placeholder="Paste cloze passage here. Mark answers: The sky is [blue|adj. colour of clear sky]." minHeight="min-h-48" />
+            <p className="text-xs font-semibold text-foreground mb-1 mt-1">Word Bank <span className="font-normal text-muted-foreground">(one word per line, or comma-separated — leave blank to auto-generate from passage)</span></p>
+            <textarea
+              className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-20 resize-y mb-3"
+              placeholder={"blue\ngreen\nred\nor: blue, green, red"}
+              value={form.bankText}
+              onChange={e => set('bankText', e.target.value)}
+            />
           </>
         ) : (
           <>
@@ -245,14 +276,14 @@ function ClozeEditor({ exercise, onSave, onCancel }) {
               <p className="text-xs text-muted-foreground">Enclose target words in brackets. Use pipe for explanation: <code className="bg-muted px-1 rounded">[word|explanation]</code>. For MCQ add wrong answers: <code className="bg-muted px-1 rounded">[fox/dog/cat|A wild animal]</code></p>
               {form.hasOptions === 'mcq' && (
                 <button type="button" onClick={() => {
-                  set('content', `Climate change has [significantly/dramatically/slightly/rarely|adv. in an important way] [altered/improved/ignored/avoided|v. changed] weather patterns around the world. Scientists [warn/doubt/deny/forget|v. caution] that rising temperatures could [devastate/benefit/stabilise/celebrate|v. destroy badly] ecosystems and [displace/unite/protect/inspire|v. force to leave] millions of people.\n\nGovernments are now under [pressure/pleasure/leisure/treasure|n. strong demand] to [implement/ignore/debate/delay|v. put into action] policies that [reduce/increase/celebrate/maintain|v. lower] carbon [emissions/omissions/permissions/admissions|n. gases released] and [promote/prevent/replace/remove|v. encourage] the use of [renewable/reliable/remarkable/reversible|adj. naturally replenished] energy sources.`);
+                  set('passageContent', `Climate change has [significantly/dramatically/slightly/rarely|adv. in an important way] [altered/improved/ignored/avoided|v. changed] weather patterns around the world. Scientists [warn/doubt/deny/forget|v. caution] that rising temperatures could [devastate/benefit/stabilise/celebrate|v. destroy badly] ecosystems and [displace/unite/protect/inspire|v. force to leave] millions of people.\n\nGovernments are now under [pressure/pleasure/leisure/treasure|n. strong demand] to [implement/ignore/debate/delay|v. put into action] policies that [reduce/increase/celebrate/maintain|v. lower] carbon [emissions/omissions/permissions/admissions|n. gases released] and [promote/prevent/replace/remove|v. encourage] the use of [renewable/reliable/remarkable/reversible|adj. naturally replenished] energy sources.`);
                   set('annotationsText', `significantly: adv. in an important way\naltered: v. changed\nwarn: v. caution\ndevastate: v. destroy badly\ndisplace: v. force to leave\npressure: n. strong demand\nimplement: v. put into action\nreduce: v. lower\nemissions: n. gases released into the air\npromote: v. encourage\nrenewable: adj. naturally replenished`);
                 }} className="ml-3 shrink-0 px-3 py-1.5 bg-sky-50 text-sky-700 border border-sky-200 rounded-lg text-xs font-semibold hover:bg-sky-100 transition-colors whitespace-nowrap">
                   📋 Use Template
                 </button>
               )}
             </div>
-            <RichTextArea value={form.content} onChange={v => set('content', v)} placeholder="Paste exercise content here..." minHeight="min-h-48" />
+            <RichTextArea value={form.passageContent} onChange={v => set('passageContent', v)} placeholder="Paste exercise content here..." minHeight="min-h-48" />
           </>
         )}
 
@@ -449,7 +480,8 @@ function MCClozeReadView({ exercise, onBack }) {
 }
 
 function ClozeReadView({ exercise, isEditor, onBack, onSaveAnnotation }) {
-  const tokens = parseClozeTokens(exercise.content || '');
+  const { passageContent, bankText } = splitContentAndBank(exercise.content || '');
+  const tokens = parseClozeTokens(passageContent);
   const blankCount = tokens.filter(t => t.type === 'blank').length;
   const [answers, setAnswers] = useState(Array(blankCount).fill(''));
   const [submitted, setSubmitted] = useState(false);
@@ -457,7 +489,7 @@ function ClozeReadView({ exercise, isEditor, onBack, onSaveAnnotation }) {
   const [showMargin, setShowMargin] = useState(false);
   const [activeWord, setActiveWord] = useState(null);
   const annotations = exercise.annotations || {};
-  const wordBank = buildWordBank(tokens);
+  const wordBank = buildWordBank(tokens, bankText);
   const speak = (text) => { window.speechSynthesis?.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'en-US'; u.rate = 0.9; window.speechSynthesis?.speak(u); };
   const handleWordClick = (word) => { speak(word); if (!showMargin && !showRuby) setActiveWord(activeWord === word ? null : word); };
   const handleTextSelect = useCallback(() => {
@@ -477,7 +509,7 @@ function ClozeReadView({ exercise, isEditor, onBack, onSaveAnnotation }) {
   const handlePrint = (withAnswers) => {
     setShowPrintOptions(false);
     const correctAnswers = tokens.filter(t => t.type === 'blank').map(t => t.correct);
-    const bank = buildWordBank(tokens);
+    const bank = buildWordBank(tokens, bankText);
     let blankIdx = 0;
     const passageHtml = tokens.map(token => {
       if (token.type === 'text') return token.value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g, '<br/>');
@@ -555,7 +587,7 @@ function ClozeReadView({ exercise, isEditor, onBack, onSaveAnnotation }) {
       )}
       <div className="flex gap-5 items-start">
         <div className="flex-1 min-w-0 bg-card rounded-2xl border border-border p-6 lg:p-8 text-lg leading-loose" onMouseUp={handleTextSelect}>
-          <ClozeContent tokens={tokens} hasOptions={exercise.hasOptions} answers={answers} setAnswers={setAnswers} submitted={submitted} annotations={annotations} showRuby={showRuby} activeWord={activeWord} onWordClick={handleWordClick} />
+          <ClozeContent tokens={tokens} hasOptions={exercise.hasOptions} answers={answers} setAnswers={setAnswers} submitted={submitted} annotations={annotations} showRuby={showRuby} activeWord={activeWord} onWordClick={handleWordClick} explicitBankText={bankText} />
         </div>
         {showMargin && Object.keys(annotations).length > 0 && (
           <aside className="w-40 shrink-0 flex flex-col gap-2.5 pt-1">
