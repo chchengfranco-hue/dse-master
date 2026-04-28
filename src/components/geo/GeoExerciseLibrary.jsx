@@ -78,6 +78,15 @@ export default function GeoExerciseLibrary() {
 
   const filtered = filterType === 'all' ? exercises : exercises.filter(e => e.type === filterType);
 
+  // Group by topic
+  const groupedByTopic = filtered.reduce((acc, ex) => {
+    if (!acc[ex.topic]) acc[ex.topic] = [];
+    acc[ex.topic].push(ex);
+    return acc;
+  }, {});
+
+  const topicGroups = Object.entries(groupedByTopic).sort((a, b) => a[0].localeCompare(b[0]));
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -105,36 +114,43 @@ export default function GeoExerciseLibrary() {
           <p className="text-xs mt-1">Create a new exercise to get started</p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {filtered.map(ex => (
-            <div key={ex.id} className="bg-card border border-border rounded-xl p-4 space-y-3">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-semibold text-foreground">{ex.title}</h3>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {ex.questions?.length || 0} question(s) · {ex.source}
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                <button
-                  onClick={() => handleCopyMarkdown(ex)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-muted hover:bg-border rounded-lg text-sm text-foreground transition-colors"
-                >
-                  {copied === ex.id ? <><Check className="w-4 h-4 text-green-600" /> Copied!</> : <><Copy className="w-4 h-4" /> Markdown</>}
-                </button>
-                <button
-                  onClick={() => handlePrint(ex)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-muted hover:bg-border rounded-lg text-sm text-foreground transition-colors"
-                >
-                  <Printer className="w-4 h-4" /> Print
-                </button>
-                <button
-                  onClick={() => handleDelete(ex.id)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-destructive/10 hover:bg-destructive/20 rounded-lg text-sm text-destructive transition-colors ml-auto"
-                >
-                  <Trash2 className="w-4 h-4" /> Delete
-                </button>
+        <div className="space-y-5">
+          {topicGroups.map(([topic, exs]) => (
+            <div key={topic}>
+              <h3 className="text-sm font-bold text-foreground uppercase tracking-wide mb-2 px-1">{topic}</h3>
+              <div className="space-y-2">
+                {exs.map(ex => (
+                  <div key={ex.id} className="bg-card border border-border rounded-xl p-4 space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h4 className="font-semibold text-foreground">{ex.title}</h4>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {ex.questions?.length || 0} question(s) · {ex.type.replace('_', ' ')}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                      <button
+                        onClick={() => handleCopyMarkdown(ex)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-muted hover:bg-border rounded-lg text-sm text-foreground transition-colors"
+                      >
+                        {copied === ex.id ? <><Check className="w-4 h-4 text-green-600" /> Copied!</> : <><Copy className="w-4 h-4" /> Markdown</>}
+                      </button>
+                      <button
+                        onClick={() => handlePrint(ex)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-muted hover:bg-border rounded-lg text-sm text-foreground transition-colors"
+                      >
+                        <Printer className="w-4 h-4" /> Print
+                      </button>
+                      <button
+                        onClick={() => handleDelete(ex.id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-destructive/10 hover:bg-destructive/20 rounded-lg text-sm text-destructive transition-colors ml-auto"
+                      >
+                        <Trash2 className="w-4 h-4" /> Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
