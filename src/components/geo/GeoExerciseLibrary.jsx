@@ -35,12 +35,11 @@ export default function GeoExerciseLibrary() {
   };
 
   const handlePrint = async (exercise) => {
-    const html = generateHTML(exercise);
-    const canvas = await html2canvas(document.createElement('div')); // placeholder
+    const markdown = generateMarkdown(exercise);
     const pdf = new jsPDF();
     const title = `${exercise.topic} - ${exercise.type}`;
     pdf.text(title, 10, 10);
-    pdf.text(generateMarkdown(exercise), 10, 20);
+    pdf.text(markdown, 10, 20);
     pdf.save(`${title}.pdf`);
   };
 
@@ -72,9 +71,7 @@ export default function GeoExerciseLibrary() {
     return md;
   };
 
-  const generateHTML = (exercise) => {
-    return `<div>${generateMarkdown(exercise)}</div>`;
-  };
+
 
   const filtered = filterType === 'all' ? exercises : exercises.filter(e => e.type === filterType);
 
