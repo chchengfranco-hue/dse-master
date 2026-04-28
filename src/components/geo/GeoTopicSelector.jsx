@@ -39,9 +39,24 @@ const SYLLABUS_TOPICS = [
 
 export default function GeoTopicSelector({ value, onChange }) {
   const [topics, setTopics] = useState(SYLLABUS_TOPICS);
+  const [selectedUnit, setSelectedUnit] = useState('');
+  const [selectedSubtopic, setSelectedSubtopic] = useState('');
   const [editMode, setEditMode] = useState(false);
   const [editGroup, setEditGroup] = useState(null);
   const [newTopic, setNewTopic] = useState('');
+
+  const currentUnitTopics = topics.find(t => t.group === selectedUnit)?.topics || [];
+
+  const handleUnitChange = (unit) => {
+    setSelectedUnit(unit);
+    setSelectedSubtopic('');
+    onChange(unit);
+  };
+
+  const handleSubtopicChange = (subtopic) => {
+    setSelectedSubtopic(subtopic);
+    onChange(`${selectedUnit} - ${subtopic}`);
+  };
 
   const addTopic = (groupIdx) => {
     if (!newTopic.trim()) return;
@@ -67,74 +82,69 @@ export default function GeoTopicSelector({ value, onChange }) {
     <div className="space-y-3">
       <input
         className="w-full rounded-xl border border-input px-3 py-2.5 text-sm"
-        placeholder="Enter any Geography topic... e.g. Plate Tectonics, Climate Change"
+        placeholder="Or enter custom topic... e.g. Plate Tectonics, Climate Change"
         value={value}
         onChange={e => onChange(e.target.value)}
       />
 
+      {/* Unit selector (compulsory) */}
+      <div>
+        <label className="text-xs font-semibold text-muted-foreground block mb-2">Unit (Required) 單元</label>
+        <select
+          value={selectedUnit}
+          onChange={e => handleUnitChange(e.target.value)}
+          className="w-full rounded-xl border border-input px-3 py-2.5 text-sm"
+        >
+          <option value="">Select a unit...</option>
+          {topics.map(({ group }) => (
+            <option key={group} value={group}>{group}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Subtopic selector (optional) */}
+      {selectedUnit && (
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground block mb-2">Sub-topic (Optional) 細題</label>
+          <div className="grid grid-cols-2 gap-2">
+            {currentUnitTopics.map((topic, idx) => (
+              <button
+                key={topic}
+                onClick={() => handleSubtopicChange(topic)}
+                className={`px-3 py-2 rounded-lg text-xs border transition-all text-left ${selectedSubtopic === topic ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted border-border text-foreground hover:bg-primary/5'}`}
+              >
+                {topic}
+              </button>
+            ))}
+          </div>
+          {editMode && (
+            <div className="flex gap-2 mt-2">
+              <input
+                className="flex-1 px-2 py-1.5 rounded border border-input text-xs"
+                placeholder="Add new topic"
+                value={editGroup === topics.findIndex(t => t.group === selectedUnit) ? newTopic : ''}
+                onChange={e => {
+                  setEditGroup(topics.findIndex(t => t.group === selectedUnit));
+                  setNewTopic(e.target.value);
+                }}
+              />
+              <button
+                onClick={() => addTopic(topics.findIndex(t => t.group === selectedUnit))}
+                className="px-2 py-1.5 bg-primary text-white rounded text-xs hover:bg-primary/90"
+              >
+                +
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       <button
         onClick={() => setEditMode(!editMode)}
-        className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${editMode ? 'bg-primary text-white border-primary' : 'bg-muted border-border hover:bg-border'}`}
+        className={`w-full px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${editMode ? 'bg-primary text-white border-primary' : 'bg-muted border-border hover:bg-border'}`}
       >
         {editMode ? '✓ Done Editing' : '✎ Edit Presets'}
       </button>
-
-      {/* Topic list */}
-      <div className="max-h-48 overflow-y-auto space-y-2 pr-1 text-xs">
-        <p className="font-semibold text-muted-foreground sticky top-0 bg-background py-1">Quick Presets:</p>
-        {topics.map(({ group, topics: groupTopics }, groupIdx) => (
-          <div key={group}>
-            {editMode ? (
-              <input
-                className="text-[10px] font-bold uppercase tracking-wide mb-1 px-2 py-1 rounded border border-input w-full"
-                value={group}
-                onChange={e => editGroupName(groupIdx, e.target.value)}
-              />
-            ) : (
-              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">{group}</p>
-            )}
-            <div className="flex flex-wrap gap-1">
-              {groupTopics.map((topic, topicIdx) => (
-                <div key={topic} className="relative group">
-                  <button
-                    onClick={() => onChange(topic)}
-                    className={`px-2 py-1 rounded text-xs border transition-all ${value === topic ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted border-border text-foreground hover:bg-primary/5'}`}
-                  >
-                    {topic}
-                  </button>
-                  {editMode && (
-                    <button
-                      onClick={() => removeTopic(groupIdx, topicIdx)}
-                      className="absolute -top-2 -right-2 bg-destructive text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              ))}
-              {editMode && (
-                <div className="flex gap-1">
-                  <input
-                    className="px-2 py-1 rounded border border-input text-xs"
-                    placeholder="New topic"
-                    value={editGroup === groupIdx ? newTopic : ''}
-                    onChange={e => {
-                      setEditGroup(groupIdx);
-                      setNewTopic(e.target.value);
-                    }}
-                  />
-                  <button
-                    onClick={() => addTopic(groupIdx)}
-                    className="px-2 py-1 bg-primary text-white rounded text-xs hover:bg-primary/90"
-                  >
-                    +
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
 
       {value && (
         <div className="bg-primary/5 border border-primary/20 rounded-xl px-3 py-2 text-sm">
