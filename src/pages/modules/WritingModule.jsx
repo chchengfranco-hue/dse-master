@@ -548,7 +548,7 @@ function WritingReadView({ model, isEditor, onBack, onSaveAnnotation, allTemplat
                   <div key={i} className={`rounded-2xl border-l-4 ${color.border} ${color.bg} p-5`}>
                     <div className="flex items-center gap-2 mb-3">
                       <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${color.badge}`}>
-                        {i + 1}. {sec.section}
+                        {sec.section}
                       </span>
                       {sec.description && <span className="text-[10px] text-muted-foreground italic">{sec.description}</span>}
                     </div>
