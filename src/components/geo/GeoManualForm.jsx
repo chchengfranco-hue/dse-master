@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Plus, X, ChevronDown } from 'lucide-react';
+import { Plus, X, ChevronDown, Upload, Image as ImageIcon } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
 
 export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
   const [questions, setQuestions] = useState([]);
@@ -7,13 +8,21 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
 
   const addQuestion = () => {
     if (type === 'mcq') {
-      setQuestions([...questions, { question_en: '', question_zh: '', template: 'statements', options_en: ['', '', ''], options_zh: ['', '', ''], numOptions: 3, answers: { A: '', B: '', C: '', D: '' }, correct: 'A', explanation_en: '', explanation_zh: '' }]);
+      setQuestions([...questions, { question_en: '', question_zh: '', template: 'statements', options_en: ['', '', ''], options_zh: ['', '', ''], numOptions: 3, answers: { A: '', B: '', C: '', D: '' }, correct: 'A', explanation_en: '', explanation_zh: '', image_url: '' }]);
     } else if (type === 'data_based') {
-      setQuestions([...questions, { context_en: '', context_zh: '', sub_questions: [{ label: 'a', question_en: '', question_zh: '', marks: 0, answer_en: '', answer_zh: '' }] }]);
+      setQuestions([...questions, { context_en: '', context_zh: '', sub_questions: [{ label: 'a', question_en: '', question_zh: '', marks: 0, answer_en: '', answer_zh: '' }], image_url: '' }]);
     } else {
-      setQuestions([...questions, { question_en: '', question_zh: '', marks: 0, guidance_en: '', guidance_zh: '', model_answer_en: '', model_answer_zh: '' }]);
+      setQuestions([...questions, { question_en: '', question_zh: '', marks: 0, guidance_en: '', guidance_zh: '', model_answer_en: '', model_answer_zh: '', image_url: '' }]);
     }
     setExpanded(questions.length);
+  };
+
+  const handleImageUpload = async (qIdx, file) => {
+    if (!file) return;
+    const res = await base44.integrations.Core.UploadFile({ file });
+    if (res.file_url) {
+      updateQuestion(qIdx, 'image_url', res.file_url);
+    }
   };
 
   const removeQuestion = (idx) => {
@@ -124,6 +133,24 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
                 <input className="w-full rounded-lg border border-input px-3 py-2 text-sm mb-2" placeholder="Question (English)" value={q.question_en} onChange={e => updateQuestion(qIdx, 'question_en', e.target.value)} />
                 <input className="w-full rounded-lg border border-input px-3 py-2 text-sm mb-3" placeholder="Question (中文)" value={q.question_zh} onChange={e => updateQuestion(qIdx, 'question_zh', e.target.value)} />
 
+                <div className="mb-3">
+                  <label className="text-xs font-semibold text-muted-foreground block mb-2">Reference Image (Optional)</label>
+                  {q.image_url ? (
+                    <div className="relative">
+                      <img src={q.image_url} alt="Reference" className="w-full rounded-lg border border-border max-h-48 object-cover mb-2" />
+                      <button type="button" onClick={() => updateQuestion(qIdx, 'image_url', '')} className="text-xs text-red-600 hover:text-red-700">Remove Image</button>
+                    </div>
+                  ) : (
+                    <label className="flex items-center justify-center w-full px-4 py-3 border-2 border-dashed border-border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Upload className="w-4 h-4" />
+                        <span>Click to upload image</span>
+                      </div>
+                      <input type="file" accept="image/*" onChange={e => handleImageUpload(qIdx, e.target.files?.[0])} className="hidden" />
+                    </label>
+                  )}
+                </div>
+
                 {q.template === 'statements' && (
                   <div className="mb-3">
                     <div className="flex items-center justify-between mb-2">
@@ -230,6 +257,24 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
                 <input className="w-full rounded-lg border border-input px-3 py-2 text-sm mb-2" placeholder="Context/Data description (English)" value={q.context_en} onChange={e => updateQuestion(qIdx, 'context_en', e.target.value)} />
                 <input className="w-full rounded-lg border border-input px-3 py-2 text-sm mb-3" placeholder="Context/Data description (中文)" value={q.context_zh} onChange={e => updateQuestion(qIdx, 'context_zh', e.target.value)} />
 
+                <div className="mb-3">
+                  <label className="text-xs font-semibold text-muted-foreground block mb-2">Reference Image (Optional)</label>
+                  {q.image_url ? (
+                    <div className="relative">
+                      <img src={q.image_url} alt="Reference" className="w-full rounded-lg border border-border max-h-48 object-cover mb-2" />
+                      <button type="button" onClick={() => updateQuestion(qIdx, 'image_url', '')} className="text-xs text-red-600 hover:text-red-700">Remove Image</button>
+                    </div>
+                  ) : (
+                    <label className="flex items-center justify-center w-full px-4 py-3 border-2 border-dashed border-border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Upload className="w-4 h-4" />
+                        <span>Click to upload image</span>
+                      </div>
+                      <input type="file" accept="image/*" onChange={e => handleImageUpload(qIdx, e.target.files?.[0])} className="hidden" />
+                    </label>
+                  )}
+                </div>
+
                 <div className="mb-3 space-y-2">
                   {q.sub_questions.map((sq, subIdx) => (
                     <div key={subIdx} className="bg-background rounded-lg p-3 border border-border text-sm space-y-2">
@@ -270,6 +315,24 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
                 <input className="w-full rounded-lg border border-input px-3 py-2 text-sm mb-2" placeholder="Marks" type="number" value={q.marks} onChange={e => updateQuestion(qIdx, 'marks', parseInt(e.target.value) || 0)} />
                 <textarea className="w-full rounded-lg border border-input px-3 py-2 text-sm mb-2" placeholder="Question (English)" value={q.question_en} onChange={e => updateQuestion(qIdx, 'question_en', e.target.value)} rows="3" />
                 <textarea className="w-full rounded-lg border border-input px-3 py-2 text-sm mb-2" placeholder="Question (中文)" value={q.question_zh} onChange={e => updateQuestion(qIdx, 'question_zh', e.target.value)} rows="3" />
+
+                <div className="mb-3">
+                  <label className="text-xs font-semibold text-muted-foreground block mb-2">Reference Image (Optional)</label>
+                  {q.image_url ? (
+                    <div className="relative">
+                      <img src={q.image_url} alt="Reference" className="w-full rounded-lg border border-border max-h-48 object-cover mb-2" />
+                      <button type="button" onClick={() => updateQuestion(qIdx, 'image_url', '')} className="text-xs text-red-600 hover:text-red-700">Remove Image</button>
+                    </div>
+                  ) : (
+                    <label className="flex items-center justify-center w-full px-4 py-3 border-2 border-dashed border-border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Upload className="w-4 h-4" />
+                        <span>Click to upload image</span>
+                      </div>
+                      <input type="file" accept="image/*" onChange={e => handleImageUpload(qIdx, e.target.files?.[0])} className="hidden" />
+                    </label>
+                  )}
+                </div>
                 <textarea className="w-full rounded-lg border border-input px-3 py-2 text-sm mb-2" placeholder="Guidance (English)" value={q.guidance_en} onChange={e => updateQuestion(qIdx, 'guidance_en', e.target.value)} rows="2" />
                 <textarea className="w-full rounded-lg border border-input px-3 py-2 text-sm mb-2" placeholder="Guidance (中文)" value={q.guidance_zh} onChange={e => updateQuestion(qIdx, 'guidance_zh', e.target.value)} rows="2" />
                 <textarea className="w-full rounded-lg border border-input px-3 py-2 text-sm mb-2" placeholder="Model answer (English)" value={q.model_answer_en} onChange={e => updateQuestion(qIdx, 'model_answer_en', e.target.value)} rows="3" />
