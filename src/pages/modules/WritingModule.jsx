@@ -537,6 +537,7 @@ function WritingReadView({ model, isEditor, onBack, onSaveAnnotation, allTemplat
           {structure.length > 0 ? (
             <div className="space-y-3">
               {splitIntoParagraphs(model.content, structure.length).map((para, i) => {
+                if (!para.trim()) return null;
                 const sec = structure[i];
                 const color = PARA_COLORS[i % PARA_COLORS.length];
                 return (
