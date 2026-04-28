@@ -489,7 +489,10 @@ function ClozeReadView({ exercise, isEditor, onBack, onSaveAnnotation }) {
   const [showMargin, setShowMargin] = useState(false);
   const [activeWord, setActiveWord] = useState(null);
   const annotations = exercise.annotations || {};
-  const wordBank = buildWordBank(tokens, bankText);
+  const [wordBank] = useState(() => {
+    const bank = buildWordBank(tokens, bankText);
+    return [...bank].sort(() => 0.5 - Math.random());
+  });
   const speak = (text) => { window.speechSynthesis?.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'en-US'; u.rate = 0.9; window.speechSynthesis?.speak(u); };
   const handleWordClick = (word) => { speak(word); if (!showMargin && !showRuby) setActiveWord(activeWord === word ? null : word); };
   const handleTextSelect = useCallback(() => {
