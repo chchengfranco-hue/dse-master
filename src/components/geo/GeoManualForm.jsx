@@ -9,7 +9,7 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
 
   const addQuestion = () => {
     if (type === 'mcq') {
-      setQuestions([...questions, { question_en: '', question_zh: '', template: 'statements', options_en: ['', '', ''], options_zh: ['', '', ''], numOptions: 3, answers: { A: '', B: '', C: '', D: '' }, correct: 'A', explanation_en: '', explanation_zh: '', image_url: '' }]);
+      setQuestions([...questions, { question_en: '', question_zh: '', template: 'statements', options_en: ['', '', ''], options_zh: ['', '', ''], numOptions: 3, answers: { A: '', B: '', C: '', D: '' }, correct: 'A', explanation_en: '', explanation_zh: '', image_url: '', tableFormat: false, tableHeaders: ['', ''], tableData: [['', ''], ['', ''], ['', '']] }]);
     } else if (type === 'data_based') {
       setQuestions([...questions, { context_en: '', context_zh: '', sub_questions: [{ label: 'a', question_en: '', question_zh: '', marks: 0, answer_en: '', answer_zh: '' }], image_url: '' }]);
     } else {
@@ -132,7 +132,7 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
 
             {expanded === qIdx && (
               <>
-                <div className="flex gap-2 mb-3">
+                <div className="flex gap-2 mb-3 flex-wrap">
                   <button
                     onClick={() => updateQuestion(qIdx, 'template', 'statements')}
                     className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${q.template === 'statements' ? 'bg-primary text-white border-primary' : 'bg-muted border-border hover:bg-border'}`}
@@ -146,6 +146,23 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
                     Simple MCQ (A, B, C, D)
                   </button>
                 </div>
+
+                {q.template === 'statements' && (
+                  <div className="flex gap-2 mb-3">
+                    <button
+                      onClick={() => updateQuestion(qIdx, 'tableFormat', false)}
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${!q.tableFormat ? 'bg-primary text-white border-primary' : 'bg-muted border-border hover:bg-border'}`}
+                    >
+                      List Format
+                    </button>
+                    <button
+                      onClick={() => updateQuestion(qIdx, 'tableFormat', true)}
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${q.tableFormat ? 'bg-primary text-white border-primary' : 'bg-muted border-border hover:bg-border'}`}
+                    >
+                      Table Format
+                    </button>
+                  </div>
+                )}
 
                 <input className="w-full rounded-lg border border-input px-3 py-2 text-sm mb-2" placeholder="Question (English)" value={q.question_en} onChange={e => updateQuestion(qIdx, 'question_en', e.target.value)} />
                 <input className="w-full rounded-lg border border-input px-3 py-2 text-sm mb-3" placeholder="Question (中文)" value={q.question_zh} onChange={e => updateQuestion(qIdx, 'question_zh', e.target.value)} />
@@ -174,8 +191,8 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
                   )}
                 </div>
 
-                {q.template === 'statements' && (
-                  <div className="mb-3">
+                {q.template === 'statements' && !q.tableFormat && (
+                   <div className="mb-3">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-xs font-semibold text-muted-foreground">Statements to Evaluate</p>
                       <div className="flex gap-1">
@@ -201,6 +218,42 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
                           <input className="w-full rounded border border-input px-2 py-1.5 text-xs" placeholder="中文陳述" value={q.options_zh[oIdx]} onChange={e => updateOption(qIdx, oIdx, 'zh', e.target.value)} />
                         </div>
                       ))}
+                    </div>
+                  </div>
+                )}
+
+                {q.template === 'statements' && q.tableFormat && (
+                  <div className="mb-3">
+                    <p className="text-xs font-semibold text-muted-foreground mb-2">Table Format</p>
+                    <div className="mb-3 space-y-2">
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Column Headers</p>
+                        <div className="flex gap-2">
+                          <input className="flex-1 rounded border border-input px-2 py-1.5 text-xs" placeholder="Header 1 (EN)" value={q.tableHeaders?.[0] || ''} onChange={e => updateQuestion(qIdx, 'tableHeaders', [e.target.value, q.tableHeaders?.[1] || ''])} />
+                          <input className="flex-1 rounded border border-input px-2 py-1.5 text-xs" placeholder="Header 2 (EN)" value={q.tableHeaders?.[1] || ''} onChange={e => updateQuestion(qIdx, 'tableHeaders', [q.tableHeaders?.[0] || '', e.target.value])} />
+                        </div>
+                      </div>
+                      <div className="max-h-64 overflow-y-auto">
+                        {q.tableData?.map((row, rIdx) => (
+                          <div key={rIdx} className="flex gap-2 mb-2">
+                            <input className="w-20 rounded border border-input px-2 py-1.5 text-xs" placeholder="(1) (2) (3)" value={row[0] || ''} onChange={e => {
+                              const newData = [...q.tableData];
+                              newData[rIdx][0] = e.target.value;
+                              updateQuestion(qIdx, 'tableData', newData);
+                            }} />
+                            <input className="flex-1 rounded border border-input px-2 py-1.5 text-xs" placeholder={q.tableHeaders?.[0] || 'Column 1'} value={row[1] || ''} onChange={e => {
+                              const newData = [...q.tableData];
+                              newData[rIdx][1] = e.target.value;
+                              updateQuestion(qIdx, 'tableData', newData);
+                            }} />
+                            <input className="flex-1 rounded border border-input px-2 py-1.5 text-xs" placeholder={q.tableHeaders?.[1] || 'Column 2'} value={row[2] || ''} onChange={e => {
+                              const newData = [...q.tableData];
+                              newData[rIdx][2] = e.target.value;
+                              updateQuestion(qIdx, 'tableData', newData);
+                            }} />
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
