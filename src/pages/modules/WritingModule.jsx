@@ -152,10 +152,16 @@ const SECTION_SEP = '\n\n---\n\n';
 // Splits stored content into per-section strings.
 // Supports both new format (SECTION_SEP) and legacy (\n\n).
 function splitIntoParagraphs(text, count) {
-  const hasSep = text.includes('---');
-  const parts = hasSep ? text.split(SECTION_SEP) : text.split(/\n\n+/);
   const result = [];
-  for (let i = 0; i < count; i++) result.push(parts[i] || '');
+  if (text.includes(SECTION_SEP)) {
+    // New structured format — split precisely
+    const parts = text.split(SECTION_SEP);
+    for (let i = 0; i < count; i++) result.push(parts[i] || '');
+  } else {
+    // Legacy / plain content — put everything in section 0, leave rest empty
+    result.push(text || '');
+    for (let i = 1; i < count; i++) result.push('');
+  }
   return result;
 }
 
