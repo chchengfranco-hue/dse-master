@@ -57,6 +57,12 @@ export default function GeoTopicSelector({ value, onChange }) {
     setTopics(newTopics);
   };
 
+  const editGroupName = (groupIdx, newName) => {
+    const newTopics = [...topics];
+    newTopics[groupIdx].group = newName;
+    setTopics(newTopics);
+  };
+
   return (
     <div className="space-y-3">
       <input
@@ -78,7 +84,15 @@ export default function GeoTopicSelector({ value, onChange }) {
         <p className="font-semibold text-muted-foreground sticky top-0 bg-background py-1">Quick Presets:</p>
         {topics.map(({ group, topics: groupTopics }, groupIdx) => (
           <div key={group}>
-            <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">{group}</p>
+            {editMode ? (
+              <input
+                className="text-[10px] font-bold uppercase tracking-wide mb-1 px-2 py-1 rounded border border-input w-full"
+                value={group}
+                onChange={e => editGroupName(groupIdx, e.target.value)}
+              />
+            ) : (
+              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">{group}</p>
+            )}
             <div className="flex flex-wrap gap-1">
               {groupTopics.map((topic, topicIdx) => (
                 <div key={topic} className="relative group">
