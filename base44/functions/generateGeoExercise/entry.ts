@@ -176,5 +176,17 @@ Important:
     response_json_schema: schemaByType[type],
   });
 
-  return Response.json({ success: true, type, topic, data: result });
+  // Save to database
+  const exerciseData = {
+    title: `${topic} - ${type.replace('_', ' ').toUpperCase()}`,
+    topic: topic,
+    type: type,
+    source: 'ai_generated',
+    questions: result.questions || [],
+    status: 'published'
+  };
+
+  const saved = await base44.asServiceRole.entities.GeoExercise.create(exerciseData);
+
+  return Response.json({ success: true, type, topic, data: result, exercise_id: saved.id });
 });

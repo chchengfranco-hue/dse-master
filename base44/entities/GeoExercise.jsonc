@@ -1,0 +1,91 @@
+{
+  "name": "GeoExercise",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Exercise title (topic + type)"
+    },
+    "topic": {
+      "type": "string",
+      "description": "Geography topic (e.g. Plate Tectonics, Climate Change)"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "mcq",
+        "data_based",
+        "short_essay"
+      ],
+      "description": "Exercise type"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "ai_generated",
+        "pdf_extracted"
+      ],
+      "description": "Whether AI-generated or PDF-extracted"
+    },
+    "pdf_url": {
+      "type": "string",
+      "description": "Original PDF URL if extracted from PDF"
+    },
+    "questions": {
+      "type": "array",
+      "description": "Array of question objects with bilingual content",
+      "items": {
+        "type": "object"
+      }
+    },
+    "markdown_content": {
+      "type": "string",
+      "description": "Full rendered Markdown (for PDF extractions)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "published"
+      ],
+      "default": "published",
+      "description": "Publish status"
+    }
+  },
+  "required": [
+    "title",
+    "topic",
+    "type",
+    "source",
+    "questions"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "data.status": "published"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
