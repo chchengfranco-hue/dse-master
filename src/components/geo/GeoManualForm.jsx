@@ -87,14 +87,11 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
                 <input className="w-full rounded-lg border border-input px-3 py-2 text-sm mb-2" placeholder="Question (English)" value={q.question_en} onChange={e => updateQuestion(qIdx, 'question_en', e.target.value)} />
                 <input className="w-full rounded-lg border border-input px-3 py-2 text-sm mb-3" placeholder="Question (中文)" value={q.question_zh} onChange={e => updateQuestion(qIdx, 'question_zh', e.target.value)} />
 
-                <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="grid grid-cols-2 gap-2 mb-3">
                   {['A', 'B', 'C', 'D'].map((letter, oIdx) => (
-                    <div key={oIdx} className="bg-background rounded-lg border border-border p-3 space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded">{letter}</span>
-                      </div>
-                      <input className="w-full rounded border border-input px-2 py-1.5 text-xs" placeholder={`Option (EN)`} value={q.options_en[oIdx]} onChange={e => updateOption(qIdx, oIdx, 'en', e.target.value)} />
-                      <input className="w-full rounded border border-input px-2 py-1.5 text-xs" placeholder={`選項 (中文)`} value={q.options_zh[oIdx]} onChange={e => updateOption(qIdx, oIdx, 'zh', e.target.value)} />
+                    <div key={oIdx}>
+                      <input className="w-full rounded-lg border border-input px-2 py-1.5 text-xs mb-1" placeholder={`${letter}. (EN)`} value={q.options_en[oIdx]} onChange={e => updateOption(qIdx, oIdx, 'en', e.target.value)} />
+                      <input className="w-full rounded-lg border border-input px-2 py-1.5 text-xs" placeholder={`${letter}. (中文)`} value={q.options_zh[oIdx]} onChange={e => updateOption(qIdx, oIdx, 'zh', e.target.value)} />
                     </div>
                   ))}
                 </div>
