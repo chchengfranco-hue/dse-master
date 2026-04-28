@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import GeoTopicSelector from '@/components/geo/GeoTopicSelector';
-import GeoExerciseResult from '@/components/geo/GeoExerciseResult';
+import GeoManualForm from '@/components/geo/GeoManualForm';
 import GeoPdfResult from '@/components/geo/GeoPdfResult';
-import { Loader2, Globe, BookOpen, BarChart2, FileText, Upload, Sparkles } from 'lucide-react';
+import { Loader2, Globe, BookOpen, BarChart2, FileText, Upload, PenTool } from 'lucide-react';
 
 const ICONS = { mcq: BookOpen, data_based: BarChart2, short_essay: FileText };
 
@@ -18,24 +18,26 @@ export default function GeoExercise() {
   const [topic, setTopic] = useState('');
   const [exerciseType, setExerciseType] = useState('mcq');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
   const [error, setError] = useState('');
 
   // PDF mode state
   const [pdfFile, setPdfFile] = useState(null);
   const [pdfResult, setPdfResult] = useState(null);
 
-  const handleGenerate = async () => {
-    if (!topic.trim()) return setError('請先選擇或輸入題目 / Please select or enter a topic.');
-    setError('');
+  // Manual input state
+  const [showManualForm, setShowManualForm] = useState(false);
+
+  const handleManualSubmit = async (data) => {
     setLoading(true);
-    setResult(null);
-    const res = await base44.functions.invoke('generateGeoExercise', { topic: topic.trim(), type: exerciseType });
+    setError('');
+    const res = await base44.functions.invoke('saveGeoExercise', data);
     setLoading(false);
     if (res.data?.success) {
-      setResult(res.data);
+      setShowManualForm(false);
+      setTopic('');
+      alert('Exercise saved successfully!');
     } else {
-      setError(res.data?.error || 'Generation failed. Please try again.');
+      setError(res.data?.error || 'Save failed. Please try again.');
     }
   };
 
@@ -58,7 +60,7 @@ export default function GeoExercise() {
     }
   };
 
-  const handleReset = () => { setResult(null); setPdfResult(null); setError(''); setPdfFile(null); };
+  const handleReset = () => { setPdfResult(null); setError(''); setPdfFile(null); };
 
   return (
     <div className="min-h-screen bg-background pb-16">
@@ -80,22 +82,31 @@ export default function GeoExercise() {
 
       <div className="max-w-3xl mx-auto px-4 py-6">
 
-        {/* Show results */}
-        {result && <GeoExerciseResult result={result} onReset={handleReset} />}
+        {/* PDF extraction result */}
         {pdfResult && <GeoPdfResult markdown={pdfResult} onReset={handleReset} />}
 
+        {/* Manual form */}
+        {showManualForm && (
+          <GeoManualForm
+            type={exerciseType}
+            topic={topic}
+            onSubmit={handleManualSubmit}
+            onCancel={() => setShowManualForm(false)}
+          />
+        )}
+
         {/* Input form */}
-        {!result && !pdfResult && (
+        {!pdfResult && !showManualForm && (
           <div className="space-y-5">
 
             {/* Mode tabs */}
             <div className="flex gap-2 bg-muted p-1 rounded-xl">
               <button
-                onClick={() => { setMode('generate'); setError(''); }}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${mode === 'generate' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                onClick={() => { setMode('manual'); setError(''); }}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${mode === 'manual' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
               >
-                <Sparkles className="w-4 h-4" />
-                AI Generate 產生練習
+                <PenTool className="w-4 h-4" />
+                Manual Input 手動輸入
               </button>
               <button
                 onClick={() => { setMode('pdf'); setError(''); }}
@@ -106,7 +117,7 @@ export default function GeoExercise() {
               </button>
             </div>
 
-            {mode === 'generate' && (
+            {mode === 'manual' && (
               <>
                 {/* Topic Selector */}
                 <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
@@ -118,7 +129,7 @@ export default function GeoExercise() {
                 {/* Exercise Type */}
                 <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
                   <h2 className="text-sm font-bold text-foreground mb-1">2. Exercise Type 題型</h2>
-                  <p className="text-xs text-muted-foreground mb-4">Select the type of questions to generate</p>
+                  <p className="text-xs text-muted-foreground mb-4">Select the type of questions to input</p>
                   <div className="grid grid-cols-3 gap-3">
                     {EXERCISE_TYPES.map(({ id, label, labelZh, color, desc }) => {
                       const Icon = ICONS[id];
@@ -145,11 +156,11 @@ export default function GeoExercise() {
                 {error && <p className="text-sm text-destructive px-1">{error}</p>}
 
                 <button
-                  onClick={handleGenerate}
-                  disabled={loading || !topic}
+                  onClick={() => setShowManualForm(true)}
+                  disabled={!topic}
                   className="w-full py-3.5 bg-primary text-primary-foreground rounded-2xl font-bold text-base hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary/20"
                 >
-                  {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Generating... 生成中...</> : '⚡ Generate Exercise 產生練習'}
+                  ✏️ Input Questions 輸入題目
                 </button>
               </>
             )}
