@@ -261,7 +261,7 @@ function ClozeEditor({ exercise, onSave, onCancel }) {
         ) : form.hasOptions === 'bank' ? (
           <>
             <p className="text-xs text-muted-foreground mb-2">Mark correct answers with brackets: <code className="bg-muted px-1 rounded">[word]</code> or <code className="bg-muted px-1 rounded">[word|explanation]</code>.</p>
-            <RichTextArea value={form.passageContent} onChange={v => set('passageContent', v)} placeholder="Paste cloze passage here. Mark answers: The sky is [blue|adj. colour of clear sky]." minHeight="min-h-48" showAnswerPreview />
+            <RichTextArea value={form.passageContent} onChange={v => set('passageContent', v)} placeholder="Paste cloze passage here. Mark answers: The sky is [blue|adj. colour of clear sky]." minHeight="min-h-48" />
             <p className="text-xs font-semibold text-foreground mb-1 mt-1">Word Bank <span className="font-normal text-muted-foreground">(one word per line, or comma-separated — leave blank to auto-generate from passage)</span></p>
             <textarea
               className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-20 resize-y mb-3"
@@ -283,7 +283,7 @@ function ClozeEditor({ exercise, onSave, onCancel }) {
                 </button>
               )}
             </div>
-            <RichTextArea value={form.passageContent} onChange={v => set('passageContent', v)} placeholder="Paste exercise content here..." minHeight="min-h-48" showAnswerPreview />
+            <RichTextArea value={form.passageContent} onChange={v => set('passageContent', v)} placeholder="Paste exercise content here..." minHeight="min-h-48" />
           </>
         )}
 
