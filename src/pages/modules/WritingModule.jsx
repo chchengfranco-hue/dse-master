@@ -164,38 +164,63 @@ function joinParagraphs(paras) {
 }
 
 function StructuredEssayEditor({ structure, value, onChange }) {
-  // Derive per-section paragraphs from the flat content string
   const [paragraphs, setParagraphs] = useState(() => splitIntoParagraphs(value || '', structure.length));
-
-  // When structure length changes (genre switched), re-split
-  const prevLen = useState(structure.length)[0];
+  // Track which optional sections are "included" (default: included if has content, else excluded)
+  const [included, setIncluded] = useState(() =>
+    structure.map((sec, i) => !sec.is_optional || !!(splitIntoParagraphs(value || '', structure.length)[i]?.trim()))
+  );
 
   const handleChange = (i, v) => {
     const updated = paragraphs.map((p, j) => j === i ? v : p);
     setParagraphs(updated);
-    onChange(joinParagraphs(updated));
+    onChange(joinParagraphs(updated.map((p, j) => included[j] ? p : '')));
+  };
+
+  const toggleIncluded = (i) => {
+    const next = included.map((v, j) => j === i ? !v : v);
+    setIncluded(next);
+    // Clear content when excluding
+    if (next[i] === false) {
+      const updated = paragraphs.map((p, j) => j === i ? '' : p);
+      setParagraphs(updated);
+      onChange(joinParagraphs(updated.map((p, j) => next[j] ? p : '')));
+    } else {
+      onChange(joinParagraphs(paragraphs.map((p, j) => next[j] ? p : '')));
+    }
   };
 
   return (
-    <div className="mb-3 space-y-3 rounded-xl border border-border overflow-hidden">
+    <div className="mb-3 space-y-2">
       {structure.map((sec, i) => {
         const color = PARA_COLORS[i % PARA_COLORS.length];
+        const isIncluded = included[i];
         return (
-          <div key={i} className={`border-l-4 ${color.border} ${color.bg} p-3`}>
+          <div key={i} className={`rounded-xl border-l-4 ${color.border} ${isIncluded ? color.bg : 'bg-muted/30 opacity-60'} p-3 transition-all`}>
             <div className="flex items-center gap-2 mb-2">
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${color.badge}`}>
                 {i + 1}. {sec.section}
               </span>
+              {sec.is_optional && (
+                <button
+                  type="button"
+                  onClick={() => toggleIncluded(i)}
+                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${isIncluded ? 'bg-green-100 text-green-700 border-green-300' : 'bg-muted text-muted-foreground border-border hover:bg-green-50 hover:text-green-600'}`}
+                >
+                  {isIncluded ? '✓ Included' : '+ Include'}
+                </button>
+              )}
               {sec.description && (
                 <span className="text-[10px] text-muted-foreground italic">{sec.description}</span>
               )}
             </div>
-            <textarea
-              className="w-full rounded-lg border border-input bg-white/80 px-3 py-2 text-sm min-h-20 resize-y focus:outline-none focus:ring-1 focus:ring-ring"
-              placeholder={`Write ${sec.section.toLowerCase()} here...`}
-              value={paragraphs[i] || ''}
-              onChange={e => handleChange(i, e.target.value)}
-            />
+            {isIncluded && (
+              <textarea
+                className="w-full rounded-lg border border-input bg-white/80 px-3 py-2 text-sm min-h-20 resize-y focus:outline-none focus:ring-1 focus:ring-ring"
+                placeholder={`Write ${sec.section.toLowerCase()} here...`}
+                value={paragraphs[i] || ''}
+                onChange={e => handleChange(i, e.target.value)}
+              />
+            )}
           </div>
         );
       })}
@@ -551,6 +576,7 @@ function WritingReadView({ model, isEditor, onBack, onSaveAnnotation, allTemplat
                       <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${color.badge}`}>
                         {i + 1}. {sec.section}
                       </span>
+                      {sec.is_optional && <span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full border border-border">optional</span>}
                       {sec.description && <span className="text-[10px] text-muted-foreground italic">{sec.description}</span>}
                     </div>
                     {para.split(/\n\n/).filter(p => p.trim()).length > 1 ? (
