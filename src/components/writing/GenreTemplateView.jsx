@@ -26,7 +26,10 @@ function StructureDiagram({ structure }) {
             </div>
           ) : (
             <div className={`flex-1 text-center py-3 px-4 text-sm font-medium border-b border-border/50 last:border-b-0 ${i % 2 === 0 ? 'bg-primary/10 text-primary' : 'bg-primary/15 text-primary'}`}>
-              <div className="font-semibold">{s.section}</div>
+              <div className="font-semibold flex items-center justify-center gap-1.5">
+                {s.section}
+                {s.is_optional && <span className="text-[10px] font-medium text-primary/60 bg-white/50 px-1.5 py-0.5 rounded-full border border-primary/20">optional</span>}
+              </div>
               {s.description && <div className="text-xs text-primary/70 mt-0.5 font-normal">{s.description}</div>}
             </div>
           )}

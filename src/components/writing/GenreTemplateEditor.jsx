@@ -121,6 +121,10 @@ export default function GenreTemplateEditor({ template, onSave, onCancel }) {
                     <input type="checkbox" checked={!!sec.is_narrow} onChange={e => updateSection(i, 'is_narrow', e.target.checked)} className="rounded" />
                     Narrow
                   </label>
+                  <label className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap cursor-pointer">
+                    <input type="checkbox" checked={!!sec.is_optional} onChange={e => updateSection(i, 'is_optional', e.target.checked)} className="rounded" />
+                    Optional
+                  </label>
                 </div>
                 <input className="w-full rounded-lg border border-input px-2 py-1.5 text-xs" placeholder="Description (optional)" value={sec.description || ''} onChange={e => updateSection(i, 'description', e.target.value)} />
               </div>

@@ -234,6 +234,7 @@ function TemplateReferencePanel({ template, onClose }) {
                   <span className="w-5 h-5 rounded-full bg-primary/20 text-primary text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
                   <div>
                     <span className="font-semibold text-foreground">{sec.section}</span>
+                    {sec.is_optional && <span className="ml-1.5 text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full border border-border">optional</span>}
                     {sec.description && <p className="text-xs text-muted-foreground mt-0.5">{sec.description}</p>}
                   </div>
                 </div>

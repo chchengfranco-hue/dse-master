@@ -41,6 +41,10 @@
           "is_narrow": {
             "type": "boolean",
             "description": "Whether this is a narrow/side element (e.g. Date, Greeting)"
+          },
+          "is_optional": {
+            "type": "boolean",
+            "description": "Whether this section is optional"
           }
         }
       },
