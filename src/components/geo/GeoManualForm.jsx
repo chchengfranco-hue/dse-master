@@ -7,7 +7,7 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
 
   const addQuestion = () => {
     if (type === 'mcq') {
-      setQuestions([...questions, { question_en: '', question_zh: '', options_en: ['', '', '', ''], options_zh: ['', '', '', ''], correct: 'A', explanation_en: '', explanation_zh: '' }]);
+      setQuestions([...questions, { question_en: '', question_zh: '', options_en: ['', '', ''], options_zh: ['', '', ''], numOptions: 3, correct: '(1)', explanation_en: '', explanation_zh: '' }]);
     } else if (type === 'data_based') {
       setQuestions([...questions, { context_en: '', context_zh: '', sub_questions: [{ label: 'a', question_en: '', question_zh: '', marks: 0, answer_en: '', answer_zh: '' }] }]);
     } else {
@@ -30,6 +30,22 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
     const updated = [...questions];
     const arr = lang === 'en' ? updated[qIdx].options_en : updated[qIdx].options_zh;
     arr[oIdx] = value;
+    setQuestions(updated);
+  };
+
+  const setNumOptions = (qIdx, num) => {
+    const updated = [...questions];
+    const q = updated[qIdx];
+    if (num < q.options_en.length) {
+      q.options_en = q.options_en.slice(0, num);
+      q.options_zh = q.options_zh.slice(0, num);
+    } else {
+      while (q.options_en.length < num) {
+        q.options_en.push('');
+        q.options_zh.push('');
+      }
+    }
+    q.numOptions = num;
     setQuestions(updated);
   };
 
@@ -88,13 +104,26 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
                 <input className="w-full rounded-lg border border-input px-3 py-2 text-sm mb-3" placeholder="Question (中文)" value={q.question_zh} onChange={e => updateQuestion(qIdx, 'question_zh', e.target.value)} />
 
                 <div className="mb-3">
-                  <p className="text-xs font-semibold text-muted-foreground mb-2">Options</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-semibold text-muted-foreground">Answer Combinations</p>
+                    <div className="flex gap-1">
+                      {[3, 4].map(num => (
+                        <button
+                          key={num}
+                          onClick={() => setNumOptions(qIdx, num)}
+                          className={`px-2 py-0.5 text-xs font-semibold rounded border transition-colors ${(q.numOptions || 3) === num ? 'bg-primary text-white border-primary' : 'bg-muted border-border hover:bg-border'}`}
+                        >
+                          {num} Option{num > 1 ? 's' : ''}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                   <div className="grid grid-cols-2 gap-3">
-                    {['A', 'B', 'C', 'D'].map((letter, oIdx) => (
+                    {q.options_en.map((opt, oIdx) => (
                       <div key={oIdx} className="bg-background border-2 border-border rounded-lg p-3 hover:border-primary/50 transition-colors">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="w-7 h-7 bg-primary text-white rounded-md flex items-center justify-center text-xs font-bold">{letter}</span>
-                          <span className="text-xs text-muted-foreground font-semibold">Option {letter}</span>
+                          <span className="w-7 h-7 bg-primary text-white rounded-md flex items-center justify-center text-xs font-bold">{oIdx + 1}</span>
+                          <span className="text-xs text-muted-foreground font-semibold">Option {oIdx + 1}</span>
                         </div>
                         <input className="w-full rounded border border-input px-2 py-1.5 text-xs mb-1.5" placeholder="English text" value={q.options_en[oIdx]} onChange={e => updateOption(qIdx, oIdx, 'en', e.target.value)} />
                         <input className="w-full rounded border border-input px-2 py-1.5 text-xs" placeholder="中文文本" value={q.options_zh[oIdx]} onChange={e => updateOption(qIdx, oIdx, 'zh', e.target.value)} />
@@ -105,7 +134,10 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
 
                 <div className="flex gap-2 mb-3">
                   <select value={q.correct} onChange={e => updateQuestion(qIdx, 'correct', e.target.value)} className="px-3 py-1.5 border border-input rounded-lg text-sm bg-background">
-                    {['A', 'B', 'C', 'D'].map(c => <option key={c} value={c}>{c}</option>)}
+                    {Array.from({ length: (q.numOptions || 3) }).map((_, i) => {
+                      const answer = `(${i + 1})`;
+                      return <option key={answer} value={answer}>{answer}</option>;
+                    })}
                   </select>
                   <span className="text-xs text-muted-foreground leading-9">Correct answer</span>
                 </div>
