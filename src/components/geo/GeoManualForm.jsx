@@ -5,6 +5,7 @@ import { base44 } from '@/api/base44Client';
 export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
   const [questions, setQuestions] = useState([]);
   const [expanded, setExpanded] = useState(0);
+  const [dragActive, setDragActive] = useState({});
 
   const addQuestion = () => {
     if (type === 'mcq') {
@@ -22,6 +23,22 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
     const res = await base44.integrations.Core.UploadFile({ file });
     if (res.file_url) {
       updateQuestion(qIdx, 'image_url', res.file_url);
+    }
+  };
+
+  const handleDrag = (e, qIdx, active) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive({ ...dragActive, [qIdx]: active });
+  };
+
+  const handleDrop = (e, qIdx) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive({ ...dragActive, [qIdx]: false });
+    const file = e.dataTransfer.files?.[0];
+    if (file?.type.startsWith('image/')) {
+      handleImageUpload(qIdx, file);
     }
   };
 
@@ -141,10 +158,16 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
                       <button type="button" onClick={() => updateQuestion(qIdx, 'image_url', '')} className="text-xs text-red-600 hover:text-red-700">Remove Image</button>
                     </div>
                   ) : (
-                    <label className="flex items-center justify-center w-full px-4 py-3 border-2 border-dashed border-border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
+                    <label 
+                      className={`flex items-center justify-center w-full px-4 py-3 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${dragActive[qIdx] ? 'bg-primary/10 border-primary' : 'border-border hover:bg-muted/50'}`}
+                      onDragEnter={e => handleDrag(e, qIdx, true)}
+                      onDragLeave={e => handleDrag(e, qIdx, false)}
+                      onDragOver={e => e.preventDefault()}
+                      onDrop={e => handleDrop(e, qIdx)}
+                    >
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Upload className="w-4 h-4" />
-                        <span>Click to upload image</span>
+                        <span>Click or drag image here</span>
                       </div>
                       <input type="file" accept="image/*" onChange={e => handleImageUpload(qIdx, e.target.files?.[0])} className="hidden" />
                     </label>
@@ -265,10 +288,16 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
                       <button type="button" onClick={() => updateQuestion(qIdx, 'image_url', '')} className="text-xs text-red-600 hover:text-red-700">Remove Image</button>
                     </div>
                   ) : (
-                    <label className="flex items-center justify-center w-full px-4 py-3 border-2 border-dashed border-border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
+                    <label 
+                      className={`flex items-center justify-center w-full px-4 py-3 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${dragActive[qIdx] ? 'bg-primary/10 border-primary' : 'border-border hover:bg-muted/50'}`}
+                      onDragEnter={e => handleDrag(e, qIdx, true)}
+                      onDragLeave={e => handleDrag(e, qIdx, false)}
+                      onDragOver={e => e.preventDefault()}
+                      onDrop={e => handleDrop(e, qIdx)}
+                    >
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Upload className="w-4 h-4" />
-                        <span>Click to upload image</span>
+                        <span>Click or drag image here</span>
                       </div>
                       <input type="file" accept="image/*" onChange={e => handleImageUpload(qIdx, e.target.files?.[0])} className="hidden" />
                     </label>
@@ -324,10 +353,16 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
                       <button type="button" onClick={() => updateQuestion(qIdx, 'image_url', '')} className="text-xs text-red-600 hover:text-red-700">Remove Image</button>
                     </div>
                   ) : (
-                    <label className="flex items-center justify-center w-full px-4 py-3 border-2 border-dashed border-border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
+                    <label 
+                      className={`flex items-center justify-center w-full px-4 py-3 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${dragActive[qIdx] ? 'bg-primary/10 border-primary' : 'border-border hover:bg-muted/50'}`}
+                      onDragEnter={e => handleDrag(e, qIdx, true)}
+                      onDragLeave={e => handleDrag(e, qIdx, false)}
+                      onDragOver={e => e.preventDefault()}
+                      onDrop={e => handleDrop(e, qIdx)}
+                    >
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Upload className="w-4 h-4" />
-                        <span>Click to upload image</span>
+                        <span>Click or drag image here</span>
                       </div>
                       <input type="file" accept="image/*" onChange={e => handleImageUpload(qIdx, e.target.files?.[0])} className="hidden" />
                     </label>
