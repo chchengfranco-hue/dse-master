@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, PenTool, Layers, MessageSquare, Book, Users, ChevronLeft, TrendingUp, FileDown, Grid3X3, CheckSquare, Globe, ClipboardList, Settings2 } from 'lucide-react';
+import { BookOpen, PenTool, Layers, MessageSquare, Book, Users, ChevronLeft, TrendingUp, FileDown, Globe, ClipboardList, Settings2 } from 'lucide-react';
 import HotIssuesModule from '@/pages/modules/HotIssuesModule';
 import GlobalPdfExport from '@/components/shared/GlobalPdfExport';
 import { cn } from '@/lib/utils';
@@ -9,10 +9,9 @@ import { AnimatePresence, motion } from 'framer-motion';
 import LoginModal from '@/components/auth/LoginModal';
 import VocabModule from '@/pages/modules/VocabModule';
 import WritingModule from '@/pages/modules/WritingModule';
-import ClozeModule from '@/pages/modules/ClozeModule';
+import ExercisesModule from '@/pages/modules/ExercisesModule';
 import EssentialVocabModule from '@/pages/modules/EssentialVocabModule';
 import SpeakingModule from '@/pages/modules/SpeakingModule';
-import GrammarModule from '@/pages/modules/GrammarModule';
 import UserManagement from '@/pages/modules/UserManagement';
 import TaskBoard from '@/pages/modules/TaskBoard';
 import Progress from '@/pages/Progress';
@@ -31,7 +30,6 @@ export default function AppLayout() {
   const { isAuthenticated, isEditor, isChiefEditor, currentUser, allowedModules, login, logout, ready } = useUser();
   const [showMore, setShowMore] = useState(false);
   const [showGlobalPdf, setShowGlobalPdf] = useState(false);
-  const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [showManagePicker, setShowManagePicker] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -49,6 +47,7 @@ export default function AppLayout() {
     if (p.startsWith('/writing')) return 'writing';
     if (p.startsWith('/cloze')) return 'exercises';
     if (p.startsWith('/grammar')) return 'exercises';
+    if (p.startsWith('/exercises')) return 'exercises';
     if (p.startsWith('/essential')) return 'essential';
     if (p.startsWith('/speaking')) return 'speaking';
     if (p.startsWith('/users')) return 'manage';
@@ -66,20 +65,19 @@ export default function AppLayout() {
   // Detect if we're on a child/detail route (not the module root)
   const isChildRoute = (() => {
     const p = location.pathname;
-    const roots = ['/vocab', '/writing', '/cloze', '/essential', '/speaking', '/grammar', '/users', '/tasks', '/progress', '/hotissues', '/'];
+    const roots = ['/vocab', '/writing', '/cloze', '/essential', '/speaking', '/grammar', '/exercises', '/users', '/tasks', '/progress', '/hotissues', '/'];
     return !roots.includes(p);
   })();
 
-  // Handle exercises tab click — show picker if not already on cloze/grammar
+  // Handle exercises tab click — navigate to /exercises picker page
   const handleExercisesClick = () => {
-    setShowExercisePicker(true);
+    navigate('/exercises');
     setShowManagePicker(false);
     setShowMore(false);
   };
 
   const handleManageClick = () => {
     setShowManagePicker(true);
-    setShowExercisePicker(false);
     setShowMore(false);
   };
 
@@ -193,8 +191,7 @@ export default function AppLayout() {
             
             {activeModule === 'vocab' && <VocabModule isEditor={isEditor} />}
             {activeModule === 'writing' && <WritingModule isEditor={isEditor} />}
-            {activeModule === 'exercises' && location.pathname.startsWith('/grammar') && <GrammarModule isEditor={isEditor} />}
-            {activeModule === 'exercises' && !location.pathname.startsWith('/grammar') && <ClozeModule isEditor={isEditor} />}
+            {activeModule === 'exercises' && <ExercisesModule isEditor={isEditor} />}
             {activeModule === 'essential' && <EssentialVocabModule isEditor={isEditor} />}
             {activeModule === 'speaking' && <SpeakingModule isEditor={isEditor} />}
             {activeModule === 'manage' && location.pathname.startsWith('/users') && isEditor && <UserManagement />}
@@ -208,41 +205,7 @@ export default function AppLayout() {
       {/* Bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-40 pb-[env(safe-area-inset-bottom)]">
 
-        {/* Exercise picker sheet */}
-        {showExercisePicker &&
-        <>
-            <div className="absolute bottom-full left-0 right-0 bg-card border-t border-border shadow-lg rounded-t-2xl p-4">
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-3 text-center">Choose Exercise Type</p>
-              <div className="grid grid-cols-2 gap-3">
-                <button onClick={() => {navigate('/cloze');setShowExercisePicker(false);}}
-              className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border bg-background hover:bg-primary/5 hover:border-primary/30 transition-all">
-                  <Grid3X3 className="w-6 h-6 text-primary" />
-                  <span className="text-sm font-semibold text-foreground">Fill-in-blank</span>
-                  <span className="text-xs text-muted-foreground">Word bank / open input</span>
-                </button>
-                <button onClick={() => {navigate('/cloze');setShowExercisePicker(false);}}
-              className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border bg-background hover:bg-primary/5 hover:border-primary/30 transition-all">
-                  <Layers className="w-6 h-6 text-primary" />
-                  <span className="text-sm font-semibold text-foreground">MCQ Dropdown</span>
-                  <span className="text-xs text-muted-foreground">Choose from options</span>
-                </button>
-                <button onClick={() => {navigate('/cloze');setShowExercisePicker(false);}}
-              className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border bg-background hover:bg-primary/5 hover:border-primary/30 transition-all">
-                  <ClipboardList className="w-6 h-6 text-primary" />
-                  <span className="text-sm font-semibold text-foreground">MC Cloze</span>
-                  <span className="text-xs text-muted-foreground">Passage + 4 options</span>
-                </button>
-                <button onClick={() => {navigate('/grammar');setShowExercisePicker(false);}}
-              className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border bg-background hover:bg-primary/5 hover:border-primary/30 transition-all">
-                  <CheckSquare className="w-6 h-6 text-primary" />
-                  <span className="text-sm font-semibold text-foreground">Grammar MCQ</span>
-                  <span className="text-xs text-muted-foreground">Grammar practice</span>
-                </button>
-              </div>
-            </div>
-            <div className="fixed inset-0 z-[-1]" onClick={() => setShowExercisePicker(false)} />
-          </>
-        }
+
 
         {/* Manage picker sheet */}
         {showManagePicker &&
@@ -276,7 +239,7 @@ export default function AppLayout() {
               onClick={() => {
                 if (mod.id === 'exercises') { handleExercisesClick(); }
                 else if (mod.id === 'manage') { handleManageClick(); }
-                else { navigate(getTabPath(mod.id)); setShowMore(false); setShowExercisePicker(false); setShowManagePicker(false); }
+                else { navigate(getTabPath(mod.id)); setShowMore(false); setShowManagePicker(false); }
               }}
               className={cn("flex flex-col items-center justify-center flex-1 h-12 rounded-xl mx-0 transition-all duration-200 select-none",
               isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
