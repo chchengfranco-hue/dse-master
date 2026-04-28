@@ -511,7 +511,8 @@ function WritingReadView({ model, isEditor, onBack, onSaveAnnotation }) {
       <div className="mb-4">
         <h2 className="text-2xl font-bold text-foreground mb-2">{model.title}</h2>
         <div className="flex flex-wrap gap-2 items-center">
-          {model.topic && <span className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">{model.topic}{model.subtopic && model.subtopic !== 'General' ? ` › ${model.subtopic}` : ''}</span>}
+          {model.topic && <span className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">{model.topic}</span>}
+          {model.subtopic && model.subtopic !== 'General' && <span className="text-xs bg-secondary text-secondary-foreground px-3 py-1 rounded-full font-medium">{model.subtopic}</span>}
           {model.exam_ref && <span className="text-xs bg-sky-100 text-sky-700 px-3 py-1 rounded-full font-medium border border-sky-200">📄 {model.exam_ref}</span>}
         </div>
       </div>
