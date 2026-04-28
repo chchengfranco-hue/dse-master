@@ -53,50 +53,33 @@ export default function GeoTopicSelector({ value, onChange }) {
 
   return (
     <div className="space-y-3">
-      {/* Mode toggle */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => { setCustomMode(false); onChange(''); }}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${!customMode ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-muted-foreground border-border'}`}
-        >
-          📋 Syllabus Topics
-        </button>
-        <button
-          onClick={() => { setCustomMode(true); onChange(customTopic); }}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${customMode ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-muted-foreground border-border'}`}
-        >
-          ✏️ Custom Topic
-        </button>
-      </div>
+      <input
+        className="w-full rounded-xl border border-input px-3 py-2.5 text-sm"
+        placeholder="Enter any Geography topic... e.g. Plate Tectonics, Climate Change"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+      />
 
-      {customMode ? (
-        <input
-          className="w-full rounded-xl border border-input px-3 py-2.5 text-sm"
-          placeholder="Enter any Geography topic... e.g. Coral Reef Degradation"
-          value={customTopic}
-          onChange={e => handleCustomChange(e.target.value)}
-          autoFocus
-        />
-      ) : (
-        <div className="max-h-72 overflow-y-auto space-y-3 pr-1">
-          {SYLLABUS_TOPICS.map(({ group, topics }) => (
-            <div key={group}>
-              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5 px-1">{group}</p>
-              <div className="flex flex-wrap gap-1.5">
-                {topics.map(topic => (
-                  <button
-                    key={topic}
-                    onClick={() => handlePreset(topic)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${value === topic ? 'bg-primary text-primary-foreground border-primary shadow-sm' : 'bg-background border-border text-foreground hover:bg-primary/5 hover:border-primary/40'}`}
-                  >
-                    {topic}
-                  </button>
-                ))}
-              </div>
+      {/* Quick preset buttons */}
+      <div className="max-h-48 overflow-y-auto space-y-2 pr-1 text-xs">
+        <p className="font-semibold text-muted-foreground sticky top-0 bg-background py-1">Quick Presets:</p>
+        {SYLLABUS_TOPICS.map(({ group, topics }) => (
+          <div key={group}>
+            <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">{group}</p>
+            <div className="flex flex-wrap gap-1">
+              {topics.map(topic => (
+                <button
+                  key={topic}
+                  onClick={() => onChange(topic)}
+                  className={`px-2 py-1 rounded text-xs border transition-all ${value === topic ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted border-border text-foreground hover:bg-primary/5'}`}
+                >
+                  {topic}
+                </button>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        ))}
+      </div>
 
       {value && (
         <div className="bg-primary/5 border border-primary/20 rounded-xl px-3 py-2 text-sm">
