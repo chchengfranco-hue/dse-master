@@ -234,17 +234,19 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
                           max="10"
                           value={q.numTableColumns || 2}
                           onChange={e => {
-                            const numCols = parseInt(e.target.value) || 2;
+                            const numCols = Math.max(1, parseInt(e.target.value) || 2);
                             const newHeaders = [...(q.tableHeaders || [])];
                             while (newHeaders.length < numCols) newHeaders.push('');
                             const newData = (q.tableData || []).map(row => {
-                              const newRow = [...row];
+                              const newRow = [row[0], ...(row.slice(1, numCols + 1))];
                               while (newRow.length <= numCols) newRow.push('');
-                              return newRow.slice(0, numCols + 1);
+                              return newRow;
                             });
-                            updateQuestion(qIdx, 'numTableColumns', numCols);
-                            updateQuestion(qIdx, 'tableHeaders', newHeaders.slice(0, numCols));
-                            updateQuestion(qIdx, 'tableData', newData);
+                            setQuestions(prev => prev.map((question, idx) => 
+                              idx === qIdx 
+                                ? { ...question, numTableColumns: numCols, tableHeaders: newHeaders.slice(0, numCols), tableData: newData }
+                                : question
+                            ));
                           }}
                           className="w-16 rounded border border-input px-2 py-1 text-xs"
                         />
