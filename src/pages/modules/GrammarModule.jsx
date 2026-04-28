@@ -86,7 +86,7 @@ function GrammarLibrary({ exercises, isEditor, onView, onEdit, onDelete, onBulkI
     <div className="px-4 lg:px-8 py-6 max-w-5xl mx-auto">
       <PullRefreshIndicator refreshing={refreshing} />
       <div className="flex items-center justify-between mb-6">
-        <div><h1 className="text-2xl font-bold text-foreground">Multiple Choice Exercises</h1><p className="text-sm text-muted-foreground mt-1">Multiple choice grammar practice</p></div>
+        <div><h1 className="text-2xl font-bold text-foreground">Multiple Choice Exercises</h1><p className="text-sm text-muted-foreground mt-1">Grammar & Vocabulary</p></div>
         <div className="flex gap-2">
           {isEditor && onBulkImport && <button onClick={onBulkImport} className="px-3 py-2 bg-muted border border-border text-foreground rounded-xl text-sm font-semibold hover:bg-border transition-colors select-none">📥 Import</button>}
           {isEditor && <button onClick={() => onEdit(null)} className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors select-none">+ Add</button>}
