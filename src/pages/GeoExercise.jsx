@@ -4,6 +4,8 @@ import GeoTopicSelector from '@/components/geo/GeoTopicSelector';
 import GeoManualForm from '@/components/geo/GeoManualForm';
 import GeoPdfResult from '@/components/geo/GeoPdfResult';
 import GeoExerciseLibrary from '@/components/geo/GeoExerciseLibrary';
+import GeoNavbar from '@/components/geo/GeoNavbar';
+import GeoQuestionBank from '@/components/geo/GeoQuestionBank';
 import { Loader2, Globe, BookOpen, BarChart2, FileText, Upload, PenTool, Library } from 'lucide-react';
 
 const ICONS = { mcq: BookOpen, data_based: BarChart2, short_essay: FileText };
@@ -28,6 +30,7 @@ export default function GeoExercise() {
 
   // Manual input state
   const [showManualForm, setShowManualForm] = useState(false);
+  const [currentExercise, setCurrentExercise] = useState(null); // After input, show question bank
 
   const handleManualSubmit = async (data) => {
     setLoading(true);
@@ -35,9 +38,8 @@ export default function GeoExercise() {
     const res = await base44.functions.invoke('saveGeoExercise', data);
     setLoading(false);
     if (res.data?.success) {
+      setCurrentExercise({ ...data, id: res.data.exercise_id });
       setShowManualForm(false);
-      setTopic('');
-      alert('Exercise saved successfully!');
     } else {
       setError(res.data?.error || 'Save failed. Please try again.');
     }
@@ -62,27 +64,50 @@ export default function GeoExercise() {
     }
   };
 
-  const handleReset = () => { setPdfResult(null); setError(''); setPdfFile(null); };
+  const handleReset = () => {
+    setPdfResult(null);
+    setError('');
+    setPdfFile(null);
+    setCurrentExercise(null);
+  };
 
   return (
     <div className="min-h-screen bg-background pb-16">
-      {/* Header */}
-      <div className="bg-gradient-to-br from-primary/90 to-primary px-6 py-8 text-primary-foreground">
-        <div className="max-w-3xl mx-auto">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-              <Globe className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">HKDSE Geography Exercise Generator</h1>
-              <p className="text-sm text-primary-foreground/80">中學文憑試地理科練習產生器</p>
+      {/* Navbar */}
+      <GeoNavbar />
+
+      {/* Show question bank after input */}
+      {currentExercise && (
+        <div className="max-w-4xl mx-auto px-4 py-6">
+          <GeoQuestionBank
+            exercise={currentExercise}
+            onBack={() => {
+              setCurrentExercise(null);
+              setTopic('');
+            }}
+          />
+        </div>
+      )}
+
+      {/* Main content */}
+      {!currentExercise && (
+        <>
+          {/* Header */}
+          <div className="bg-gradient-to-br from-primary/90 to-primary px-6 py-6 text-primary-foreground">
+            <div className="max-w-3xl mx-auto">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                  <Globe className="w-5 h-5" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold">HKDSE Geography Exercise Generator</h1>
+                  <p className="text-sm text-primary-foreground/80">中學文憑試地理科練習產生器</p>
+                </div>
+              </div>
             </div>
           </div>
-          <p className="text-xs text-primary-foreground/70 mt-2">Admin Tool · Bilingual (EN / 中文) · AI-powered</p>
-        </div>
-      </div>
 
-      <div className="max-w-3xl mx-auto px-4 py-6">
+          <div className="max-w-3xl mx-auto px-4 py-6">
 
         {/* View tabs */}
         <div className="flex gap-2 bg-muted p-1 rounded-xl mb-6">
@@ -254,8 +279,10 @@ export default function GeoExercise() {
             )}
           </div>
         )}
-        </>}
-      </div>
+          </>}
+        </div>
+        </>
+      )}
     </div>
   );
 }
