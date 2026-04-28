@@ -24,39 +24,87 @@ function useGrammarExercises(isEditor) {
 
 // --- Editor ---
 function GrammarEditor({ exercise, onSave, onCancel }) {
+  const initQuestions = exercise?.mcqData
+    ? exercise.mcqData.map(q => `${q.q} | ${q.opts[0]} | ${q.opts[1]} | ${q.opts[2]} | ${q.opts[3]}`).join('\n')
+    : '';
+  const initAnswers = exercise?.mcqData
+    ? exercise.mcqData.map(q => `${q.ansLetter} | ${q.exp || ''}`).join('\n')
+    : '';
+
   const [form, setForm] = useState({
     id: exercise?.id || null,
     title: exercise?.title || '',
     topic: exercise?.topic || '',
     subtopic: exercise?.subtopic || '',
     status: exercise?.status || 'published',
-    batchData: exercise?.mcqData ? exercise.mcqData.map(q => `${q.q} | ${q.opts[0]} | ${q.opts[1]} | ${q.opts[2]} | ${q.opts[3]} | ${q.ansLetter} | ${q.exp}`).join('\n') : '',
+    questionsText: initQuestions,
+    answersText: initAnswers,
   });
   const s = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
   const handleSave = () => {
     if (!form.title.trim()) return alert('Title is required.');
-    const lines = form.batchData.trim().split('\n').filter(l => l.trim());
+    const qLines = form.questionsText.trim().split('\n').filter(l => l.trim());
+    const aLines = form.answersText.trim().split('\n').filter(l => l.trim());
+    if (qLines.length === 0) return alert('Please add at least one question.');
+    if (aLines.length !== qLines.length) return alert(`Questions (${qLines.length}) and answers (${aLines.length}) count don't match.`);
     const mcqData = [];
-    for (let i = 0; i < lines.length; i++) {
-      const parts = lines[i].split('|').map(p => p.trim());
-      if (parts.length < 6) { alert(`Error on line ${i + 1}: Not enough parts`); return; }
-      mcqData.push({ q: parts[0], opts: [parts[1], parts[2], parts[3], parts[4]], ansLetter: (parts[5] || 'A').toUpperCase(), exp: parts[6] || '' });
+    for (let i = 0; i < qLines.length; i++) {
+      const qParts = qLines[i].split('|').map(p => p.trim());
+      if (qParts.length < 5) { alert(`Question line ${i + 1}: need Question | A | B | C | D`); return; }
+      const aParts = aLines[i].split('|').map(p => p.trim());
+      mcqData.push({ q: qParts[0], opts: [qParts[1], qParts[2], qParts[3], qParts[4]], ansLetter: (aParts[0] || 'A').toUpperCase(), exp: aParts[1] || '' });
     }
     onSave({ id: form.id, title: form.title.trim(), topic: form.topic.trim() || 'Uncategorized', subtopic: form.subtopic.trim() || 'General', mcqData, status: form.status });
   };
+
+  const qCount = form.questionsText.trim().split('\n').filter(l => l.trim()).length;
+  const aCount = form.answersText.trim().split('\n').filter(l => l.trim()).length;
+
   return (
-    <div className="px-4 lg:px-8 py-6 max-w-3xl mx-auto">
+    <div className="px-4 lg:px-8 py-6 max-w-4xl mx-auto">
       <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
         <h2 className="text-xl font-bold text-foreground mb-5">{form.id ? 'Edit Exercise' : 'Add Grammar Exercise'}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <input className="rounded-xl border border-input px-3 py-2 text-sm" placeholder="Main Topic (e.g. Tenses)" value={form.topic} onChange={e => s('topic', e.target.value)} />
           <input className="rounded-xl border border-input px-3 py-2 text-sm" placeholder="Sub-topic (e.g. Present Perfect)" value={form.subtopic} onChange={e => s('subtopic', e.target.value)} />
         </div>
-        <input className="w-full rounded-xl border border-input px-3 py-2 text-sm mb-3" placeholder="Exercise Title" value={form.title} onChange={e => s('title', e.target.value)} />
-        <h3 className="text-sm font-bold text-primary mb-2 border-b border-border pb-1">MCQ Questions (Batch Input)</h3>
-        <p className="text-xs text-muted-foreground mb-1">Format: <code className="bg-muted px-1 rounded">Question | A | B | C | D | Answer | Explanation</code></p>
-        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 mb-3">Example: <code>She ___ yesterday. | goes | went | has gone | going | B | "Yesterday" = Past Simple.</code></p>
-        <textarea className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-48 resize-y mb-5" placeholder={"I ___ an apple every day. | eat | ate | eaten | eating | A | Habitual action = Present Simple."} value={form.batchData} onChange={e => s('batchData', e.target.value)} />
+        <input className="w-full rounded-xl border border-input px-3 py-2 text-sm mb-4" placeholder="Exercise Title" value={form.title} onChange={e => s('title', e.target.value)} />
+
+        <h3 className="text-sm font-bold text-primary mb-3 border-b border-border pb-1">MCQ Questions</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-5">
+          {/* Box 1: Questions + Options */}
+          <div>
+            <p className="text-xs font-semibold text-foreground mb-1">
+              Questions & Options <span className="font-normal text-muted-foreground">— one per line</span>
+            </p>
+            <p className="text-xs text-muted-foreground mb-1">Format: <code className="bg-muted px-1 rounded">Question | A | B | C | D</code></p>
+            <textarea
+              className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-56 resize-y font-mono"
+              placeholder={"She ___ yesterday. | goes | went | has gone | going\nI ___ here since 2020. | live | lived | have lived | living"}
+              value={form.questionsText}
+              onChange={e => s('questionsText', e.target.value)}
+            />
+          </div>
+          {/* Box 2: Correct Answers + Explanations */}
+          <div>
+            <p className="text-xs font-semibold text-foreground mb-1">
+              Answers & Explanations <span className="font-normal text-muted-foreground">— one per line, in order</span>
+              {qCount > 0 && (
+                <span className={`ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${aCount === qCount ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                  {aCount}/{qCount}
+                </span>
+              )}
+            </p>
+            <p className="text-xs text-muted-foreground mb-1">Format: <code className="bg-muted px-1 rounded">Letter | Explanation</code></p>
+            <textarea
+              className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-56 resize-y font-mono"
+              placeholder={"B | \"Yesterday\" signals Past Simple.\nC | \"Since 2020\" signals Present Perfect."}
+              value={form.answersText}
+              onChange={e => s('answersText', e.target.value)}
+            />
+          </div>
+        </div>
         <div className="flex items-center gap-3 mb-5 p-3 bg-muted/50 rounded-xl border border-border">
           <span className="text-sm font-medium text-foreground">Status:</span>
           <button onClick={() => s('status', 'draft')} className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${form.status === 'draft' ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground hover:bg-border'}`}>🔒 Draft</button>
@@ -71,6 +119,8 @@ function GrammarEditor({ exercise, onSave, onCancel }) {
     </div>
   );
 }
+
+
 
 // --- Library ---
 function GrammarLibrary({ exercises, isEditor, onView, onEdit, onDelete, onBulkImport, refreshing }) {
