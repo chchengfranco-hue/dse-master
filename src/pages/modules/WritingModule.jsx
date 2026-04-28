@@ -146,17 +146,21 @@ const PARA_COLORS = [
   { badge: 'bg-orange-100 text-orange-700 border-orange-200', border: 'border-l-orange-400', bg: 'bg-orange-50/60' },
 ];
 
-// Splits a flat string by double-newlines into paragraphs (one per section)
+// Unique separator between structured sections (allows \n\n freely within a section)
+const SECTION_SEP = '\n\n---\n\n';
+
+// Splits stored content into per-section strings.
+// Supports both new format (SECTION_SEP) and legacy (\n\n).
 function splitIntoParagraphs(text, count) {
-  const parts = text.split(/\n\n+/);
-  // Pad or trim to match section count
+  const hasSep = text.includes('---');
+  const parts = hasSep ? text.split(SECTION_SEP) : text.split(/\n\n+/);
   const result = [];
   for (let i = 0; i < count; i++) result.push(parts[i] || '');
   return result;
 }
 
 function joinParagraphs(paras) {
-  return paras.join('\n\n');
+  return paras.join(SECTION_SEP);
 }
 
 function StructuredEssayEditor({ structure, value, onChange }) {
@@ -548,9 +552,9 @@ function WritingReadView({ model, isEditor, onBack, onSaveAnnotation, allTemplat
                       </span>
                       {sec.description && <span className="text-[10px] text-muted-foreground italic">{sec.description}</span>}
                     </div>
-                    {para.split(/\n\n+/).filter(p => p.trim()).length > 1 ? (
+                    {para.split(/\n\n/).filter(p => p.trim()).length > 1 ? (
                       <div className="space-y-2">
-                        {para.split(/\n\n+/).filter(p => p.trim()).map((subPara, j) => (
+                        {para.split(/\n\n/).filter(p => p.trim()).map((subPara, j) => (
                           <div key={j} className="text-base leading-loose bg-white/70 rounded-xl px-4 py-3">
                             <AnnotatedContent text={subPara} annotations={annotations} showRuby={showRuby} activeWord={activeWord} onWordClick={handleWordClick} />
                           </div>
