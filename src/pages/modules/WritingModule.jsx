@@ -521,14 +521,7 @@ function WritingReadView({ model, isEditor, onBack, onSaveAnnotation }) {
         <div className="bg-sky-50 border-2 border-sky-200 rounded-2xl p-5 mb-5">
           <h3 className="text-xs font-bold text-sky-600 uppercase tracking-wide mb-2">📋 Exam Question</h3>
           <p className="text-base text-foreground leading-relaxed">{model.question}</p>
-          {/* Student answer box */}
-          <div className="mt-4 no-print">
-            <p className="text-xs text-muted-foreground mb-2 font-semibold">Your Answer (for practice):</p>
-            <textarea
-              className="w-full rounded-xl border border-sky-200 bg-white px-4 py-3 text-sm min-h-32 resize-y placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-sky-300"
-              placeholder="Write your own answer here for practice before reading the model..."
-            />
-          </div>
+
         </div>
       )}
 
