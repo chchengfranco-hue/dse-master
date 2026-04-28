@@ -5,7 +5,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const { entity, operation, id, data } = await req.json();
 
-    const allowedEntities = ['ReadingPassage', 'GrammarExercise', 'WritingModel', 'VocabSet', 'SpeakingExam', 'ClozeExercise'];
+    const allowedEntities = ['ReadingPassage', 'GrammarExercise', 'WritingModel', 'WritingTemplate', 'VocabSet', 'SpeakingExam', 'ClozeExercise'];
     const allowedOps = ['create', 'update', 'delete'];
 
     if (!allowedEntities.includes(entity) || !allowedOps.includes(operation)) {
