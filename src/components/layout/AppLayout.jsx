@@ -233,6 +233,12 @@ export default function AppLayout() {
                   <span className="text-sm font-semibold text-foreground">Users</span>
                   <span className="text-xs text-muted-foreground">Manage accounts</span>
                 </button>
+                <button onClick={() => {navigate('/geo-exercise');setShowManagePicker(false);}}
+              className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border bg-background hover:bg-primary/5 hover:border-primary/30 transition-all col-span-2">
+                  <span className="text-2xl">🌍</span>
+                  <span className="text-sm font-semibold text-foreground">Geo Exercise</span>
+                  <span className="text-xs text-muted-foreground">HKDSE Geography generator</span>
+                </button>
               </div>
             </div>
             <div className="fixed inset-0 z-[-1]" onClick={() => setShowManagePicker(false)} />
