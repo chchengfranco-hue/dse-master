@@ -228,42 +228,26 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
                     <div className="mb-3 space-y-2">
                       <div className="flex items-center justify-between mb-2">
                         <p className="text-xs text-muted-foreground">Number of Columns</p>
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() => {
-                              const numCols = (q.numTableColumns || 2) - 1;
-                              if (numCols >= 1) {
-                                const newHeaders = (q.tableHeaders || []).slice(0, numCols);
-                                const newData = (q.tableData || []).map(row => row.slice(0, numCols + 1));
-                                updateQuestion(qIdx, 'numTableColumns', numCols);
-                                updateQuestion(qIdx, 'tableHeaders', newHeaders);
-                                updateQuestion(qIdx, 'tableData', newData);
-                              }
-                            }}
-                            className="px-2 py-0.5 text-xs bg-muted border border-border rounded hover:bg-border"
-                          >
-                            −
-                          </button>
-                          <span className="px-3 py-0.5 text-xs font-semibold bg-primary/10 border border-primary/20 rounded">{q.numTableColumns || 2}</span>
-                          <button
-                            onClick={() => {
-                              const numCols = (q.numTableColumns || 2) + 1;
-                              const newHeaders = [...(q.tableHeaders || [])];
-                              while (newHeaders.length < numCols) newHeaders.push('');
-                              const newData = (q.tableData || []).map(row => {
-                                const newRow = [...row];
-                                while (newRow.length <= numCols) newRow.push('');
-                                return newRow;
-                              });
-                              updateQuestion(qIdx, 'numTableColumns', numCols);
-                              updateQuestion(qIdx, 'tableHeaders', newHeaders);
-                              updateQuestion(qIdx, 'tableData', newData);
-                            }}
-                            className="px-2 py-0.5 text-xs bg-muted border border-border rounded hover:bg-border"
-                          >
-                            +
-                          </button>
-                        </div>
+                        <input
+                          type="number"
+                          min="1"
+                          max="10"
+                          value={q.numTableColumns || 2}
+                          onChange={e => {
+                            const numCols = parseInt(e.target.value) || 2;
+                            const newHeaders = [...(q.tableHeaders || [])];
+                            while (newHeaders.length < numCols) newHeaders.push('');
+                            const newData = (q.tableData || []).map(row => {
+                              const newRow = [...row];
+                              while (newRow.length <= numCols) newRow.push('');
+                              return newRow.slice(0, numCols + 1);
+                            });
+                            updateQuestion(qIdx, 'numTableColumns', numCols);
+                            updateQuestion(qIdx, 'tableHeaders', newHeaders.slice(0, numCols));
+                            updateQuestion(qIdx, 'tableData', newData);
+                          }}
+                          className="w-16 rounded border border-input px-2 py-1 text-xs"
+                        />
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground mb-1">Column Headers</p>
