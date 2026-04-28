@@ -44,23 +44,7 @@ function parseClozeTokens(raw) {
   return parts;
 }
 
-const WORDBANK_SEP = '\n---WORDBANK---\n';
-
-function splitContentAndBank(raw) {
-  const idx = raw.indexOf(WORDBANK_SEP);
-  if (idx === -1) return { passageContent: raw, bankText: '' };
-  return { passageContent: raw.slice(0, idx), bankText: raw.slice(idx + WORDBANK_SEP.length) };
-}
-
-function joinContentAndBank(passage, bankText) {
-  if (!bankText.trim()) return passage;
-  return passage + WORDBANK_SEP + bankText.trim();
-}
-
-function buildWordBank(tokens, explicitBankText) {
-  if (explicitBankText && explicitBankText.trim()) {
-    return explicitBankText.split(/[\n,]+/).map(w => w.trim()).filter(Boolean);
-  }
+function buildWordBank(tokens) {
   return [...new Set(tokens.filter(t => t.type === 'blank').map(t => t.correct))].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
 }
 
@@ -99,8 +83,8 @@ function AnnotatedText({ text, annotations, showRuby, activeWord, onWordClick })
   );
 }
 
-function ClozeContent({ tokens, hasOptions, answers, setAnswers, submitted, annotations, showRuby, activeWord, onWordClick, explicitBankText }) {
-  const bank = buildWordBank(tokens, explicitBankText);
+function ClozeContent({ tokens, hasOptions, answers, setAnswers, submitted, annotations, showRuby, activeWord, onWordClick }) {
+  const bank = buildWordBank(tokens);
   let blankIndex = 0;
   return (
     <span>
@@ -212,75 +196,22 @@ function MCClozeQuestionsEditor({ questions, onChange }) {
   );
 }
 
-// Parse existing bracketed content into plain passage + answers list
-function deconstructPassage(raw) {
-  const regex = /\[([^\]\|]+)(?:\|([^\]]+))?\]/g;
-  let plainText = '';
-  const answers = [];
-  let last = 0; let match; let blankNum = 1;
-  while ((match = regex.exec(raw)) !== null) {
-    plainText += raw.slice(last, match.index);
-    const wordParts = match[1].split('/');
-    answers.push(wordParts[0].trim());
-    plainText += `[${blankNum++}]`;
-    last = match.index + match[0].length;
-  }
-  plainText += raw.slice(last);
-  return { plainText, answers };
-}
-
-// Reconstruct bracketed content from plain passage + answers list
-function reconstructPassage(plainText, answersText) {
-  const answers = answersText.split('\n').map(a => a.trim()).filter(Boolean);
-  let blankIdx = 0;
-  return plainText.replace(/\[(\d+)\]/g, () => {
-    const ans = answers[blankIdx++] || '';
-    return ans ? `[${ans}]` : `[?]`;
-  });
-}
-
 function ClozeEditor({ exercise, onSave, onCancel }) {
-  const { passageContent: initPassage, bankText: initBank } = splitContentAndBank(exercise?.content || '');
-
-  // Deconstruct existing passage into split-box format
-  const { plainText: initPlainText, answers: initAnswers } = deconstructPassage(initPassage);
-
   const [form, setForm] = useState({
     id: exercise?.id || null, title: exercise?.title || '', topic: exercise?.topic || '',
     subtopic: exercise?.subtopic || '', hasOptions: exercise?.hasOptions || 'bank',
-    // Split-box fields (for bank/nobank/mcq modes)
-    plainText: initPlainText,
-    answersText: initAnswers.join('\n'),
-    bankText: initBank,
-    // Raw passage (for mccloze)
-    passageContent: initPassage,
+    content: exercise?.content || '',
     status: exercise?.status || 'published',
     mc_questions: exercise?.mc_questions || [],
     annotationsText: exercise?.annotations ? Object.entries(exercise.annotations).map(([k, v]) => `${k}: ${v}`).join('\n') : '',
   });
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
-
   const handleSave = () => {
-    if (!form.title.trim()) return alert('Title is required.');
+    if (!form.title.trim() || !form.content.trim()) return alert('Title and Content are required.');
     const annotations = {};
     form.annotationsText.split('\n').forEach(line => { const idx = line.indexOf(':'); if (idx > 0) { const w = line.slice(0, idx).trim(), m = line.slice(idx + 1).trim(); if (w && m) annotations[w] = m; } });
-
-    let builtPassage;
-    if (form.hasOptions === 'mccloze') {
-      builtPassage = form.passageContent.trim();
-    } else {
-      if (!form.plainText.trim()) return alert('Passage text is required.');
-      builtPassage = reconstructPassage(form.plainText.trim(), form.answersText);
-    }
-
-    const content = form.hasOptions === 'bank' ? joinContentAndBank(builtPassage, form.bankText) : builtPassage;
-    onSave({ id: form.id, title: form.title.trim(), topic: form.topic.trim() || 'Uncategorized', subtopic: form.subtopic.trim() || 'General', hasOptions: form.hasOptions, content, annotations, status: form.status, mc_questions: form.hasOptions === 'mccloze' ? form.mc_questions : [] });
+    onSave({ id: form.id, title: form.title.trim(), topic: form.topic.trim() || 'Uncategorized', subtopic: form.subtopic.trim() || 'General', hasOptions: form.hasOptions, content: form.content.trim(), annotations, status: form.status, mc_questions: form.hasOptions === 'mccloze' ? form.mc_questions : [] });
   };
-
-  // Count blanks in plain text for answer box hint
-  const blankCount = (form.plainText.match(/\[\d+\]/g) || []).length;
-  const answerLines = form.answersText.split('\n').filter(a => a.trim()).length;
-
   return (
     <div className="px-4 lg:px-8 py-6 max-w-3xl mx-auto">
       <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
@@ -305,53 +236,23 @@ function ClozeEditor({ exercise, onSave, onCancel }) {
         {form.hasOptions === 'mccloze' ? (
           <>
             <p className="text-xs text-muted-foreground mb-2">Write your passage using <code className="bg-muted px-1 rounded">[BLANK_1]</code>, <code className="bg-muted px-1 rounded">[BLANK_2]</code>, etc. as placeholders for each blank.</p>
-            <RichTextArea value={form.passageContent} onChange={v => set('passageContent', v)} placeholder="e.g. The sky is [BLANK_1] and the grass is [BLANK_2]." minHeight="min-h-36" />
+            <RichTextArea value={form.content} onChange={v => set('content', v)} placeholder="e.g. The sky is [BLANK_1] and the grass is [BLANK_2]." minHeight="min-h-36" />
             <MCClozeQuestionsEditor questions={form.mc_questions} onChange={v => set('mc_questions', v)} />
           </>
         ) : (
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
-              {/* Box 1: Passage */}
-              <div>
-                <p className="text-xs font-semibold text-foreground mb-1">
-                  Passage <span className="font-normal text-muted-foreground">— use <code className="bg-muted px-1 rounded">[1]</code> <code className="bg-muted px-1 rounded">[2]</code> … for blanks</span>
-                </p>
-                <textarea
-                  className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-52 resize-y"
-                  placeholder={"The sky is [1] and the grass is [2].\n\nUse [1], [2], [3]... to mark each blank."}
-                  value={form.plainText}
-                  onChange={e => set('plainText', e.target.value)}
-                />
-              </div>
-              {/* Box 2: Correct Answers */}
-              <div>
-                <p className="text-xs font-semibold text-foreground mb-1">
-                  Correct Answers <span className="font-normal text-muted-foreground">— one per line, in order</span>
-                  {blankCount > 0 && (
-                    <span className={`ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${answerLines === blankCount ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                      {answerLines}/{blankCount}
-                    </span>
-                  )}
-                </p>
-                <textarea
-                  className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-52 resize-y font-mono"
-                  placeholder={"blue\ngreen\nrunning\n..."}
-                  value={form.answersText}
-                  onChange={e => set('answersText', e.target.value)}
-                />
-              </div>
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs text-muted-foreground">Enclose target words in brackets. Use pipe for explanation: <code className="bg-muted px-1 rounded">[word|explanation]</code>. For MCQ add wrong answers: <code className="bg-muted px-1 rounded">[fox/dog/cat|A wild animal]</code></p>
+              {form.hasOptions === 'mcq' && (
+                <button type="button" onClick={() => {
+                  set('content', `Climate change has [significantly/dramatically/slightly/rarely|adv. in an important way] [altered/improved/ignored/avoided|v. changed] weather patterns around the world. Scientists [warn/doubt/deny/forget|v. caution] that rising temperatures could [devastate/benefit/stabilise/celebrate|v. destroy badly] ecosystems and [displace/unite/protect/inspire|v. force to leave] millions of people.\n\nGovernments are now under [pressure/pleasure/leisure/treasure|n. strong demand] to [implement/ignore/debate/delay|v. put into action] policies that [reduce/increase/celebrate/maintain|v. lower] carbon [emissions/omissions/permissions/admissions|n. gases released] and [promote/prevent/replace/remove|v. encourage] the use of [renewable/reliable/remarkable/reversible|adj. naturally replenished] energy sources.`);
+                  set('annotationsText', `significantly: adv. in an important way\naltered: v. changed\nwarn: v. caution\ndevastate: v. destroy badly\ndisplace: v. force to leave\npressure: n. strong demand\nimplement: v. put into action\nreduce: v. lower\nemissions: n. gases released into the air\npromote: v. encourage\nrenewable: adj. naturally replenished`);
+                }} className="ml-3 shrink-0 px-3 py-1.5 bg-sky-50 text-sky-700 border border-sky-200 rounded-lg text-xs font-semibold hover:bg-sky-100 transition-colors whitespace-nowrap">
+                  📋 Use Template
+                </button>
+              )}
             </div>
-            {form.hasOptions === 'bank' && (
-              <>
-                <p className="text-xs font-semibold text-foreground mb-1 mt-1">Word Bank <span className="font-normal text-muted-foreground">(one word per line, or comma-separated — leave blank to auto-generate from answers)</span></p>
-                <textarea
-                  className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm min-h-20 resize-y mb-3"
-                  placeholder={"blue\ngreen\nred\nor: blue, green, red"}
-                  value={form.bankText}
-                  onChange={e => set('bankText', e.target.value)}
-                />
-              </>
-            )}
+            <RichTextArea value={form.content} onChange={v => set('content', v)} placeholder="Paste exercise content here..." minHeight="min-h-48" />
           </>
         )}
 
@@ -372,34 +273,18 @@ function ClozeEditor({ exercise, onSave, onCancel }) {
   );
 }
 
-const TYPE_LABELS = { bank: 'Fill-in-blank', nobank: 'Fill-in-blank (No Bank)', mcq: 'MCQ Dropdown', mccloze: 'MC Cloze' };
-
 function ClozeLibrary({ exercises, isEditor, onView, onEdit, onDelete, onBulkImport, refreshing }) {
-  const urlParams = new URLSearchParams(window.location.search);
-  const typeFilter = urlParams.get('type') || null;
-
   const [selected, setSelected] = useState('All'); const [selSub, setSelSub] = useState(null);
   const [search, setSearch] = useState(''); const [page, setPage] = useState(1); const PER = 10;
-  // Filter exercises by type from URL param
-  const typeExercises = typeFilter
-    ? exercises.filter(p => {
-        if (typeFilter === 'bank') return p.hasOptions === 'bank' || p.hasOptions === 'nobank';
-        return p.hasOptions === typeFilter;
-      })
-    : exercises;
-
   const topicTree = {};
-  typeExercises.forEach(p => { const t = p.topic || 'Uncategorized', st = p.subtopic || 'General'; if (!topicTree[t]) topicTree[t] = new Set(); if (st !== 'General') topicTree[t].add(st); });
-  const filtered = typeExercises.filter(p => { const tm = selected === 'All' || (selSub ? p.topic === selected && p.subtopic === selSub : p.topic === selected); return tm && (!search || p.title.toLowerCase().includes(search.toLowerCase())); });
+  exercises.forEach(p => { const t = p.topic || 'Uncategorized', st = p.subtopic || 'General'; if (!topicTree[t]) topicTree[t] = new Set(); if (st !== 'General') topicTree[t].add(st); });
+  const filtered = exercises.filter(p => { const tm = selected === 'All' || (selSub ? p.topic === selected && p.subtopic === selSub : p.topic === selected); return tm && (!search || p.title.toLowerCase().includes(search.toLowerCase())); });
   const totalPages = Math.ceil(filtered.length / PER);
   const paged = filtered.slice((page - 1) * PER, page * PER);
   return (
     <div className="px-4 lg:px-8 py-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">{typeFilter ? TYPE_LABELS[typeFilter] || 'Exercises' : 'All Exercises'}</h1>
-          <p className="text-sm text-muted-foreground mt-1">{typeFilter === 'bank' ? 'Fill-in-blank with word bank or open input' : typeFilter === 'mcq' ? 'Multiple choice dropdown exercises' : typeFilter === 'mccloze' ? 'Passage with 4-option multiple choice' : 'All fill-in-blank vocabulary exercises'}</p>
-        </div>
+        <div><h1 className="text-2xl font-bold text-foreground">Cloze Exercises</h1><p className="text-sm text-muted-foreground mt-1">Fill-in-the-blank vocabulary exercises</p></div>
         <div className="flex gap-2">
           {isEditor && onBulkImport && <button onClick={onBulkImport} className="px-3 py-2 bg-muted border border-border text-foreground rounded-xl text-sm font-semibold hover:bg-border select-none">📥 Import</button>}
           {isEditor && <button onClick={() => onEdit(null)} className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 select-none">+ Add Exercise</button>}
@@ -409,10 +294,10 @@ function ClozeLibrary({ exercises, isEditor, onView, onEdit, onDelete, onBulkImp
       <div className="flex gap-5 items-start">
         <aside className="w-52 shrink-0 bg-card rounded-2xl border border-border p-4 hidden sm:block">
           <h3 className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">Categories</h3>
-          <button onClick={() => { setSelected('All'); setSelSub(null); setPage(1); }} className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium mb-1 select-none ${selected === 'All' ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'}`}>All ({typeExercises.length})</button>
+          <button onClick={() => { setSelected('All'); setSelSub(null); setPage(1); }} className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium mb-1 select-none ${selected === 'All' ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'}`}>All Exercises ({exercises.length})</button>
           {Object.keys(topicTree).sort().map(t => (
             <div key={t}>
-              <button onClick={() => { setSelected(t); setSelSub(null); setPage(1); }} className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium mb-1 select-none ${selected === t && !selSub ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'}`}>{t} ({typeExercises.filter(p => p.topic === t).length})</button>
+              <button onClick={() => { setSelected(t); setSelSub(null); setPage(1); }} className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium mb-1 select-none ${selected === t && !selSub ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'}`}>{t} ({exercises.filter(p => p.topic === t).length})</button>
               {Array.from(topicTree[t]).sort().map(st => (
                 <button key={st} onClick={() => { setSelected(t); setSelSub(st); setPage(1); }} className={`w-full text-left px-3 py-1.5 pl-6 rounded-xl text-xs mb-0.5 select-none ${selected === t && selSub === st ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}>{st}</button>
               ))}
@@ -564,8 +449,7 @@ function MCClozeReadView({ exercise, onBack }) {
 }
 
 function ClozeReadView({ exercise, isEditor, onBack, onSaveAnnotation }) {
-  const { passageContent, bankText } = splitContentAndBank(exercise.content || '');
-  const tokens = parseClozeTokens(passageContent);
+  const tokens = parseClozeTokens(exercise.content || '');
   const blankCount = tokens.filter(t => t.type === 'blank').length;
   const [answers, setAnswers] = useState(Array(blankCount).fill(''));
   const [submitted, setSubmitted] = useState(false);
@@ -573,10 +457,7 @@ function ClozeReadView({ exercise, isEditor, onBack, onSaveAnnotation }) {
   const [showMargin, setShowMargin] = useState(false);
   const [activeWord, setActiveWord] = useState(null);
   const annotations = exercise.annotations || {};
-  const [wordBank] = useState(() => {
-    const bank = buildWordBank(tokens, bankText);
-    return [...bank].sort(() => 0.5 - Math.random());
-  });
+  const wordBank = buildWordBank(tokens);
   const speak = (text) => { window.speechSynthesis?.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'en-US'; u.rate = 0.9; window.speechSynthesis?.speak(u); };
   const handleWordClick = (word) => { speak(word); if (!showMargin && !showRuby) setActiveWord(activeWord === word ? null : word); };
   const handleTextSelect = useCallback(() => {
@@ -596,7 +477,7 @@ function ClozeReadView({ exercise, isEditor, onBack, onSaveAnnotation }) {
   const handlePrint = (withAnswers) => {
     setShowPrintOptions(false);
     const correctAnswers = tokens.filter(t => t.type === 'blank').map(t => t.correct);
-    const bank = buildWordBank(tokens, bankText);
+    const bank = buildWordBank(tokens);
     let blankIdx = 0;
     const passageHtml = tokens.map(token => {
       if (token.type === 'text') return token.value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g, '<br/>');
@@ -674,7 +555,7 @@ function ClozeReadView({ exercise, isEditor, onBack, onSaveAnnotation }) {
       )}
       <div className="flex gap-5 items-start">
         <div className="flex-1 min-w-0 bg-card rounded-2xl border border-border p-6 lg:p-8 text-lg leading-loose" onMouseUp={handleTextSelect}>
-          <ClozeContent tokens={tokens} hasOptions={exercise.hasOptions} answers={answers} setAnswers={setAnswers} submitted={submitted} annotations={annotations} showRuby={showRuby} activeWord={activeWord} onWordClick={handleWordClick} explicitBankText={bankText} />
+          <ClozeContent tokens={tokens} hasOptions={exercise.hasOptions} answers={answers} setAnswers={setAnswers} submitted={submitted} annotations={annotations} showRuby={showRuby} activeWord={activeWord} onWordClick={handleWordClick} />
         </div>
         {showMargin && Object.keys(annotations).length > 0 && (
           <aside className="w-40 shrink-0 flex flex-col gap-2.5 pt-1">
