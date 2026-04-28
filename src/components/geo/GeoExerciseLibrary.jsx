@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Trash2, Copy, Printer, Check } from 'lucide-react';
+import { Trash2, Copy, Printer, Check, Eye, Edit2 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import GeoQuestionBank from './GeoQuestionBank';
 
 export default function GeoExerciseLibrary() {
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(null);
   const [filterType, setFilterType] = useState('all');
+  const [selectedExercise, setSelectedExercise] = useState(null);
 
   useEffect(() => {
     fetchExercises();
@@ -73,6 +75,17 @@ export default function GeoExerciseLibrary() {
 
 
 
+  if (selectedExercise) {
+    return (
+      <div>
+        <GeoQuestionBank
+          exercise={selectedExercise}
+          onBack={() => setSelectedExercise(null)}
+        />
+      </div>
+    );
+  }
+
   const filtered = filterType === 'all' ? exercises : exercises.filter(e => e.type === filterType);
 
   // Group by topic
@@ -127,6 +140,12 @@ export default function GeoExerciseLibrary() {
                       </div>
                     </div>
                     <div className="flex gap-2 flex-wrap">
+                      <button
+                        onClick={() => setSelectedExercise(ex)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 rounded-lg text-sm text-primary transition-colors"
+                      >
+                        <Eye className="w-4 h-4" /> View
+                      </button>
                       <button
                         onClick={() => handleCopyMarkdown(ex)}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-muted hover:bg-border rounded-lg text-sm text-foreground transition-colors"
