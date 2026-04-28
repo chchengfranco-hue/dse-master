@@ -139,34 +139,57 @@ export default function GeoTopicSelector({ value, onChange }) {
       {selectedUnit && (
         <div>
           <label className="text-xs font-semibold text-muted-foreground block mb-2">Sub-topic (Optional) 細題</label>
-          <div className="grid grid-cols-2 gap-2">
-            {currentUnitTopics.map((topic, idx) => (
-              <button
-                key={topic}
-                onClick={() => handleSubtopicChange(topic)}
-                className={`px-3 py-2 rounded-lg text-xs border transition-all text-left ${selectedSubtopic === topic ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted border-border text-foreground hover:bg-primary/5'}`}
-              >
-                {topic}
-              </button>
-            ))}
-          </div>
-          {editMode && (
-            <div className="flex gap-2 mt-2">
-              <input
-                className="flex-1 px-2 py-1.5 rounded border border-input text-xs"
-                placeholder="Add new topic"
-                value={editGroup === topics.findIndex(t => t.group === selectedUnit) ? newTopic : ''}
-                onChange={e => {
-                  setEditGroup(topics.findIndex(t => t.group === selectedUnit));
-                  setNewTopic(e.target.value);
-                }}
-              />
-              <button
-                onClick={() => addTopic(topics.findIndex(t => t.group === selectedUnit))}
-                className="px-2 py-1.5 bg-primary text-white rounded text-xs hover:bg-primary/90"
-              >
-                +
-              </button>
+          {editMode ? (
+            <div className="space-y-2">
+              {currentUnitTopics.map((topic, idx) => (
+                <div key={topic} className="flex gap-2 items-center">
+                  <input
+                    className="flex-1 rounded-lg border border-input px-3 py-2 text-sm"
+                    value={topic}
+                    onChange={e => {
+                      const unitIdx = topics.findIndex(t => t.group === selectedUnit);
+                      const newTopics = [...topics];
+                      newTopics[unitIdx].topics[idx] = e.target.value;
+                      setTopics(newTopics);
+                    }}
+                  />
+                  <button
+                    onClick={() => removeTopic(topics.findIndex(t => t.group === selectedUnit), idx)}
+                    className="px-3 py-2 bg-destructive/10 text-destructive rounded-lg text-xs hover:bg-destructive/20"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+              <div className="flex gap-2">
+                <input
+                  className="flex-1 px-3 py-2 rounded-lg border border-input text-xs"
+                  placeholder="Add new sub-topic"
+                  value={editGroup === topics.findIndex(t => t.group === selectedUnit) ? newTopic : ''}
+                  onChange={e => {
+                    setEditGroup(topics.findIndex(t => t.group === selectedUnit));
+                    setNewTopic(e.target.value);
+                  }}
+                />
+                <button
+                  onClick={() => addTopic(topics.findIndex(t => t.group === selectedUnit))}
+                  className="px-3 py-2 bg-primary text-white rounded-lg text-xs hover:bg-primary/90 font-semibold"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              {currentUnitTopics.map((topic) => (
+                <button
+                  key={topic}
+                  onClick={() => handleSubtopicChange(topic)}
+                  className={`px-3 py-2 rounded-lg text-xs border transition-all text-left ${selectedSubtopic === topic ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted border-border text-foreground hover:bg-primary/5'}`}
+                >
+                  {topic}
+                </button>
+              ))}
             </div>
           )}
         </div>
