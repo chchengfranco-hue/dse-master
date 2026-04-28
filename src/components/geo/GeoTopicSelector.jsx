@@ -38,71 +38,56 @@ const SYLLABUS_TOPICS = [
 ];
 
 export default function GeoTopicSelector({ value, onChange }) {
-  const [input, setInput] = useState(value);
-  const [showSuggestions, setShowSuggestions] = useState(true);
+  const [customMode, setCustomMode] = useState(false);
+  const [customTopic, setCustomTopic] = useState('');
 
-  const allTopics = SYLLABUS_TOPICS.flatMap(g => g.topics);
-  const filtered = input ? allTopics.filter(t => t.toLowerCase().includes(input.toLowerCase())) : allTopics;
-
-  const handleInputChange = (v) => {
-    setInput(v);
-    onChange(v);
-    setShowSuggestions(true);
+  const handlePreset = (topic) => {
+    setCustomMode(false);
+    onChange(topic);
   };
 
-  const handleSelectTopic = (topic) => {
-    setInput(topic);
-    onChange(topic);
-    setShowSuggestions(false);
+  const handleCustomChange = (v) => {
+    setCustomTopic(v);
+    onChange(v);
   };
 
   return (
     <div className="space-y-3">
-      {/* Input field */}
-      <div className="relative">
-        <input
-          className="w-full rounded-xl border border-input px-3 py-2.5 text-sm"
-          placeholder="Search or enter a Geography topic..."
-          value={input}
-          onChange={e => handleInputChange(e.target.value)}
-          onFocus={() => setShowSuggestions(true)}
-        />
-        
-        {/* Suggestions dropdown */}
-        {showSuggestions && input && filtered.length > 0 && (
-          <>
-            <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl shadow-lg z-10 max-h-48 overflow-y-auto">
-              {filtered.map(topic => (
-                <button
-                  key={topic}
-                  onClick={() => handleSelectTopic(topic)}
-                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors text-left border-b border-border last:border-b-0"
-                >
-                  <span className="text-primary">✓</span>
-                  {topic}
-                </button>
-              ))}
-            </div>
-            <div className="fixed inset-0 z-[5]" onClick={() => setShowSuggestions(false)} />
-          </>
-        )}
+      {/* Mode toggle */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => { setCustomMode(false); onChange(''); }}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${!customMode ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-muted-foreground border-border'}`}
+        >
+          📋 Syllabus Topics
+        </button>
+        <button
+          onClick={() => { setCustomMode(true); onChange(customTopic); }}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${customMode ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-muted-foreground border-border'}`}
+        >
+          ✏️ Custom Topic
+        </button>
       </div>
 
-      {/* Syllabus reference (collapsed) */}
-      <details className="text-xs">
-        <summary className="cursor-pointer text-muted-foreground hover:text-foreground font-semibold px-1 py-1 select-none">
-          📋 View Syllabus Topics
-        </summary>
-        <div className="mt-2 space-y-3 pl-2 border-l border-border">
+      {customMode ? (
+        <input
+          className="w-full rounded-xl border border-input px-3 py-2.5 text-sm"
+          placeholder="Enter any Geography topic... e.g. Coral Reef Degradation"
+          value={customTopic}
+          onChange={e => handleCustomChange(e.target.value)}
+          autoFocus
+        />
+      ) : (
+        <div className="max-h-72 overflow-y-auto space-y-3 pr-1">
           {SYLLABUS_TOPICS.map(({ group, topics }) => (
             <div key={group}>
-              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">{group}</p>
-              <div className="flex flex-wrap gap-1">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5 px-1">{group}</p>
+              <div className="flex flex-wrap gap-1.5">
                 {topics.map(topic => (
                   <button
                     key={topic}
-                    onClick={() => handleSelectTopic(topic)}
-                    className="px-2 py-1 rounded-full text-[10px] font-medium border border-border bg-background text-foreground hover:bg-primary/5 hover:border-primary/40 transition-all"
+                    onClick={() => handlePreset(topic)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${value === topic ? 'bg-primary text-primary-foreground border-primary shadow-sm' : 'bg-background border-border text-foreground hover:bg-primary/5 hover:border-primary/40'}`}
                   >
                     {topic}
                   </button>
@@ -111,7 +96,7 @@ export default function GeoTopicSelector({ value, onChange }) {
             </div>
           ))}
         </div>
-      </details>
+      )}
 
       {value && (
         <div className="bg-primary/5 border border-primary/20 rounded-xl px-3 py-2 text-sm">
