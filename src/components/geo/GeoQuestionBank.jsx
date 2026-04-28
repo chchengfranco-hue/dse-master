@@ -13,39 +13,63 @@ export default function GeoQuestionBank({ exercise, onBack }) {
 
   const renderMCQQuestion = (q, idx) => (
     <div key={idx} className="bg-card border border-border rounded-xl overflow-hidden">
-      <button
-        onClick={() => setExpandedQuestion(expandedQuestion === idx ? -1 : idx)}
-        className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
-      >
-        <div className="flex-1 text-left">
+      <div className="p-4 space-y-3">
+        <div>
           <p className="text-sm font-semibold text-foreground">Q{idx + 1}</p>
-          <p className="text-sm text-foreground mt-1">{q.question_en}</p>
+          <p className="text-sm text-foreground mt-2">{q.question_en}</p>
           <p className="text-xs text-muted-foreground mt-1">{q.question_zh}</p>
         </div>
-        <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${expandedQuestion === idx ? 'rotate-180' : ''}`} />
-      </button>
-      {expandedQuestion === idx && (
-        <div className="border-t border-border px-4 py-4 space-y-3 bg-muted/30">
+
+        {q.template === 'statements' ? (
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Statements</p>
+            <div className="space-y-2 mb-3">
+              {q.options_en.map((opt, i) => (
+                <div key={i} className="bg-muted/50 rounded-lg p-2.5">
+                  <p className="text-xs font-semibold text-foreground">({i + 1}) {opt}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{q.options_zh[i]}</p>
+                </div>
+              ))}
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Answer Combinations</p>
+              <div className="grid grid-cols-4 gap-2">
+                {['A', 'B', 'C', 'D'].map(letter => q.answers && q.answers[letter] && (
+                  <div key={letter} className="bg-muted/50 rounded-lg p-2 text-center">
+                    <p className="text-xs font-bold text-primary">{letter}</p>
+                    <p className="text-xs text-foreground">{q.answers[letter]}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Options</p>
-            {q.options_en.map((opt, i) => (
-              <div key={i} className="text-sm text-foreground py-1">
-                {String.fromCharCode(65 + i)}) {opt}
-              </div>
-            ))}
+            <div className="grid grid-cols-2 gap-2">
+              {['A', 'B', 'C', 'D'].map((letter, i) => q.options_en[i] && (
+                <div key={letter} className="bg-muted/50 rounded-lg p-2.5">
+                  <p className="text-xs font-bold text-primary mb-1">{letter})</p>
+                  <p className="text-xs text-foreground">{q.options_en[i]}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{q.options_zh[i]}</p>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-            <p className="text-xs font-semibold text-green-800 mb-1">✓ Answer: {q.correct}</p>
-            <p className="text-sm text-green-700">{q.explanation_en}</p>
-          </div>
-          <button
-            onClick={() => handleCopyQuestion(q.question_en)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground hover:bg-border transition-colors"
-          >
-            {copied === q.question_en ? <><Check className="w-3 h-3 text-green-600" /> Copied!</> : <><Copy className="w-3 h-3" /> Copy</>}
-          </button>
+        )}
+
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+          <p className="text-xs font-semibold text-green-800 mb-1">✓ Answer: {q.correct || q.answers?.A || 'A'}</p>
+          <p className="text-sm text-green-700">{q.explanation_en}</p>
         </div>
-      )}
+
+        <button
+          onClick={() => handleCopyQuestion(q.question_en)}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-muted border border-border rounded-lg text-xs text-foreground hover:bg-border transition-colors"
+        >
+          {copied === q.question_en ? <><Check className="w-3 h-3 text-green-600" /> Copied!</> : <><Copy className="w-3 h-3" /> Copy</>}
+        </button>
+      </div>
     </div>
   );
 
