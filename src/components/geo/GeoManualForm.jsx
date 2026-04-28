@@ -7,7 +7,7 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
 
   const addQuestion = () => {
     if (type === 'mcq') {
-      setQuestions([...questions, { question_en: '', question_zh: '', options_en: ['', '', ''], options_zh: ['', '', ''], numOptions: 3, answers: { A: '', B: '', C: '', D: '' }, explanation_en: '', explanation_zh: '' }]);
+      setQuestions([...questions, { question_en: '', question_zh: '', template: 'statements', options_en: ['', '', ''], options_zh: ['', '', ''], numOptions: 3, answers: { A: '', B: '', C: '', D: '' }, correct: 'A', explanation_en: '', explanation_zh: '' }]);
     } else if (type === 'data_based') {
       setQuestions([...questions, { context_en: '', context_zh: '', sub_questions: [{ label: 'a', question_en: '', question_zh: '', marks: 0, answer_en: '', answer_zh: '' }] }]);
     } else {
@@ -99,63 +99,111 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
             <button onClick={() => setExpanded(expanded === qIdx ? -1 : qIdx)} className="w-full flex items-center justify-between mb-3">
               <div className="text-left">
                 <p className="text-sm font-bold text-foreground">Question {qIdx + 1}</p>
-                <p className="text-xs text-muted-foreground">{q.question_en.slice(0, 50)}...</p>
+                <p className="text-xs text-muted-foreground">{q.question_en.slice(0, 50)}... <span className="text-primary font-semibold">{q.template === 'statements' ? '[Statements]' : '[Simple MCQ]'}</span></p>
               </div>
               <ChevronDown className={`w-4 h-4 transition-transform ${expanded === qIdx ? 'rotate-180' : ''}`} />
             </button>
 
             {expanded === qIdx && (
               <>
+                <div className="flex gap-2 mb-3">
+                  <button
+                    onClick={() => updateQuestion(qIdx, 'template', 'statements')}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${q.template === 'statements' ? 'bg-primary text-white border-primary' : 'bg-muted border-border hover:bg-border'}`}
+                  >
+                    Evaluate Statements (1)(2)(3)(4)
+                  </button>
+                  <button
+                    onClick={() => updateQuestion(qIdx, 'template', 'simple')}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${q.template === 'simple' ? 'bg-primary text-white border-primary' : 'bg-muted border-border hover:bg-border'}`}
+                  >
+                    Simple MCQ (A, B, C, D)
+                  </button>
+                </div>
+
                 <input className="w-full rounded-lg border border-input px-3 py-2 text-sm mb-2" placeholder="Question (English)" value={q.question_en} onChange={e => updateQuestion(qIdx, 'question_en', e.target.value)} />
                 <input className="w-full rounded-lg border border-input px-3 py-2 text-sm mb-3" placeholder="Question (中文)" value={q.question_zh} onChange={e => updateQuestion(qIdx, 'question_zh', e.target.value)} />
 
-                <div className="mb-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs font-semibold text-muted-foreground">Statements to Evaluate</p>
-                    <div className="flex gap-1">
-                      {[3, 4].map(num => (
-                        <button
-                          key={num}
-                          onClick={() => setNumOptions(qIdx, num)}
-                          className={`px-2 py-0.5 text-xs font-semibold rounded border transition-colors ${(q.numOptions || 3) === num ? 'bg-primary text-white border-primary' : 'bg-muted border-border hover:bg-border'}`}
-                        >
-                          {num} Statement{num > 1 ? 's' : ''}
-                        </button>
+                {q.template === 'statements' && (
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-semibold text-muted-foreground">Statements to Evaluate</p>
+                      <div className="flex gap-1">
+                        {[3, 4].map(num => (
+                          <button
+                            key={num}
+                            onClick={() => setNumOptions(qIdx, num)}
+                            className={`px-2 py-0.5 text-xs font-semibold rounded border transition-colors ${(q.numOptions || 3) === num ? 'bg-primary text-white border-primary' : 'bg-muted border-border hover:bg-border'}`}
+                          >
+                            {num} Statement{num > 1 ? 's' : ''}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      {q.options_en.map((opt, oIdx) => (
+                        <div key={oIdx} className="bg-background border-2 border-border rounded-lg p-3 hover:border-primary/50 transition-colors">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="w-6 h-6 bg-primary text-white rounded flex items-center justify-center text-xs font-bold">({oIdx + 1})</span>
+                            <span className="text-xs text-muted-foreground">Statement ({oIdx + 1})</span>
+                          </div>
+                          <input className="w-full rounded border border-input px-2 py-1.5 text-xs mb-1.5" placeholder="English statement" value={q.options_en[oIdx]} onChange={e => updateOption(qIdx, oIdx, 'en', e.target.value)} />
+                          <input className="w-full rounded border border-input px-2 py-1.5 text-xs" placeholder="中文陳述" value={q.options_zh[oIdx]} onChange={e => updateOption(qIdx, oIdx, 'zh', e.target.value)} />
+                        </div>
                       ))}
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    {q.options_en.map((opt, oIdx) => (
-                      <div key={oIdx} className="bg-background border-2 border-border rounded-lg p-3 hover:border-primary/50 transition-colors">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="w-6 h-6 bg-primary text-white rounded flex items-center justify-center text-xs font-bold">({oIdx + 1})</span>
-                          <span className="text-xs text-muted-foreground">Statement ({oIdx + 1})</span>
-                        </div>
-                        <input className="w-full rounded border border-input px-2 py-1.5 text-xs mb-1.5" placeholder="English statement" value={q.options_en[oIdx]} onChange={e => updateOption(qIdx, oIdx, 'en', e.target.value)} />
-                        <input className="w-full rounded border border-input px-2 py-1.5 text-xs" placeholder="中文陳述" value={q.options_zh[oIdx]} onChange={e => updateOption(qIdx, oIdx, 'zh', e.target.value)} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                )}
 
-                <div className="mb-3">
-                  <p className="text-xs font-semibold text-muted-foreground mb-2">Answer Options (A, B, C, D)</p>
-                  <div className="grid grid-cols-4 gap-2">
-                    {['A', 'B', 'C', 'D'].map(letter => (
-                      <div key={letter} className="bg-background border-2 border-border rounded-lg p-2.5 hover:border-primary/50 transition-colors">
-                        <div className="flex items-center justify-center mb-1.5">
-                          <span className="w-6 h-6 bg-primary text-white rounded flex items-center justify-center text-xs font-bold">{letter}</span>
+                {q.template === 'simple' && (
+                  <div className="mb-3">
+                    <p className="text-xs font-semibold text-muted-foreground mb-2">Answer Options (A, B, C, D)</p>
+                    <div className="grid grid-cols-4 gap-2">
+                      {['A', 'B', 'C', 'D'].map(letter => (
+                        <div key={letter} className="bg-background border-2 border-border rounded-lg p-3 hover:border-primary/50 transition-colors">
+                          <div className="flex items-center justify-center mb-2">
+                            <span className="w-6 h-6 bg-primary text-white rounded flex items-center justify-center text-xs font-bold">{letter}</span>
+                          </div>
+                          <textarea
+                            className="w-full rounded border border-input px-2 py-1.5 text-xs"
+                            placeholder={`Option ${letter}`}
+                            value={q.options_en[['A', 'B', 'C', 'D'].indexOf(letter)] || ''}
+                            onChange={e => updateOption(qIdx, ['A', 'B', 'C', 'D'].indexOf(letter), 'en', e.target.value)}
+                            rows="2"
+                          />
+                          <textarea
+                            className="w-full rounded border border-input px-2 py-1.5 text-xs mt-1"
+                            placeholder={`選項 ${letter}`}
+                            value={q.options_zh[['A', 'B', 'C', 'D'].indexOf(letter)] || ''}
+                            onChange={e => updateOption(qIdx, ['A', 'B', 'C', 'D'].indexOf(letter), 'zh', e.target.value)}
+                            rows="2"
+                          />
                         </div>
-                        <input
-                          className="w-full rounded border border-input px-2 py-1.5 text-xs"
-                          placeholder={`${letter}) e.g. (1)(2)`}
-                          value={q.answers[letter]}
-                          onChange={e => updateAnswer(qIdx, letter, e.target.value)}
-                        />
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {q.template === 'statements' && (
+                  <div className="mb-3">
+                    <p className="text-xs font-semibold text-muted-foreground mb-2">Answer Options (A, B, C, D)</p>
+                    <div className="grid grid-cols-4 gap-2">
+                      {['A', 'B', 'C', 'D'].map(letter => (
+                        <div key={letter} className="bg-background border-2 border-border rounded-lg p-2.5 hover:border-primary/50 transition-colors">
+                          <div className="flex items-center justify-center mb-1.5">
+                            <span className="w-6 h-6 bg-primary text-white rounded flex items-center justify-center text-xs font-bold">{letter}</span>
+                          </div>
+                          <input
+                            className="w-full rounded border border-input px-2 py-1.5 text-xs"
+                            placeholder={`${letter}) e.g. (1)(2)`}
+                            value={q.answers[letter]}
+                            onChange={e => updateAnswer(qIdx, letter, e.target.value)}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <input className="w-full rounded-lg border border-input px-3 py-2 text-sm mb-2" placeholder="Explanation (English)" value={q.explanation_en} onChange={e => updateQuestion(qIdx, 'explanation_en', e.target.value)} />
                 <input className="w-full rounded-lg border border-input px-3 py-2 text-sm mb-3" placeholder="Explanation (中文)" value={q.explanation_zh} onChange={e => updateQuestion(qIdx, 'explanation_zh', e.target.value)} />
