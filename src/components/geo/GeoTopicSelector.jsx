@@ -90,16 +90,49 @@ export default function GeoTopicSelector({ value, onChange }) {
       {/* Unit selector (compulsory) */}
       <div>
         <label className="text-xs font-semibold text-muted-foreground block mb-2">Unit (Required) 單元</label>
-        <select
-          value={selectedUnit}
-          onChange={e => handleUnitChange(e.target.value)}
-          className="w-full rounded-xl border border-input px-3 py-2.5 text-sm"
-        >
-          <option value="">Select a unit...</option>
-          {topics.map(({ group }) => (
-            <option key={group} value={group}>{group}</option>
-          ))}
-        </select>
+        {editMode ? (
+          <div className="space-y-2">
+            {topics.map(({ group }, idx) => (
+              <div key={group} className="flex gap-2 items-center">
+                <input
+                  className="flex-1 rounded-lg border border-input px-3 py-2 text-sm"
+                  value={group}
+                  onChange={e => editGroupName(idx, e.target.value)}
+                />
+                <button
+                  onClick={() => {
+                    const newTopics = topics.filter((_, i) => i !== idx);
+                    setTopics(newTopics);
+                    if (selectedUnit === group) setSelectedUnit('');
+                  }}
+                  className="px-3 py-2 bg-destructive/10 text-destructive rounded-lg text-xs hover:bg-destructive/20"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+            <button
+              onClick={() => {
+                const newGroup = `Unit ${topics.length + 1}`;
+                setTopics([...topics, { group: newGroup, topics: [] }]);
+              }}
+              className="w-full px-3 py-2 bg-primary text-white rounded-lg text-xs hover:bg-primary/90 font-semibold"
+            >
+              + Add Unit
+            </button>
+          </div>
+        ) : (
+          <select
+            value={selectedUnit}
+            onChange={e => handleUnitChange(e.target.value)}
+            className="w-full rounded-xl border border-input px-3 py-2.5 text-sm"
+          >
+            <option value="">Select a unit...</option>
+            {topics.map(({ group }) => (
+              <option key={group} value={group}>{group}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {/* Subtopic selector (optional) */}
