@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import GeoTopicSelector from '@/components/geo/GeoTopicSelector';
 import GeoExerciseResult from '@/components/geo/GeoExerciseResult';
-import { Loader2, Globe, BookOpen, BarChart2, FileText } from 'lucide-react';
+import GeoPdfResult from '@/components/geo/GeoPdfResult';
+import { Loader2, Globe, BookOpen, BarChart2, FileText, Upload, Sparkles } from 'lucide-react';
 
 const ICONS = { mcq: BookOpen, data_based: BarChart2, short_essay: FileText };
 
@@ -13,11 +14,16 @@ const EXERCISE_TYPES = [
 ];
 
 export default function GeoExercise() {
+  const [mode, setMode] = useState('generate'); // 'generate' | 'pdf'
   const [topic, setTopic] = useState('');
   const [exerciseType, setExerciseType] = useState('mcq');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+
+  // PDF mode state
+  const [pdfFile, setPdfFile] = useState(null);
+  const [pdfResult, setPdfResult] = useState(null);
 
   const handleGenerate = async () => {
     if (!topic.trim()) return setError('請先選擇或輸入題目 / Please select or enter a topic.');
@@ -33,7 +39,26 @@ export default function GeoExercise() {
     }
   };
 
-  const handleReset = () => { setResult(null); setError(''); };
+  const handlePdfExtract = async () => {
+    if (!pdfFile) return setError('Please upload a PDF file first.');
+    setError('');
+    setLoading(true);
+    setPdfResult(null);
+
+    // Upload the file first
+    const { file_url } = await base44.integrations.Core.UploadFile({ file: pdfFile });
+
+    // Then extract
+    const res = await base44.functions.invoke('generateGeoExercise', { mode: 'pdf', pdf_url: file_url });
+    setLoading(false);
+    if (res.data?.success) {
+      setPdfResult(res.data.markdown);
+    } else {
+      setError(res.data?.error || 'Extraction failed. Please try again.');
+    }
+  };
+
+  const handleReset = () => { setResult(null); setPdfResult(null); setError(''); setPdfFile(null); };
 
   return (
     <div className="min-h-screen bg-background pb-16">
@@ -54,62 +79,143 @@ export default function GeoExercise() {
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-6">
-        {!result ? (
-          <div className="space-y-6">
-            {/* Topic Selector */}
-            <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
-              <h2 className="text-sm font-bold text-foreground mb-1">1. Select Topic 選擇課題</h2>
-              <p className="text-xs text-muted-foreground mb-4">Choose from the HKDSE syllabus or enter a custom topic</p>
-              <GeoTopicSelector value={topic} onChange={setTopic} />
+
+        {/* Show results */}
+        {result && <GeoExerciseResult result={result} onReset={handleReset} />}
+        {pdfResult && <GeoPdfResult markdown={pdfResult} onReset={handleReset} />}
+
+        {/* Input form */}
+        {!result && !pdfResult && (
+          <div className="space-y-5">
+
+            {/* Mode tabs */}
+            <div className="flex gap-2 bg-muted p-1 rounded-xl">
+              <button
+                onClick={() => { setMode('generate'); setError(''); }}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${mode === 'generate' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                <Sparkles className="w-4 h-4" />
+                AI Generate 產生練習
+              </button>
+              <button
+                onClick={() => { setMode('pdf'); setError(''); }}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${mode === 'pdf' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                <Upload className="w-4 h-4" />
+                Upload PDF 上傳試卷
+              </button>
             </div>
 
-            {/* Exercise Type */}
-            <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
-              <h2 className="text-sm font-bold text-foreground mb-1">2. Exercise Type 題型</h2>
-              <p className="text-xs text-muted-foreground mb-4">Select the type of questions to generate</p>
-              <div className="grid grid-cols-3 gap-3">
-                {EXERCISE_TYPES.map(({ id, label, labelZh, color, desc }) => {
-                const Icon = ICONS[id];
-                return (
-                  <button
-                    key={id}
-                    onClick={() => setExerciseType(id)}
-                    className={`flex flex-col items-center gap-2 py-4 px-3 rounded-xl border-2 transition-all ${exerciseType === id ? 'border-primary bg-primary/5' : 'border-border bg-background hover:bg-muted'}`}
-                  >
-                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center`}>
-                      <Icon className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs font-bold text-foreground">{label}</p>
-                      <p className="text-[10px] text-primary font-medium">{labelZh}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">{desc}</p>
-                    </div>
-                  </button>
-                );
-              })}
-              </div>
-            </div>
+            {mode === 'generate' && (
+              <>
+                {/* Topic Selector */}
+                <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
+                  <h2 className="text-sm font-bold text-foreground mb-1">1. Select Topic 選擇課題</h2>
+                  <p className="text-xs text-muted-foreground mb-4">Choose from the HKDSE syllabus or enter a custom topic</p>
+                  <GeoTopicSelector value={topic} onChange={setTopic} />
+                </div>
 
-            {error && <p className="text-sm text-destructive px-1">{error}</p>}
+                {/* Exercise Type */}
+                <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
+                  <h2 className="text-sm font-bold text-foreground mb-1">2. Exercise Type 題型</h2>
+                  <p className="text-xs text-muted-foreground mb-4">Select the type of questions to generate</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    {EXERCISE_TYPES.map(({ id, label, labelZh, color, desc }) => {
+                      const Icon = ICONS[id];
+                      return (
+                        <button
+                          key={id}
+                          onClick={() => setExerciseType(id)}
+                          className={`flex flex-col items-center gap-2 py-4 px-3 rounded-xl border-2 transition-all ${exerciseType === id ? 'border-primary bg-primary/5' : 'border-border bg-background hover:bg-muted'}`}
+                        >
+                          <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center`}>
+                            <Icon className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="text-center">
+                            <p className="text-xs font-bold text-foreground">{label}</p>
+                            <p className="text-[10px] text-primary font-medium">{labelZh}</p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">{desc}</p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
-            {/* Generate Button */}
-            <button
-              onClick={handleGenerate}
-              disabled={loading || !topic}
-              className="w-full py-3.5 bg-primary text-primary-foreground rounded-2xl font-bold text-base hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary/20"
-            >
-              {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Generating... 生成中...</> : '⚡ Generate Exercise 產生練習'}
-            </button>
+                {error && <p className="text-sm text-destructive px-1">{error}</p>}
+
+                <button
+                  onClick={handleGenerate}
+                  disabled={loading || !topic}
+                  className="w-full py-3.5 bg-primary text-primary-foreground rounded-2xl font-bold text-base hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary/20"
+                >
+                  {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Generating... 生成中...</> : '⚡ Generate Exercise 產生練習'}
+                </button>
+              </>
+            )}
+
+            {mode === 'pdf' && (
+              <>
+                <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
+                  <h2 className="text-sm font-bold text-foreground mb-1">Upload Past Paper PDF 上傳試卷</h2>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    The AI will OCR your exam paper and convert it into a bilingual, structured exercise with answer keys and figure descriptions.
+                  </p>
+
+                  {/* Upload area */}
+                  <label className={`flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-xl py-10 px-4 cursor-pointer transition-all ${pdfFile ? 'border-primary bg-primary/5' : 'border-border bg-muted/40 hover:bg-muted hover:border-primary/40'}`}>
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      className="hidden"
+                      onChange={e => { setPdfFile(e.target.files[0] || null); setError(''); }}
+                    />
+                    <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                      <Upload className="w-6 h-6 text-primary" />
+                    </div>
+                    {pdfFile ? (
+                      <div className="text-center">
+                        <p className="text-sm font-semibold text-primary">{pdfFile.name}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{(pdfFile.size / 1024).toFixed(0)} KB · Click to change</p>
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <p className="text-sm font-semibold text-foreground">Click to upload PDF</p>
+                        <p className="text-xs text-muted-foreground mt-1">HKDSE past paper or test paper</p>
+                      </div>
+                    )}
+                  </label>
+
+                  <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-800 space-y-1">
+                    <p className="font-semibold">What the AI will produce:</p>
+                    <ul className="list-disc ml-4 space-y-0.5">
+                      <li>Bilingual questions (English + 繁體中文)</li>
+                      <li>High-detail figure/diagram descriptions</li>
+                      <li>Markdown tables for data/graphs</li>
+                      <li>Collapsible answer keys with side-by-side EN/中文 explanations</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {error && <p className="text-sm text-destructive px-1">{error}</p>}
+
+                <button
+                  onClick={handlePdfExtract}
+                  disabled={loading || !pdfFile}
+                  className="w-full py-3.5 bg-primary text-primary-foreground rounded-2xl font-bold text-base hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary/20"
+                >
+                  {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Processing PDF... 處理中...</> : '📄 Extract & Convert 提取並轉換'}
+                </button>
+              </>
+            )}
 
             {loading && (
               <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 text-center">
-                <p className="text-sm font-semibold text-blue-800">AI is generating your bilingual exercise...</p>
-                <p className="text-xs text-blue-600 mt-1">人工智能正在生成雙語練習，請稍候 (15–30 seconds)</p>
+                <p className="text-sm font-semibold text-blue-800">AI is processing your request...</p>
+                <p className="text-xs text-blue-600 mt-1">人工智能正在處理，請稍候 (15–60 seconds)</p>
               </div>
             )}
           </div>
-        ) : (
-          <GeoExerciseResult result={result} onReset={handleReset} />
         )}
       </div>
     </div>
