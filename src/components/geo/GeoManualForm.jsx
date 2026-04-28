@@ -7,7 +7,7 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
 
   const addQuestion = () => {
     if (type === 'mcq') {
-      setQuestions([...questions, { question_en: '', question_zh: '', options_en: ['', '', ''], options_zh: ['', '', ''], numOptions: 3, correct: '(1)', explanation_en: '', explanation_zh: '' }]);
+      setQuestions([...questions, { question_en: '', question_zh: '', options_en: ['', '', ''], options_zh: ['', '', ''], numOptions: 3, answers: { A: '', B: '', C: '', D: '' }, explanation_en: '', explanation_zh: '' }]);
     } else if (type === 'data_based') {
       setQuestions([...questions, { context_en: '', context_zh: '', sub_questions: [{ label: 'a', question_en: '', question_zh: '', marks: 0, answer_en: '', answer_zh: '' }] }]);
     } else {
@@ -23,6 +23,12 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
   const updateQuestion = (idx, field, value) => {
     const updated = [...questions];
     updated[idx] = { ...updated[idx], [field]: value };
+    setQuestions(updated);
+  };
+
+  const updateAnswer = (qIdx, letter, value) => {
+    const updated = [...questions];
+    updated[qIdx].answers[letter] = value;
     setQuestions(updated);
   };
 
@@ -132,25 +138,23 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
                   </div>
                 </div>
 
-                <div className="flex gap-2 mb-3">
-                  <select value={q.correct} onChange={e => updateQuestion(qIdx, 'correct', e.target.value)} className="px-3 py-1.5 border border-input rounded-lg text-sm bg-background">
-                    <option value="(1)">A. Only (1)</option>
-                    <option value="(2)">B. Only (2)</option>
-                    <option value="(3)">C. Only (3)</option>
-                    {(q.numOptions || 3) === 4 && <option value="(4)">D. Only (4)</option>}
-                    <option value="(1)(2)">A. (1) & (2)</option>
-                    <option value="(1)(3)">B. (1) & (3)</option>
-                    <option value="(1)(4)">C. (1) & (4)</option>
-                    <option value="(2)(3)">B. (2) & (3)</option>
-                    <option value="(2)(4)">C. (2) & (4)</option>
-                    <option value="(3)(4)">D. (3) & (4)</option>
-                    <option value="(1)(2)(3)">C. (1), (2), & (3)</option>
-                    {(q.numOptions || 3) === 4 && <option value="(1)(2)(4)">D. (1), (2), & (4)</option>}
-                    {(q.numOptions || 3) === 4 && <option value="(1)(3)(4)">D. (1), (3), & (4)</option>}
-                    {(q.numOptions || 3) === 4 && <option value="(2)(3)(4)">D. (2), (3), & (4)</option>}
-                    {(q.numOptions || 3) === 4 && <option value="(1)(2)(3)(4)">D. All (1)-(4)</option>}
-                  </select>
-                  <span className="text-xs text-muted-foreground leading-9">Correct answer</span>
+                <div className="mb-3">
+                  <p className="text-xs font-semibold text-muted-foreground mb-2">Answer Options (A, B, C, D)</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {['A', 'B', 'C', 'D'].map(letter => (
+                      <div key={letter} className="bg-background border-2 border-border rounded-lg p-2.5 hover:border-primary/50 transition-colors">
+                        <div className="flex items-center justify-center mb-1.5">
+                          <span className="w-6 h-6 bg-primary text-white rounded flex items-center justify-center text-xs font-bold">{letter}</span>
+                        </div>
+                        <input
+                          className="w-full rounded border border-input px-2 py-1.5 text-xs"
+                          placeholder={`${letter}) e.g. (1)(2)`}
+                          value={q.answers[letter]}
+                          onChange={e => updateAnswer(qIdx, letter, e.target.value)}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <input className="w-full rounded-lg border border-input px-3 py-2 text-sm mb-2" placeholder="Explanation (English)" value={q.explanation_en} onChange={e => updateQuestion(qIdx, 'explanation_en', e.target.value)} />
