@@ -105,7 +105,7 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
 
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs font-semibold text-muted-foreground">Answer Combinations</p>
+                    <p className="text-xs font-semibold text-muted-foreground">Statements to Evaluate</p>
                     <div className="flex gap-1">
                       {[3, 4].map(num => (
                         <button
@@ -113,20 +113,20 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
                           onClick={() => setNumOptions(qIdx, num)}
                           className={`px-2 py-0.5 text-xs font-semibold rounded border transition-colors ${(q.numOptions || 3) === num ? 'bg-primary text-white border-primary' : 'bg-muted border-border hover:bg-border'}`}
                         >
-                          {num} Option{num > 1 ? 's' : ''}
+                          {num} Statement{num > 1 ? 's' : ''}
                         </button>
                       ))}
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
                     {q.options_en.map((opt, oIdx) => (
                       <div key={oIdx} className="bg-background border-2 border-border rounded-lg p-3 hover:border-primary/50 transition-colors">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="w-7 h-7 bg-primary text-white rounded-md flex items-center justify-center text-xs font-bold">{oIdx + 1}</span>
-                          <span className="text-xs text-muted-foreground font-semibold">Option {oIdx + 1}</span>
+                          <span className="w-6 h-6 bg-primary text-white rounded flex items-center justify-center text-xs font-bold">({oIdx + 1})</span>
+                          <span className="text-xs text-muted-foreground">Statement ({oIdx + 1})</span>
                         </div>
-                        <input className="w-full rounded border border-input px-2 py-1.5 text-xs mb-1.5" placeholder="English text" value={q.options_en[oIdx]} onChange={e => updateOption(qIdx, oIdx, 'en', e.target.value)} />
-                        <input className="w-full rounded border border-input px-2 py-1.5 text-xs" placeholder="中文文本" value={q.options_zh[oIdx]} onChange={e => updateOption(qIdx, oIdx, 'zh', e.target.value)} />
+                        <input className="w-full rounded border border-input px-2 py-1.5 text-xs mb-1.5" placeholder="English statement" value={q.options_en[oIdx]} onChange={e => updateOption(qIdx, oIdx, 'en', e.target.value)} />
+                        <input className="w-full rounded border border-input px-2 py-1.5 text-xs" placeholder="中文陳述" value={q.options_zh[oIdx]} onChange={e => updateOption(qIdx, oIdx, 'zh', e.target.value)} />
                       </div>
                     ))}
                   </div>
@@ -134,10 +134,21 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
 
                 <div className="flex gap-2 mb-3">
                   <select value={q.correct} onChange={e => updateQuestion(qIdx, 'correct', e.target.value)} className="px-3 py-1.5 border border-input rounded-lg text-sm bg-background">
-                    {Array.from({ length: (q.numOptions || 3) }).map((_, i) => {
-                      const answer = `(${i + 1})`;
-                      return <option key={answer} value={answer}>{answer}</option>;
-                    })}
+                    <option value="(1)">A. Only (1)</option>
+                    <option value="(2)">B. Only (2)</option>
+                    <option value="(3)">C. Only (3)</option>
+                    {(q.numOptions || 3) === 4 && <option value="(4)">D. Only (4)</option>}
+                    <option value="(1)(2)">A. (1) & (2)</option>
+                    <option value="(1)(3)">B. (1) & (3)</option>
+                    <option value="(1)(4)">C. (1) & (4)</option>
+                    <option value="(2)(3)">B. (2) & (3)</option>
+                    <option value="(2)(4)">C. (2) & (4)</option>
+                    <option value="(3)(4)">D. (3) & (4)</option>
+                    <option value="(1)(2)(3)">C. (1), (2), & (3)</option>
+                    {(q.numOptions || 3) === 4 && <option value="(1)(2)(4)">D. (1), (2), & (4)</option>}
+                    {(q.numOptions || 3) === 4 && <option value="(1)(3)(4)">D. (1), (3), & (4)</option>}
+                    {(q.numOptions || 3) === 4 && <option value="(2)(3)(4)">D. (2), (3), & (4)</option>}
+                    {(q.numOptions || 3) === 4 && <option value="(1)(2)(3)(4)">D. All (1)-(4)</option>}
                   </select>
                   <span className="text-xs text-muted-foreground leading-9">Correct answer</span>
                 </div>
