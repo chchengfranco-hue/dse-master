@@ -3,7 +3,8 @@ import { base44 } from '@/api/base44Client';
 import GeoTopicSelector from '@/components/geo/GeoTopicSelector';
 import GeoManualForm from '@/components/geo/GeoManualForm';
 import GeoPdfResult from '@/components/geo/GeoPdfResult';
-import { Loader2, Globe, BookOpen, BarChart2, FileText, Upload, PenTool } from 'lucide-react';
+import GeoExerciseLibrary from '@/components/geo/GeoExerciseLibrary';
+import { Loader2, Globe, BookOpen, BarChart2, FileText, Upload, PenTool, Library } from 'lucide-react';
 
 const ICONS = { mcq: BookOpen, data_based: BarChart2, short_essay: FileText };
 
@@ -14,6 +15,7 @@ const EXERCISE_TYPES = [
 ];
 
 export default function GeoExercise() {
+  const [view, setView] = useState('create'); // 'create' | 'library'
   const [mode, setMode] = useState('generate'); // 'generate' | 'pdf'
   const [topic, setTopic] = useState('');
   const [exerciseType, setExerciseType] = useState('mcq');
@@ -81,6 +83,30 @@ export default function GeoExercise() {
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-6">
+
+        {/* View tabs */}
+        <div className="flex gap-2 bg-muted p-1 rounded-xl mb-6">
+          <button
+            onClick={() => setView('create')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${view === 'create' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            <PenTool className="w-4 h-4" />
+            Create 建立
+          </button>
+          <button
+            onClick={() => setView('library')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${view === 'library' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            <Library className="w-4 h-4" />
+            Library 庫
+          </button>
+        </div>
+
+        {/* Library view */}
+        {view === 'library' && <GeoExerciseLibrary />}
+
+        {/* Create view */}
+        {view === 'create' && <>
 
         {/* PDF extraction result */}
         {pdfResult && <GeoPdfResult markdown={pdfResult} onReset={handleReset} />}
@@ -228,6 +254,7 @@ export default function GeoExercise() {
             )}
           </div>
         )}
+        </>}
       </div>
     </div>
   );
