@@ -9,7 +9,7 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
 
   const addQuestion = () => {
     if (type === 'mcq') {
-      setQuestions([...questions, { question_en: '', question_zh: '', template: 'statements', options_en: ['', '', ''], options_zh: ['', '', ''], numOptions: 3, answers: { A: '', B: '', C: '', D: '' }, correct: 'A', explanation_en: '', explanation_zh: '', image_url: '', tableFormat: false, tableHeaders: ['', ''], tableData: [['', ''], ['', ''], ['', '']] }]);
+      setQuestions([...questions, { question_en: '', question_zh: '', template: 'statements', options_en: ['', '', ''], options_zh: ['', '', ''], numOptions: 3, answers: { A: '', B: '', C: '', D: '' }, correct: 'A', explanation_en: '', explanation_zh: '', image_url: '', tableFormat: false, numTableColumns: 2, tableHeaders: ['', ''], tableData: [['', '', ''], ['', '', ''], ['', '', '']] }]);
     } else if (type === 'data_based') {
       setQuestions([...questions, { context_en: '', context_zh: '', sub_questions: [{ label: 'a', question_en: '', question_zh: '', marks: 0, answer_en: '', answer_zh: '' }], image_url: '' }]);
     } else {
@@ -226,31 +226,89 @@ export default function GeoManualForm({ type, topic, onSubmit, onCancel }) {
                   <div className="mb-3">
                     <p className="text-xs font-semibold text-muted-foreground mb-2">Table Format</p>
                     <div className="mb-3 space-y-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs text-muted-foreground">Number of Columns</p>
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => {
+                              const numCols = (q.numTableColumns || 2) - 1;
+                              if (numCols >= 1) {
+                                const newHeaders = (q.tableHeaders || []).slice(0, numCols);
+                                const newData = (q.tableData || []).map(row => row.slice(0, numCols + 1));
+                                updateQuestion(qIdx, 'numTableColumns', numCols);
+                                updateQuestion(qIdx, 'tableHeaders', newHeaders);
+                                updateQuestion(qIdx, 'tableData', newData);
+                              }
+                            }}
+                            className="px-2 py-0.5 text-xs bg-muted border border-border rounded hover:bg-border"
+                          >
+                            −
+                          </button>
+                          <span className="px-3 py-0.5 text-xs font-semibold bg-primary/10 border border-primary/20 rounded">{q.numTableColumns || 2}</span>
+                          <button
+                            onClick={() => {
+                              const numCols = (q.numTableColumns || 2) + 1;
+                              const newHeaders = [...(q.tableHeaders || [])];
+                              while (newHeaders.length < numCols) newHeaders.push('');
+                              const newData = (q.tableData || []).map(row => {
+                                const newRow = [...row];
+                                while (newRow.length <= numCols) newRow.push('');
+                                return newRow;
+                              });
+                              updateQuestion(qIdx, 'numTableColumns', numCols);
+                              updateQuestion(qIdx, 'tableHeaders', newHeaders);
+                              updateQuestion(qIdx, 'tableData', newData);
+                            }}
+                            className="px-2 py-0.5 text-xs bg-muted border border-border rounded hover:bg-border"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
                       <div>
                         <p className="text-xs text-muted-foreground mb-1">Column Headers</p>
-                        <div className="flex gap-2">
-                          <input className="flex-1 rounded border border-input px-2 py-1.5 text-xs" placeholder="Header 1 (EN)" value={q.tableHeaders?.[0] || ''} onChange={e => updateQuestion(qIdx, 'tableHeaders', [e.target.value, q.tableHeaders?.[1] || ''])} />
-                          <input className="flex-1 rounded border border-input px-2 py-1.5 text-xs" placeholder="Header 2 (EN)" value={q.tableHeaders?.[1] || ''} onChange={e => updateQuestion(qIdx, 'tableHeaders', [q.tableHeaders?.[0] || '', e.target.value])} />
+                        <div className="flex gap-2 flex-wrap">
+                          {Array.from({ length: q.numTableColumns || 2 }).map((_, hIdx) => (
+                            <input
+                              key={hIdx}
+                              className="flex-1 min-w-20 rounded border border-input px-2 py-1.5 text-xs"
+                              placeholder={`Header ${hIdx + 1}`}
+                              value={q.tableHeaders?.[hIdx] || ''}
+                              onChange={e => {
+                                const newHeaders = [...(q.tableHeaders || [])];
+                                newHeaders[hIdx] = e.target.value;
+                                updateQuestion(qIdx, 'tableHeaders', newHeaders);
+                              }}
+                            />
+                          ))}
                         </div>
                       </div>
                       <div className="max-h-64 overflow-y-auto">
                         {q.tableData?.map((row, rIdx) => (
                           <div key={rIdx} className="flex gap-2 mb-2">
-                            <input className="w-20 rounded border border-input px-2 py-1.5 text-xs" placeholder="(1) (2) (3)" value={row[0] || ''} onChange={e => {
-                              const newData = [...q.tableData];
-                              newData[rIdx][0] = e.target.value;
-                              updateQuestion(qIdx, 'tableData', newData);
-                            }} />
-                            <input className="flex-1 rounded border border-input px-2 py-1.5 text-xs" placeholder={q.tableHeaders?.[0] || 'Column 1'} value={row[1] || ''} onChange={e => {
-                              const newData = [...q.tableData];
-                              newData[rIdx][1] = e.target.value;
-                              updateQuestion(qIdx, 'tableData', newData);
-                            }} />
-                            <input className="flex-1 rounded border border-input px-2 py-1.5 text-xs" placeholder={q.tableHeaders?.[1] || 'Column 2'} value={row[2] || ''} onChange={e => {
-                              const newData = [...q.tableData];
-                              newData[rIdx][2] = e.target.value;
-                              updateQuestion(qIdx, 'tableData', newData);
-                            }} />
+                            <input
+                              className="w-20 rounded border border-input px-2 py-1.5 text-xs"
+                              placeholder="(1) (2) (3)"
+                              value={row[0] || ''}
+                              onChange={e => {
+                                const newData = [...q.tableData];
+                                newData[rIdx][0] = e.target.value;
+                                updateQuestion(qIdx, 'tableData', newData);
+                              }}
+                            />
+                            {Array.from({ length: q.numTableColumns || 2 }).map((_, cIdx) => (
+                              <input
+                                key={cIdx}
+                                className="flex-1 rounded border border-input px-2 py-1.5 text-xs"
+                                placeholder={q.tableHeaders?.[cIdx] || `Column ${cIdx + 1}`}
+                                value={row[cIdx + 1] || ''}
+                                onChange={e => {
+                                  const newData = [...q.tableData];
+                                  newData[rIdx][cIdx + 1] = e.target.value;
+                                  updateQuestion(qIdx, 'tableData', newData);
+                                }}
+                              />
+                            ))}
                           </div>
                         ))}
                       </div>
