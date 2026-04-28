@@ -6,7 +6,7 @@ import GeoExerciseLibrary from '@/components/geo/GeoExerciseLibrary';
 import GeoNavbar from '@/components/geo/GeoNavbar';
 import GeoQuestionBank from '@/components/geo/GeoQuestionBank';
 import GeoMockTestGenerator from '@/components/geo/GeoMockTestGenerator';
-import { Loader2, Globe, BookOpen, BarChart2, FileText, PenTool, Library, Zap } from 'lucide-react';
+import { Loader2, Globe, BookOpen, BarChart2, FileText, PenTool, Library, Zap, BookMarked } from 'lucide-react';
 
 const ICONS = { mcq: BookOpen, data_based: BarChart2, short_essay: FileText };
 
@@ -17,7 +17,8 @@ const EXERCISE_TYPES = [
 ];
 
 export default function GeoExercise() {
-  const [view, setView] = useState('create'); // 'create' | 'library' | 'mocktest'
+  const [view, setView] = useState('papers'); // 'papers' | 'create' | 'library' | 'mocktest'
+  const [paper, setPaper] = useState(null); // 'paper1' | 'paper2' | null
   const [topic, setTopic] = useState('');
   const [exerciseType, setExerciseType] = useState('mcq');
   const [loading, setLoading] = useState(false);
@@ -58,6 +59,8 @@ export default function GeoExercise() {
             onBack={() => {
               setCurrentExercise(null);
               setTopic('');
+              setPaper(null);
+              setView('papers');
             }}
           />
         </div>
@@ -83,30 +86,76 @@ export default function GeoExercise() {
 
           <div className="max-w-3xl mx-auto px-4 py-6">
 
+        {/* Paper selection view */}
+        {view === 'papers' && !paper && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button
+              onClick={() => { setPaper('paper1'); setView('create'); }}
+              className="bg-card border-2 border-primary rounded-2xl p-6 hover:shadow-lg hover:bg-primary/5 transition-all"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-white font-bold">1</div>
+                <div className="text-left">
+                  <h3 className="text-lg font-bold text-foreground">Paper 1 試卷一</h3>
+                  <p className="text-sm text-muted-foreground">2.5 hours</p>
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground text-left space-y-1">
+                <p>甲部 (A): 20 MCQs | 乙部 (B): Choose 2 questions | 丙部 (C): Choose 1 essay</p>
+              </div>
+            </button>
+            <button
+              onClick={() => { setPaper('paper2'); setView('create'); }}
+              className="bg-card border-2 border-primary rounded-2xl p-6 hover:shadow-lg hover:bg-primary/5 transition-all"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-white font-bold">2</div>
+                <div className="text-left">
+                  <h3 className="text-lg font-bold text-foreground">Paper 2 試卷二</h3>
+                  <p className="text-sm text-muted-foreground">1.25 hours</p>
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground text-left space-y-1">
+                <p>丁部 (D): Choose 1 question | 戊部 (E): Choose 1 question</p>
+              </div>
+            </button>
+          </div>
+        )}
+
         {/* View tabs */}
-        <div className="flex gap-2 bg-muted p-1 rounded-xl mb-6">
-          <button
-            onClick={() => { setView('create'); setCurrentExercise(null); }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${view === 'create' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-          >
-            <PenTool className="w-4 h-4" />
-            Create 建立
-          </button>
-          <button
-            onClick={() => { setView('mocktest'); setCurrentExercise(null); }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${view === 'mocktest' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-          >
-            <Zap className="w-4 h-4" />
-            Mock Test 模試
-          </button>
-          <button
-            onClick={() => { setView('library'); setCurrentExercise(null); }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${view === 'library' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-          >
-            <Library className="w-4 h-4" />
-            Library 庫
-          </button>
-        </div>
+        {(view !== 'papers' || paper) && (
+          <div className="flex gap-2 bg-muted p-1 rounded-xl mb-6">
+            <button
+              onClick={() => { setView('create'); }}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${view === 'create' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              <PenTool className="w-4 h-4" />
+              Create 建立
+            </button>
+            <button
+              onClick={() => { setView('mocktest'); }}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${view === 'mocktest' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              <Zap className="w-4 h-4" />
+              Mock Test 模試
+            </button>
+            <button
+              onClick={() => { setView('library'); }}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all ${view === 'library' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              <Library className="w-4 h-4" />
+              Library 庫
+            </button>
+            {paper && (
+              <button
+                onClick={() => { setPaper(null); setView('papers'); }}
+                className="px-4 py-2.5 bg-muted text-muted-foreground rounded-lg text-sm font-semibold hover:bg-border transition-all"
+              >
+                Back
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Library view */}
         {view === 'library' && <GeoExerciseLibrary />}
@@ -115,13 +164,20 @@ export default function GeoExercise() {
         {view === 'mocktest' && <GeoMockTestGenerator />}
 
         {/* Create view */}
-        {view === 'create' && <>
+        {view === 'create' && paper && <>
+
+        {/* Paper indicator */}
+        <div className="bg-primary/5 border border-primary/20 rounded-xl px-4 py-2 mb-4 flex items-center gap-2">
+          <BookMarked className="w-4 h-4 text-primary" />
+          <span className="text-sm font-semibold text-primary">{paper === 'paper1' ? 'Paper 1 (Section A/B/C)' : 'Paper 2 (Section D/E)'}</span>
+        </div>
 
         {/* Manual form */}
         {showManualForm && (
           <GeoManualForm
             type={exerciseType}
             topic={topic}
+            paper={paper}
             onSubmit={handleManualSubmit}
             onCancel={() => setShowManualForm(false)}
           />
