@@ -217,14 +217,26 @@ export default function AppLayout() {
                 <button onClick={() => {navigate('/cloze');setShowExercisePicker(false);}}
               className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border bg-background hover:bg-primary/5 hover:border-primary/30 transition-all">
                   <Grid3X3 className="w-6 h-6 text-primary" />
-                  <span className="text-sm font-semibold text-foreground">Cloze</span>
-                  <span className="text-xs text-muted-foreground">Fill-in-the-blank</span>
+                  <span className="text-sm font-semibold text-foreground">Fill-in-blank</span>
+                  <span className="text-xs text-muted-foreground">Word bank / open input</span>
+                </button>
+                <button onClick={() => {navigate('/cloze');setShowExercisePicker(false);}}
+              className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border bg-background hover:bg-primary/5 hover:border-primary/30 transition-all">
+                  <Layers className="w-6 h-6 text-primary" />
+                  <span className="text-sm font-semibold text-foreground">MCQ Dropdown</span>
+                  <span className="text-xs text-muted-foreground">Choose from options</span>
+                </button>
+                <button onClick={() => {navigate('/cloze');setShowExercisePicker(false);}}
+              className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border bg-background hover:bg-primary/5 hover:border-primary/30 transition-all">
+                  <ClipboardList className="w-6 h-6 text-primary" />
+                  <span className="text-sm font-semibold text-foreground">MC Cloze</span>
+                  <span className="text-xs text-muted-foreground">Passage + 4 options</span>
                 </button>
                 <button onClick={() => {navigate('/grammar');setShowExercisePicker(false);}}
               className="flex flex-col items-center gap-2 py-4 rounded-xl border border-border bg-background hover:bg-primary/5 hover:border-primary/30 transition-all">
                   <CheckSquare className="w-6 h-6 text-primary" />
-                  <span className="text-sm font-semibold text-foreground">Grammar</span>
-                  <span className="text-xs text-muted-foreground">Multiple choice</span>
+                  <span className="text-sm font-semibold text-foreground">Grammar MCQ</span>
+                  <span className="text-xs text-muted-foreground">Grammar practice</span>
                 </button>
               </div>
             </div>
