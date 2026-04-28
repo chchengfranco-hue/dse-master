@@ -4,9 +4,9 @@ import GrammarModule from './GrammarModule';
 import { Grid3X3, Layers, ClipboardList, CheckSquare } from 'lucide-react';
 
 const EXERCISE_TYPES = [
-  { id: 'fill', label: 'Fill-in-blank', icon: Grid3X3, description: 'Word bank / open input', path: '/cloze' },
-  { id: 'mcqdrop', label: 'MCQ Dropdown', icon: Layers, description: 'Choose from options', path: '/cloze' },
-  { id: 'mccloze', label: 'MC Cloze', icon: ClipboardList, description: 'Passage + 4 options', path: '/cloze' },
+  { id: 'fill', label: 'Fill-in-blank', icon: Grid3X3, description: 'Word bank / open input', path: '/cloze?type=bank' },
+  { id: 'mcqdrop', label: 'MCQ Dropdown', icon: Layers, description: 'Choose from options', path: '/cloze?type=mcq' },
+  { id: 'mccloze', label: 'MC Cloze', icon: ClipboardList, description: 'Passage + 4 options', path: '/cloze?type=mccloze' },
   { id: 'grammar', label: 'Grammar MCQ', icon: CheckSquare, description: 'Grammar practice', path: '/grammar' },
 ];
 

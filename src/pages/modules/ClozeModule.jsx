@@ -372,18 +372,34 @@ function ClozeEditor({ exercise, onSave, onCancel }) {
   );
 }
 
+const TYPE_LABELS = { bank: 'Fill-in-blank', nobank: 'Fill-in-blank (No Bank)', mcq: 'MCQ Dropdown', mccloze: 'MC Cloze' };
+
 function ClozeLibrary({ exercises, isEditor, onView, onEdit, onDelete, onBulkImport, refreshing }) {
+  const urlParams = new URLSearchParams(window.location.search);
+  const typeFilter = urlParams.get('type') || null;
+
   const [selected, setSelected] = useState('All'); const [selSub, setSelSub] = useState(null);
   const [search, setSearch] = useState(''); const [page, setPage] = useState(1); const PER = 10;
+  // Filter exercises by type from URL param
+  const typeExercises = typeFilter
+    ? exercises.filter(p => {
+        if (typeFilter === 'bank') return p.hasOptions === 'bank' || p.hasOptions === 'nobank';
+        return p.hasOptions === typeFilter;
+      })
+    : exercises;
+
   const topicTree = {};
-  exercises.forEach(p => { const t = p.topic || 'Uncategorized', st = p.subtopic || 'General'; if (!topicTree[t]) topicTree[t] = new Set(); if (st !== 'General') topicTree[t].add(st); });
-  const filtered = exercises.filter(p => { const tm = selected === 'All' || (selSub ? p.topic === selected && p.subtopic === selSub : p.topic === selected); return tm && (!search || p.title.toLowerCase().includes(search.toLowerCase())); });
+  typeExercises.forEach(p => { const t = p.topic || 'Uncategorized', st = p.subtopic || 'General'; if (!topicTree[t]) topicTree[t] = new Set(); if (st !== 'General') topicTree[t].add(st); });
+  const filtered = typeExercises.filter(p => { const tm = selected === 'All' || (selSub ? p.topic === selected && p.subtopic === selSub : p.topic === selected); return tm && (!search || p.title.toLowerCase().includes(search.toLowerCase())); });
   const totalPages = Math.ceil(filtered.length / PER);
   const paged = filtered.slice((page - 1) * PER, page * PER);
   return (
     <div className="px-4 lg:px-8 py-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <div><h1 className="text-2xl font-bold text-foreground">Cloze Exercises</h1><p className="text-sm text-muted-foreground mt-1">Fill-in-the-blank vocabulary exercises</p></div>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">{typeFilter ? TYPE_LABELS[typeFilter] || 'Exercises' : 'All Exercises'}</h1>
+          <p className="text-sm text-muted-foreground mt-1">{typeFilter === 'bank' ? 'Fill-in-blank with word bank or open input' : typeFilter === 'mcq' ? 'Multiple choice dropdown exercises' : typeFilter === 'mccloze' ? 'Passage with 4-option multiple choice' : 'All fill-in-blank vocabulary exercises'}</p>
+        </div>
         <div className="flex gap-2">
           {isEditor && onBulkImport && <button onClick={onBulkImport} className="px-3 py-2 bg-muted border border-border text-foreground rounded-xl text-sm font-semibold hover:bg-border select-none">📥 Import</button>}
           {isEditor && <button onClick={() => onEdit(null)} className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 select-none">+ Add Exercise</button>}
@@ -393,10 +409,10 @@ function ClozeLibrary({ exercises, isEditor, onView, onEdit, onDelete, onBulkImp
       <div className="flex gap-5 items-start">
         <aside className="w-52 shrink-0 bg-card rounded-2xl border border-border p-4 hidden sm:block">
           <h3 className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-3">Categories</h3>
-          <button onClick={() => { setSelected('All'); setSelSub(null); setPage(1); }} className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium mb-1 select-none ${selected === 'All' ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'}`}>All Exercises ({exercises.length})</button>
+          <button onClick={() => { setSelected('All'); setSelSub(null); setPage(1); }} className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium mb-1 select-none ${selected === 'All' ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'}`}>All ({typeExercises.length})</button>
           {Object.keys(topicTree).sort().map(t => (
             <div key={t}>
-              <button onClick={() => { setSelected(t); setSelSub(null); setPage(1); }} className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium mb-1 select-none ${selected === t && !selSub ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'}`}>{t} ({exercises.filter(p => p.topic === t).length})</button>
+              <button onClick={() => { setSelected(t); setSelSub(null); setPage(1); }} className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium mb-1 select-none ${selected === t && !selSub ? 'bg-primary/10 text-primary font-bold' : 'hover:bg-muted text-foreground'}`}>{t} ({typeExercises.filter(p => p.topic === t).length})</button>
               {Array.from(topicTree[t]).sort().map(st => (
                 <button key={st} onClick={() => { setSelected(t); setSelSub(st); setPage(1); }} className={`w-full text-left px-3 py-1.5 pl-6 rounded-xl text-xs mb-0.5 select-none ${selected === t && selSub === st ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}>{st}</button>
               ))}
