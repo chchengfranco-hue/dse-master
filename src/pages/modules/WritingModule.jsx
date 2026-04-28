@@ -293,7 +293,7 @@ function WritingEditor({ model, onSave, onCancel, allTemplates }) {
     status: model?.status || 'published',
     annotationsText: model?.annotations ? Object.entries(model.annotations).map(([k, v]) => `${k}: ${v}`).join('\n') : '',
   });
-  const [selectedGenre, setSelectedGenre] = useState('');
+  const [selectedGenre, setSelectedGenre] = useState(model?.genre || '');
   const activeTemplate = allTemplates?.find(t => t.genre === selectedGenre) || null;
 
   const s = (k, v) => setForm(p => ({ ...p, [k]: v }));
@@ -310,7 +310,7 @@ function WritingEditor({ model, onSave, onCancel, allTemplates }) {
     if (!form.title.trim() || !form.content.trim()) return alert('Title and Content are required.');
     const annotations = {};
     form.annotationsText.split('\n').forEach(line => { const idx = line.indexOf(':'); if (idx > 0) { const w = line.slice(0, idx).trim(), m = line.slice(idx + 1).trim(); if (w && m) annotations[w] = m; } });
-    onSave({ id: form.id, title: form.title.trim(), topic: form.topic || 'Uncategorized', subtopic: form.subtopic || 'General', imageUrl: form.imageUrl.trim(), examRef: form.examRef.trim(), question: form.question.trim(), content: form.content.trim(), annotations, status: form.status });
+    onSave({ id: form.id, title: form.title.trim(), topic: form.topic || 'Uncategorized', subtopic: form.subtopic || 'General', imageUrl: form.imageUrl.trim(), examRef: form.examRef.trim(), question: form.question.trim(), content: form.content.trim(), annotations, status: form.status, genre: selectedGenre || '' });
   };
   return (
     <div className="px-4 lg:px-8 py-6 max-w-3xl mx-auto">
@@ -468,12 +468,14 @@ function WritingLibrary({ models, isEditor, onView, onEdit, onDelete, onBulkImpo
 }
 
 // --- Read View ---
-function WritingReadView({ model, isEditor, onBack, onSaveAnnotation }) {
+function WritingReadView({ model, isEditor, onBack, onSaveAnnotation, allTemplates }) {
   const [showRuby, setShowRuby] = useState(false);
   const [showMargin, setShowMargin] = useState(false);
   const [activeWord, setActiveWord] = useState(null);
   const annotations = model.annotations || {};
   const annotationCount = Object.keys(annotations).length;
+  const matchedTemplate = allTemplates?.find(t => t.genre === model.genre) || null;
+  const structure = matchedTemplate?.structure || [];
 
   const handleWordClick = (word) => { speak(word); if (!showMargin && !showRuby) setActiveWord(activeWord === word ? null : word); };
 
@@ -531,8 +533,32 @@ function WritingReadView({ model, isEditor, onBack, onSaveAnnotation }) {
       {model.imageUrl && <img src={model.imageUrl} alt="Theme" className="max-h-72 rounded-2xl mb-5 object-cover" />}
 
       <div className="flex gap-5 items-start">
-        <div className="flex-1 min-w-0 bg-card rounded-2xl border border-border p-6 lg:p-8 text-base leading-loose" onMouseUp={handleTextSelect}>
-          <AnnotatedContent text={model.content} annotations={annotations} showRuby={showRuby} activeWord={activeWord} onWordClick={handleWordClick} />
+        <div className="flex-1 min-w-0" onMouseUp={handleTextSelect}>
+          {structure.length > 0 ? (
+            <div className="space-y-3">
+              {splitIntoParagraphs(model.content, structure.length).map((para, i) => {
+                const sec = structure[i];
+                const color = PARA_COLORS[i % PARA_COLORS.length];
+                return (
+                  <div key={i} className={`rounded-2xl border-l-4 ${color.border} ${color.bg} p-5`}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${color.badge}`}>
+                        {i + 1}. {sec.section}
+                      </span>
+                      {sec.description && <span className="text-[10px] text-muted-foreground italic">{sec.description}</span>}
+                    </div>
+                    <div className="text-base leading-loose bg-white/70 rounded-xl px-4 py-3">
+                      <AnnotatedContent text={para} annotations={annotations} showRuby={showRuby} activeWord={activeWord} onWordClick={handleWordClick} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="bg-card rounded-2xl border border-border p-6 lg:p-8 text-base leading-loose">
+              <AnnotatedContent text={model.content} annotations={annotations} showRuby={showRuby} activeWord={activeWord} onWordClick={handleWordClick} />
+            </div>
+          )}
         </div>
         {showMargin && annotationCount > 0 && (
           <aside className="w-40 shrink-0 flex flex-col gap-2.5 pt-1">
@@ -583,7 +609,7 @@ export default function WritingModule({ isEditor }) {
   const { templates, loading: tLoading, reload: reloadTemplates } = useWritingTemplates(isEditor);
 
   const saveModel = async (data) => {
-    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, content: data.content, annotations: data.annotations || {}, image_url: data.imageUrl || '', exam_ref: data.examRef || '', question: data.question || '', status: data.status || 'published', is_published: data.status !== 'draft' };
+    const payload = { title: data.title, topic: data.topic, subtopic: data.subtopic, content: data.content, annotations: data.annotations || {}, image_url: data.imageUrl || '', exam_ref: data.examRef || '', question: data.question || '', status: data.status || 'published', is_published: data.status !== 'draft', genre: data.genre || '' };
     if (data.id) await contentApi.update('WritingModel', data.id, payload);
     else await contentApi.create('WritingModel', payload);
     navigate('/writing');
@@ -630,9 +656,9 @@ export default function WritingModule({ isEditor }) {
         const W = () => {
           const [model, setModel] = useState(null);
           const id = window.location.pathname.split('/').pop();
-          useEffect(() => { base44.entities.WritingModel.get(id).then(m => setModel({ ...m, imageUrl: m.image_url || '', annotations: m.annotations || {} })); }, [id]);
+          useEffect(() => { base44.entities.WritingModel.get(id).then(m => setModel({ ...m, imageUrl: m.image_url || '', annotations: m.annotations || {}, genre: m.genre || '' })); }, [id]);
           if (!model) return <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>;
-          return <WritingReadView model={model} isEditor={isEditor} onBack={() => navigate('/writing')} onSaveAnnotation={handleSaveAnnotation} />;
+          return <WritingReadView model={model} isEditor={isEditor} onBack={() => navigate('/writing')} onSaveAnnotation={handleSaveAnnotation} allTemplates={templates} />;
         };
         return <W />;
       })()} />
@@ -687,7 +713,7 @@ export default function WritingModule({ isEditor }) {
           const idStr = window.location.pathname.split('/').pop();
           useEffect(() => {
             if (idStr === 'new') { setModel(null); return; }
-            base44.entities.WritingModel.get(idStr).then(m => setModel({ ...m, imageUrl: m.image_url || '', exam_ref: m.exam_ref || '', annotations: m.annotations || {} }));
+            base44.entities.WritingModel.get(idStr).then(m => setModel({ ...m, imageUrl: m.image_url || '', exam_ref: m.exam_ref || '', annotations: m.annotations || {}, genre: m.genre || '' }));
           }, [idStr]);
           if (model === undefined) return <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>;
           return <WritingEditor model={model} onSave={saveModel} onCancel={() => navigate('/writing')} allTemplates={templates} />;

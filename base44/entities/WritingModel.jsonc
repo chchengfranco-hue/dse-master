@@ -22,6 +22,10 @@
       "type": "string",
       "description": "Past exam paper reference (e.g. 2023 DSE Paper 2 Q3)"
     },
+    "genre": {
+      "type": "string",
+      "description": "Writing genre (matches a WritingTemplate genre name)"
+    },
     "question": {
       "type": "string",
       "description": "The exam question or writing prompt"
